@@ -30,7 +30,7 @@ static func load_all(dir: String = DIR) -> Array[HeroData]:
 			var hero := load(dir.path_join(file)) as HeroData
 			if hero != null:
 				heroes.append(hero)
-	heroes.sort_custom(func(a: HeroData, b: HeroData) -> bool: return a.id < b.id)
+	heroes.sort_custom(func(a: HeroData, b: HeroData) -> bool: return String(a.id) < String(b.id))
 	return heroes
 
 
