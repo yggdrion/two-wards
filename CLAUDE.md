@@ -14,7 +14,10 @@ This applies to every session, human or Claude: CI is lean (see below), so the l
 - While iterating, run `./tools/check.sh --quick` (lint and asset validator, no Godot) after each change to GDScript, assets or the manifest, and the gdUnit4 suite you touched (`./tools/run_tests.sh -a res://tests/<suite>_test.gd`).
 - In each PR description, say that the full check passed (test count) or what was not run and why.
 - After a change to the Windows-only path (`*.ps1`, export presets), ask Rapha to run `.\tools\check.ps1` on Windows before merging, since PR runs skip Windows.
-- Playtest builds are local too: Rapha builds them with `.\tools\check.ps1 -Export` (into `build\windows\`). Don't trigger manual CI runs for builds and don't attach built executables.
+- Playtest builds are local too, never a manual CI run. After a milestone or major step, Claude builds the Windows exe in its own environment and hands it to Rapha:
+  1. Run the full check, then `./tools/export.sh windows` on the commit to test (the Linux export aborts at the very end but still writes the binary; check that `build/windows/two-wards.exe` exists).
+  2. Copy it to the project files as `/mnt/project-files/builds/two-wards-<milestone>-<short sha>.exe` and attach it to the thread message.
+  3. Add a short "what to try" list. Rapha can also build it on their PC with `.\tools\check.ps1 -Export` (into `build\windows\`).
 
 ## Commands
 
