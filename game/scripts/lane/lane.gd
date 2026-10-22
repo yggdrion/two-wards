@@ -1,6 +1,6 @@
 class_name Lane
 extends Node2D
-## The run's simulation root: waves along the path, towers, the hero and the player's cards.
+## The run's simulation root: waves along the path, towers, the players' cards and wizard buffs.
 ##
 ## All simulation runs through tick() so tests (and later the network host)
 ## can step it with a fixed delta instead of waiting for real frames.
@@ -13,10 +13,8 @@ signal run_lost
 enum Phase { WAVE, BREAK, WON, LOST }
 
 const PATH_WIDTH := 24.0
-## Playable field above the card UI. Heroes and towers stay inside it.
+## Playable field above the card UI. Towers stay inside it.
 const FIELD := Rect2(0, 0, 640, 288)
-## Towers can only be placed this close to the playing player's hero.
-const PLACE_RADIUS := 96.0
 ## Minimum distance between two towers.
 const TOWER_SPACING := 24.0
 ## Seconds between a cleared wave and the next one.
@@ -25,10 +23,14 @@ const GOLD_PER_WAVE := 10
 const GOLD_FOR_WIN := 25
 ## Crystal damage older than this is forgotten (Time Warp looks back 10 s).
 const DAMAGE_MEMORY := 30.0
+## Stacked slows never take enemies below this share of their speed.
+const MIN_ENEMY_SPEED := 0.1
 
 @export var waves: Array[WaveData] = []
 ## Cards the solo player brings; in co-op (M4) both decks merge into one.
 @export var deck: DeckData
+## One wizard per player, in player order; its buff covers the whole battlefield.
+@export var heroes: Array[HeroData] = []
 ## Seeds the deck shuffle; same seed and inputs give the same run.
 @export var rng_seed: int = 1
 ## When false, nothing advances on its own; call tick() manually.
@@ -53,17 +55,16 @@ var _damage_log: Array[Dictionary] = []
 @onready var core: HeartCrystal = $HeartCrystal
 @onready var enemies_root: Node2D = $Enemies
 @onready var towers_root: Node2D = $Towers
-@onready var hero: Hero = $Hero
 
 
 func _ready() -> void:
 	var curve := path.curve
 	core.position = path.position + curve.get_point_position(curve.point_count - 1)
 	core.destroyed.connect(_on_core_destroyed)
-	hero.bounds = FIELD
 	var cards: Array[CardData] = []
 	if deck != null:
 		cards = deck.cards
+	var hero: HeroData = heroes[0] if not heroes.is_empty() else null
 	players.append(PlayerState.new(Deck.new(cards, rng_seed), hero))
 	if not waves.is_empty():
 		_start_wave(0)
@@ -79,8 +80,7 @@ func tick(delta: float) -> void:
 		return
 	time += delta
 	for player in players:
-		player.energy.step(delta)
-	hero.step(delta)
+		player.step(delta)
 	if phase == Phase.BREAK:
 		_break_timer -= delta
 		if _break_timer <= 0.0:
@@ -89,11 +89,13 @@ func tick(delta: float) -> void:
 		for i in _spawner.step(delta):
 			spawn_enemy(waves[wave_index].enemy)
 	_step_lures(delta)
+	var speed := enemy_speed_scale()
 	for enemy in enemies.duplicate():
 		enemy.held = _in_lure(enemy.position)
-		enemy.step(delta)
+		enemy.step(delta, speed)
+	var damage := tower_damage_scale()
 	for tower in get_towers():
-		tower.step(delta, enemies)
+		tower.step(delta, enemies, damage)
 		if tower.is_expired():
 			towers_root.remove_child(tower)
 			tower.queue_free()
@@ -124,14 +126,35 @@ func cycle_card(player_index: int, slot: int) -> bool:
 	return not is_over() and players[player_index].cycle(slot)
 
 
+# --- Wizard buffs ---
+
+
+## Enemy speed multiplier from every player's wizard: each Frost stack takes its amount off.
+func enemy_speed_scale() -> float:
+	return maxf(1.0 - _buff_total(HeroData.Buff.ENEMY_SLOW), MIN_ENEMY_SPEED)
+
+
+## Tower damage multiplier from every player's wizard: each Ember stack adds its amount.
+func tower_damage_scale() -> float:
+	return 1.0 + _buff_total(HeroData.Buff.TOWER_DAMAGE)
+
+
+func _buff_total(kind: HeroData.Buff) -> float:
+	var total := 0.0
+	for player in players:
+		if player.hero != null and player.hero.buff == kind:
+			total += player.hero.amount * player.buff_stacks()
+	return total
+
+
 # --- Queries and actions used by card effects ---
 
 
-func can_place_tower(pos: Vector2, by_hero: Hero) -> bool:
+## Towers go anywhere on the field that is off the path and not too close to another tower
+## or the crystal.
+func can_place_tower(pos: Vector2) -> bool:
 	var margin := Tower.SIZE / 2.0
 	if not FIELD.grow(-margin).has_point(pos):
-		return false
-	if by_hero.position.distance_to(pos) > PLACE_RADIUS:
 		return false
 	if distance_to_path(pos) < PATH_WIDTH / 2.0 + margin:
 		return false
@@ -226,15 +249,15 @@ func state_hash() -> String:
 			parts
 			. append(
 				(
-					"p %.3f %d %s %d %d %.2f %.2f"
+					"p %.3f %d %s %d %d %s %.3f"
 					% [
 						player.energy.value,
 						player.next_card_discount,
 						",".join(hand_ids),
 						player.deck.draw_pile.size(),
 						player.deck.discard_pile.size(),
-						player.hero.position.x,
-						player.hero.position.y,
+						String(player.hero.id) if player.hero != null else "-",
+						player.empowered,
 					]
 				)
 			)

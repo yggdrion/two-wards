@@ -112,7 +112,7 @@ Twelve cards across three rarities cover every card type once or more; the meta 
 - Energy regenerates 1 per 2 s, max 10. Cards cost 1–7.
 - Hand of 3; a played card is replaced from the deck at once. Cycling a card costs 1 energy.
 - Towers can be placed anywhere on the field that is off the path and keeps the minimum spacing to other towers.
-- Wizard buffs apply to the whole battlefield for the whole run. Two players with the same wizard get its buff twice.
+- Wizard buffs apply to the whole battlefield for the whole run. Two players with the same wizard get its buff twice. Stacks add up (two Frost: enemies 30% slower; Empower turns one player's stack into two), enemies never drop below 10% of their speed, and boosted tower damage rounds to whole points.
 - Passing a card to the partner costs 1 energy.
 - Deck empty → discard pile is shuffled back in.
 
@@ -150,7 +150,7 @@ Twelve cards across three rarities cover every card type once or more; the meta 
 ### Persistence
 
 - Local JSON save per profile: collection, gold, decks, selected wizard, pity counter, save version.
-- Save on every meta change; load with a migration step keyed on the version.
+- Save on every meta change; load with a migration step keyed on the version. Version 2 (M3b) added the selected wizard (old saves get Frost) and turned owned Blink copies into Empower.
 - Server-side profiles are out of scope; the lobby server could host them later.
 
 ## Art direction

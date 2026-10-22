@@ -1,0 +1,25 @@
+[gd_resource type="Resource" script_class="HeroData" format=3]
+
+[ext_resource type="Script" path="res://scripts/data/hero_data.gd" id="1_hero"]
+[ext_resource type="Texture2D" path="res://assets/units/hero/unit_hero_idle_down.png" id="2_sprite"]
+[ext_resource type="Shader" path="res://resources/shaders/palette_swap.gdshader" id="3_swap"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_ember"]
+atlas = ExtResource("2_sprite")
+region = Rect2(0, 0, 64, 64)
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_ember"]
+shader = ExtResource("3_swap")
+shader_parameter/swap_count = 3
+shader_parameter/from_colors = PackedColorArray(0.0705882, 0.305882, 0.537255, 1, 0, 0.6, 0.858824, 1, 0.227451, 0.266667, 0.4, 1)
+shader_parameter/to_colors = PackedColorArray(0.635294, 0.14902, 0.2, 1, 0.968627, 0.462745, 0.133333, 1, 0.407843, 0.219608, 0.423529, 1)
+
+[resource]
+script = ExtResource("1_hero")
+id = &"ember"
+display_name = "Ember"
+buff = 1
+amount = 0.2
+text = "Towers deal 20% more damage."
+portrait = SubResource("AtlasTexture_ember")
+portrait_material = SubResource("ShaderMaterial_ember")

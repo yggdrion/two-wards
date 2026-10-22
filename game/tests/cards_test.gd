@@ -3,8 +3,7 @@ extends GdUnitTestSuite
 
 const LANE_SCENE := preload("res://scenes/lane.tscn")
 const STEP := 1.0 / 60.0
-const HERO_AT := Vector2(320, 128)
-## A free spot near HERO_AT, off the path.
+## A free spot inside the U of the path.
 const SPOT := Vector2(300, 120)
 const RUNNER := preload("res://resources/units/goblin_runner.tres")
 const ARROW := preload("res://resources/towers/arrow_tower.tres")
@@ -22,7 +21,6 @@ func before_test() -> void:
 	auto_free(lane)
 	player = lane.players[0]
 	player.energy.value = Energy.MAX
-	lane.hero.position = HERO_AT
 
 
 func _card(id: String) -> CardData:
@@ -77,15 +75,15 @@ func test_storm_spire() -> void:
 	assert_int(lane.get_towers()[0].data.chain_count).is_equal(3)
 
 
-func test_tower_cards_must_be_near_hero() -> void:
-	assert_bool(_play("arrow_tower", HERO_AT + Vector2(0, -120))).is_false()
-	assert_int(lane.get_towers().size()).is_equal(0)
-	assert_int(player.energy.points()).is_equal(Energy.MAX)
+func test_tower_cards_go_anywhere_off_the_path() -> void:
+	for at: Vector2 in [Vector2(40, 200), Vector2(600, 30), Vector2(520, 260)]:
+		assert_bool(_play("arrow_tower", at)).override_failure_message(str(at)).is_true()
+	assert_int(lane.get_towers().size()).is_equal(3)
 
 
 func test_tower_cards_cannot_go_on_the_path() -> void:
-	lane.hero.position = Vector2(260, 200)
 	assert_bool(_play("arrow_tower", Vector2(260, 240))).is_false()
+	assert_int(player.energy.points()).is_equal(Energy.MAX)
 
 
 func test_arcane_bolt() -> void:
@@ -104,10 +102,12 @@ func test_mend() -> void:
 	assert_int(lane.core.hp).is_equal(lane.core.max_hp - 3)
 
 
-func test_blink() -> void:
-	assert_bool(_play("blink", HERO_AT + Vector2(200, 0))).is_true()
-	assert_vector(lane.hero.position).is_equal(HERO_AT + Vector2(128, 0))
-	assert_bool(lane.hero.invulnerable > 0.0).is_true()
+func test_empower() -> void:
+	assert_float(lane.enemy_speed_scale()).is_equal_approx(0.85, 0.0001)
+	assert_bool(_play("empower")).is_true()
+	assert_float(lane.enemy_speed_scale()).is_equal_approx(0.7, 0.0001)
+	_tick(8.1)
+	assert_float(lane.enemy_speed_scale()).is_equal_approx(0.85, 0.0001)
 
 
 func test_decoy_effigy() -> void:
@@ -123,13 +123,14 @@ func test_decoy_effigy() -> void:
 func test_war_drums() -> void:
 	var tower := lane.place_tower(ARROW, SPOT)
 	var far := lane.place_tower(ARROW, Vector2(80, 180))
-	assert_bool(_play("war_drums")).is_true()
+	assert_bool(_play("war_drums", SPOT + Vector2(40, 0))).is_true()
 	assert_bool(tower.is_buffed()).is_true()
 	assert_bool(far.is_buffed()).is_false()
 
 
-func test_war_drums_needs_a_tower_nearby() -> void:
-	assert_bool(_play("war_drums")).is_false()
+func test_war_drums_needs_a_tower_near_the_target() -> void:
+	lane.place_tower(ARROW, SPOT)
+	assert_bool(_play("war_drums", Vector2(560, 40))).is_false()
 
 
 func test_arcane_focus() -> void:

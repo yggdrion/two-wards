@@ -43,9 +43,31 @@ func test_v0_save_is_migrated() -> void:
 	assert_str(profile.profile_name).is_equal("old")
 	assert_int(profile.gold).is_equal(30)
 	assert_int(profile.owned("mend")).is_equal(2)
-	assert_int(profile.owned("blink")).is_equal(1)
+	assert_int(profile.owned("empower")).is_equal(1)
 	assert_int(profile.decks.size()).is_equal(DeckRules.MAX_DECKS)
 	assert_int(profile.boosters_since_epic).is_equal(0)
+	assert_str(profile.hero).is_equal(Profile.DEFAULT_HERO)
+
+
+func test_v1_save_gets_a_wizard_and_empower_for_blink() -> void:
+	_write(
+		{
+			"version": 1,
+			"name": "m3",
+			"gold": 80,
+			"collection": {"blink": 2, "mend": 2},
+			"decks": [{"name": "Starter", "cards": ["blink", "mend", "blink"]}],
+			"active_deck": 0,
+			"boosters_since_epic": 3,
+		}
+	)
+	var profile := SaveStore.load_profile(PATH)
+	assert_str(profile.hero).is_equal("frost")
+	assert_int(profile.owned("blink")).is_equal(0)
+	assert_int(profile.owned("empower")).is_equal(2)
+	assert_array(profile.deck_cards(0)).is_equal(["empower", "mend", "empower"])
+	assert_int(profile.gold).is_equal(80)
+	assert_int(profile.boosters_since_epic).is_equal(3)
 
 
 func test_migrate_sets_current_version() -> void:

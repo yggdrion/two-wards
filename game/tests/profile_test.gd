@@ -6,6 +6,7 @@ func test_new_profile_owns_two_of_each_common_and_a_legal_deck() -> void:
 	for card_id in Profile.STARTER_CARDS:
 		assert_int(profile.owned(card_id)).is_equal(Profile.STARTER_COPIES)
 	assert_int(profile.gold).is_equal(0)
+	assert_str(profile.hero).is_equal("frost")
 	assert_int(profile.decks.size()).is_equal(DeckRules.MAX_DECKS)
 	assert_bool(profile.is_deck_valid(0)).is_true()
 	assert_bool(profile.is_deck_valid(1)).is_false()
@@ -28,15 +29,17 @@ func test_every_change_emits_changed() -> void:
 	profile.add_card("mend")
 	profile.set_deck_cards(1, ["mend"])
 	profile.set_active_deck(1)
-	assert_int(count[0]).is_equal(4)
+	profile.set_hero("ember")
+	assert_int(count[0]).is_equal(5)
 
 
 func test_dict_round_trip() -> void:
 	var profile := Profile.create("alice")
 	profile.add_gold(75)
 	profile.add_card("time_warp")
-	profile.set_deck_cards(2, ["mend", "blink"])
+	profile.set_deck_cards(2, ["mend", "empower"])
 	profile.set_active_deck(2)
+	profile.set_hero("ember")
 	profile.boosters_since_epic = 4
 	var copy := Profile.from_dict(JSON.parse_string(JSON.stringify(profile.to_dict())))
 	assert_dict(copy.to_dict()).is_equal(profile.to_dict())

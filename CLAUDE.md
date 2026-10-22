@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## State of the repo
 
-M1 and M2 are done; M3 (meta system) adds the save file, boosters, collection and deck builder. The main scene is `scenes/main.tscn` (`App`: meta screens, then runs `scenes/game.tscn` with the active deck). Meta screens build their controls in code on `resources/ui/theme.tres`, so the art pass only swaps styleboxes. `docs/PLAN.md` is the source of truth for scope, architecture, card/meta numbers, style guide, testing and milestones; read it before starting work. Its scope table is binding: anything listed as "out of scope" goes to a backlog, not into the PoC.
+M1, M2 and M3 (meta system: save file, boosters, collection, deck builder) are done; M3b (heroes) removes the field hero and adds two wizards (`HeroData` in `resources/heroes/`) with battlefield-wide buffs, picked in a hero select screen. The main scene is `scenes/main.tscn` (`App`: meta screens, then runs `scenes/game.tscn` with the active deck). Meta screens build their controls in code on `resources/ui/theme.tres`, so the art pass only swaps styleboxes. `docs/PLAN.md` is the source of truth for scope, architecture, card/meta numbers, style guide, testing and milestones; read it before starting work. Its scope table is binding: anything listed as "out of scope" goes to a backlog, not into the PoC.
 
 ## Always run the local check
 

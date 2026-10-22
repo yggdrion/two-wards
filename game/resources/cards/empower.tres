@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="CardData" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/cards/card_art_empower.png" id="1_art"]
+[ext_resource type="Script" path="res://scripts/data/effects/card_effect.gd" id="2_effect"]
+[ext_resource type="Script" path="res://scripts/data/effects/empower_effect.gd" id="3_empower"]
+[ext_resource type="Script" path="res://scripts/data/card_data.gd" id="4_card"]
+
+[sub_resource type="Resource" id="Resource_empower"]
+script = ExtResource("3_empower")
+
+[resource]
+script = ExtResource("4_card")
+id = &"empower"
+display_name = "Empower"
+kind = 2
+target = 0
+text = "Your wizard's buff counts double for 8 s."
+art = ExtResource("1_art")
+effects = Array[ExtResource("2_effect")]([SubResource("Resource_empower")])

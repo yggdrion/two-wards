@@ -91,7 +91,7 @@ CARD_ART = {
     "storm_spire": ("tower", "#0099db"),
     "arcane_bolt": ("orb", "#b55088"),
     "mend": ("orb", "#63c74d"),
-    "blink": ("orb", "#2ce8f5"),
+    "empower": ("orb", "#2ce8f5"),
     "decoy_effigy": ("orb", "#feae34"),
     "war_drums": ("orb", RED),
     "arcane_focus": ("orb", YELLOW),

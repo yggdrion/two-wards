@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dp263a7tnr7m"
-path="res://.godot/imported/card_art_blink.png-f2168cc250dcac3f868d67c17b08edd3.ctex"
+uid="uid://dyvvjvdofp4vc"
+path="res://.godot/imported/card_art_empower.png-cdc12593945877c9d22b5cd8bdcbf216.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://assets/cards/card_art_blink.png"
-dest_files=["res://.godot/imported/card_art_blink.png-f2168cc250dcac3f868d67c17b08edd3.ctex"]
+source_file="res://assets/cards/card_art_empower.png"
+dest_files=["res://.godot/imported/card_art_empower.png-cdc12593945877c9d22b5cd8bdcbf216.ctex"]
 
 [params]
 
