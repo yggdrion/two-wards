@@ -7,19 +7,13 @@ name: CI
 # Jobs for parts that don't exist yet (network test, lobby, asset validator)
 # are gated on their entry point and switch on once it lands.
 #
-# Lean mode: run ./tools/check.sh (or .\tools\check.ps1) locally before pushing.
-# CI runs on PRs and main only; PR runs do Linux lint + tests, and the Windows
-# test job and exports run on main or on a manual run. Playtest builds are made
-# locally (.\tools\check.ps1 -Export), not here. For full CI on every push again, set
-# `push:` with no filters and drop the two `if: github.event_name != 'pull_request'`
-# lines on test-windows and export.
+# Local only: nothing here runs on its own. The gate is ./tools/check.sh (or
+# .\tools\check.ps1) before every push, and playtest builds are exported
+# locally. This workflow only runs when started by hand ("Run workflow").
+# To turn CI back on, add `push: {branches: [main]}` and `pull_request:` (with
+# paths-ignore: ["docs/**", "**.md"]) under `on:`.
 
 on:
-  push:
-    branches: [main]
-    paths-ignore: ["docs/**", "**.md"]
-  pull_request:
-    paths-ignore: ["docs/**", "**.md"]
   workflow_dispatch:
 
 # A newer push to a PR cancels its older run; main runs always finish.
