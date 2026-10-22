@@ -31,7 +31,10 @@ try {
         if ($LASTEXITCODE) { throw "$Exe $args failed (exit $LASTEXITCODE)" }
     }
 
-    $Python = if (Get-Command py -ErrorAction SilentlyContinue) { 'py' } else { 'python' }
+    # Prefer the python on PATH, where pip installed gdtoolkit and pillow; the py launcher
+    # can pick a different version. The WindowsApps python is only a Store installer stub.
+    $OnPath = Get-Command python -ErrorAction SilentlyContinue
+    $Python = if ($OnPath -and $OnPath.Source -notlike '*\WindowsApps\*') { 'python' } else { 'py' }
     if (-not (Get-Command gdlint -ErrorAction SilentlyContinue)) {
         throw 'gdlint not found: pip install "gdtoolkit==4.5.0"'
     }
