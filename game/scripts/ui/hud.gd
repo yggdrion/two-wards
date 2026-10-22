@@ -1,18 +1,18 @@
 class_name Hud
 extends Control
-## Bottom strip of the run screen: run status, energy, the hand of 3 and the full card on hover.
+## Slim bottom bar of the run screen: run status, the hand of 3 as mini cards and energy. The
+## full card shows above the hand while the mouse is on a card, never while aiming one.
 
 signal card_pressed(slot: int)
 signal cycle_requested(slot: int)
 
 ## Screen size in base pixels; everything below is laid out from it and Lane.FIELD.
 const SCREEN := Vector2(640, 360)
-const TOP := Lane.FIELD.end.y + 4.0
-const CARD_X := 208.0
-const CARD_GAP := CardView.COMPACT_SIZE.x + 8.0
-const RIGHT_X := SCREEN.x - 116.0
+const TOP := Lane.FIELD.end.y
+const CARD_X := 184.0
+const CARD_GAP := CardView.MINI_SIZE.x + 8.0
+const RIGHT_X := 520.0
 const CONTINUE_HINT := "Click to continue"
-const ENERGY_ICON := preload("res://assets/icons/icon_energy.png")
 
 var lane: Lane
 ## Slot of the card waiting for a target, or -1.
@@ -26,7 +26,8 @@ func _ready() -> void:
 	mouse_filter = MOUSE_FILTER_IGNORE
 	for i in PlayerState.HAND_SIZE:
 		var view := CardView.new()
-		view.position = Vector2(CARD_X + i * CARD_GAP, TOP + 2)
+		view.mini = true
+		view.position = Vector2(CARD_X + i * CARD_GAP, TOP + 4)
 		view.pressed.connect(func(_v: CardView) -> void: card_pressed.emit(i))
 		view.cycle_requested.connect(func(_v: CardView) -> void: cycle_requested.emit(i))
 		view.mouse_entered.connect(func() -> void: _hovered = i)
@@ -54,11 +55,11 @@ func refresh() -> void:
 		var card := player.card_at(i)
 		view.card = card
 		view.selected = i == selected
-		view.position.y = TOP + (-6 if i == selected else 2)
+		view.position.y = TOP + (-4 if i == selected else 4)
 		if card != null:
 			view.shown_cost = player.cost_of(card)
 			view.affordable = player.energy.can_spend(view.shown_cost)
-	var shown := _hovered if _hovered >= 0 else selected
+	var shown := _hovered if selected < 0 else -1
 	_preview.visible = shown >= 0 and player.card_at(shown) != null
 	if _preview.visible:
 		_preview.card = player.card_at(shown)
@@ -67,6 +68,11 @@ func refresh() -> void:
 		var x := clampf(cards[shown].position.x - 24, 0, SCREEN.x - CardView.FULL_SIZE.x)
 		_preview.position = Vector2(x, TOP - CardView.FULL_SIZE.y - 4)
 	queue_redraw()
+
+
+## True while the full card covers part of the field.
+func is_preview_shown() -> bool:
+	return _preview.visible
 
 
 func _draw() -> void:
@@ -85,26 +91,28 @@ func _draw() -> void:
 		self, Vector2(8, TOP + 24), "Crystal %d/%d" % [lane.core.hp, lane.core.max_hp], Palette.TEXT
 	)
 	UiFont.draw(self, Vector2(8, TOP + 42), "Gold %d" % lane.gold, Palette.ENERGY)
-	_draw_energy(player, Vector2(8, TOP + 68))
+	_draw_energy(player, Vector2(RIGHT_X, TOP + 4))
 	UiFont.draw(
-		self, Vector2(RIGHT_X, TOP + 6), "Deck %d" % player.deck.draw_pile.size(), Palette.TEXT
+		self,
+		Vector2(RIGHT_X, TOP + 34),
+		"Deck %d" % player.deck.draw_pile.size(),
+		Palette.CARD_TEXT_DIM
 	)
 	UiFont.draw(
-		self, Vector2(RIGHT_X, TOP + 24), "Disc %d" % player.deck.discard_pile.size(), Palette.TEXT
+		self,
+		Vector2(RIGHT_X, TOP + 50),
+		"Disc %d" % player.deck.discard_pile.size(),
+		Palette.CARD_TEXT_DIM
 	)
-	UiFont.draw(self, Vector2(RIGHT_X, TOP + 60), "1-3 play", Palette.CARD_TEXT_DIM)
-	UiFont.draw(self, Vector2(RIGHT_X, TOP + 78), "RMB/Q", Palette.CARD_TEXT_DIM)
-	UiFont.draw(self, Vector2(RIGHT_X, TOP + 96), "cycle 1", Palette.CARD_TEXT_DIM)
 	_draw_banner()
 
 
 func _draw_energy(player: PlayerState, pos: Vector2) -> void:
-	draw_texture(ENERGY_ICON, pos)
 	var points := player.energy.points()
+	UiFont.draw(self, pos, "Energy %d" % points, Palette.ENERGY)
 	for i in Energy.MAX:
-		var cell := Rect2(pos.x + 36 + (i % 5) * 18, pos.y + 2 + (i / 5) * 16, 14, 12)
+		var cell := Rect2(pos.x + i * 11, pos.y + 18, 8, 8)
 		draw_rect(cell, Palette.ENERGY if i < points else Palette.PATH)
-	UiFont.draw(self, Vector2(pos.x, pos.y + 36), "Energy %d" % points, Palette.ENERGY)
 
 
 func _draw_banner() -> void:

@@ -2,16 +2,20 @@ class_name CardView
 extends Control
 ## Draws a card from its parts at runtime: rarity frame, art, cost and text in the pixel font.
 ##
-## Compact (96x128, the hand) shows an art crop, cost and name; full (144x208, on hover) adds the
-## whole art and the rules text. Numbers are never baked into art.
+## Mini (96x64, the run's hand) shows an art crop and the cost; compact (96x128, the meta
+## screens) adds the name; full (144x208, on hover) adds the whole art and the rules text. Numbers
+## are never baked into art.
 
 signal pressed(view: CardView)
 signal cycle_requested(view: CardView)
 
 const COMPACT_SIZE := Vector2(96, 128)
 const FULL_SIZE := Vector2(144, 208)
+const MINI_SIZE := Vector2(96, 64)
 ## Part of the 128x96 art shown on a compact card.
 const COMPACT_CROP := Rect2(20, 16, 88, 60)
+## Part of the art shown on a mini card.
+const MINI_CROP := Rect2(20, 16, 88, 56)
 ## Width of the rarity frame and the cost badge outline.
 const BORDER := 2.0
 
@@ -22,9 +26,11 @@ var card: CardData:
 var full := false:
 	set(value):
 		full = value
-		size = FULL_SIZE if full else COMPACT_SIZE
-		custom_minimum_size = size
-		queue_redraw()
+		_update_size()
+var mini := false:
+	set(value):
+		mini = value
+		_update_size()
 ## Cost to show (after discounts); -1 shows the card's own cost.
 var shown_cost := -1:
 	set(value):
@@ -48,6 +54,12 @@ var face_down := false:
 func _init() -> void:
 	size = COMPACT_SIZE
 	custom_minimum_size = size
+
+
+func _update_size() -> void:
+	size = FULL_SIZE if full else (MINI_SIZE if mini else COMPACT_SIZE)
+	custom_minimum_size = size
+	queue_redraw()
 
 
 func _gui_input(event: InputEvent) -> void:
@@ -83,6 +95,8 @@ func _draw() -> void:
 	draw_rect(rect, Palette.CARD_BG)
 	if full:
 		_draw_full()
+	elif mini:
+		_draw_mini()
 	else:
 		_draw_compact()
 	var border := Palette.SHOT if selected else rarity_color(card.rarity)
@@ -94,6 +108,11 @@ func _draw_compact() -> void:
 	if card.art != null:
 		draw_texture_rect_region(card.art, Rect2(4, 4, 88, 60), COMPACT_CROP)
 	UiFont.draw_wrapped(self, Vector2(4, 68), card.display_name, 88, 3, Palette.TEXT)
+
+
+func _draw_mini() -> void:
+	if card.art != null:
+		draw_texture_rect_region(card.art, Rect2(4, 4, 88, 56), MINI_CROP)
 
 
 func _draw_full() -> void:

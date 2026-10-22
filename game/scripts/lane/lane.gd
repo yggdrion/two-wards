@@ -14,7 +14,7 @@ enum Phase { WAVE, BREAK, WON, LOST }
 
 const PATH_WIDTH := 24.0
 ## Playable field above the card UI. Heroes and towers stay inside it.
-const FIELD := Rect2(0, 0, 640, 224)
+const FIELD := Rect2(0, 0, 640, 288)
 ## Towers can only be placed this close to the playing player's hero.
 const PLACE_RADIUS := 96.0
 ## Minimum distance between two towers.

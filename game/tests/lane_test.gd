@@ -84,9 +84,9 @@ func test_energy_regenerates_during_tick() -> void:
 func test_placement_rules() -> void:
 	var waves: Array[WaveData] = []
 	var lane := _make_lane(waves)
-	lane.hero.position = Vector2(320, 128)
+	lane.hero.position = Vector2(320, 180)
 	assert_bool(lane.can_place_tower(Vector2(300, 120), lane.hero)).is_true()
-	assert_bool(lane.can_place_tower(Vector2(320, 192), lane.hero)).is_false()
+	assert_bool(lane.can_place_tower(Vector2(320, 240), lane.hero)).is_false()
 	assert_bool(lane.can_place_tower(Vector2(320, 20), lane.hero)).is_false()
 	lane.place_tower(ARROW, Vector2(300, 120))
 	assert_bool(lane.can_place_tower(Vector2(310, 120), lane.hero)).is_false()
@@ -95,7 +95,7 @@ func test_placement_rules() -> void:
 func test_hero_moves_inside_field() -> void:
 	var waves: Array[WaveData] = []
 	var lane := _make_lane(waves)
-	lane.hero.position = Vector2(320, 200)
+	lane.hero.position = Vector2(320, 260)
 	lane.hero.move_dir = Vector2.DOWN
 	for i in 120:
 		lane.tick(STEP)

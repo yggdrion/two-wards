@@ -84,7 +84,8 @@ func test_tower_cards_must_be_near_hero() -> void:
 
 
 func test_tower_cards_cannot_go_on_the_path() -> void:
-	assert_bool(_play("arrow_tower", Vector2(260, 192))).is_false()
+	lane.hero.position = Vector2(260, 200)
+	assert_bool(_play("arrow_tower", Vector2(260, 240))).is_false()
 
 
 func test_arcane_bolt() -> void:
