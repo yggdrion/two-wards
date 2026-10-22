@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="CardData" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/cards/card_art_ballista.png" id="1_7m4m1"]
+[ext_resource type="Script" path="res://scripts/data/effects/card_effect.gd" id="2_aljqh"]
+[ext_resource type="Script" path="res://scripts/data/effects/place_tower_effect.gd" id="3_2grb8"]
+[ext_resource type="Resource" path="res://resources/towers/ballista.tres" id="4_4edyi"]
+[ext_resource type="Script" path="res://scripts/data/card_data.gd" id="5_ebke0"]
+
+[sub_resource type="Resource" id="Resource_b8tew"]
+script = ExtResource("3_2grb8")
+tower = ExtResource("4_4edyi")
+
+[resource]
+script = ExtResource("5_ebke0")
+id = &"ballista"
+display_name = "Ballista"
+kind = 0
+cost = 4
+text = "Tower. Bolts pierce goblins in a line."
+art = ExtResource("1_7m4m1")
+effects = Array[ExtResource("2_aljqh")]([SubResource("Resource_b8tew")])

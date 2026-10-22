@@ -1,0 +1,104 @@
+extends Node2D
+## Solo run screen: the keyboard moves the hero, the hand picks a card, a click on the field
+## targets it. Every action goes through Lane's play_card/cycle_card, as network input will.
+
+const PLAYER := 0
+
+var selected := -1
+
+@onready var lane: Lane = $Lane
+@onready var overlay: Node2D = $Overlay
+@onready var hud: Hud = $HudLayer/Hud
+
+
+func _ready() -> void:
+	hud.lane = lane
+	hud.card_pressed.connect(_select)
+	hud.cycle_requested.connect(_cycle)
+	overlay.draw.connect(_draw_targeting)
+
+
+func _process(_delta: float) -> void:
+	lane.hero.move_dir = _move_input()
+	if selected >= 0 and lane.players[PLAYER].card_at(selected) == null:
+		selected = -1
+	hud.selected = selected
+	overlay.queue_redraw()
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	var key := event as InputEventKey
+	if key != null and key.pressed and not key.echo:
+		match key.physical_keycode:
+			KEY_1, KEY_2, KEY_3:
+				_select(key.physical_keycode - KEY_1)
+			KEY_Q:
+				if selected >= 0:
+					_cycle(selected)
+			KEY_ESCAPE:
+				selected = -1
+	var click := event as InputEventMouseButton
+	if click != null and click.pressed:
+		if click.button_index == MOUSE_BUTTON_LEFT and selected >= 0:
+			var at := lane.get_local_mouse_position()
+			if Lane.FIELD.has_point(at) and lane.play_card(PLAYER, selected, at):
+				selected = -1
+		elif click.button_index == MOUSE_BUTTON_RIGHT:
+			selected = -1
+
+
+func _select(slot: int) -> void:
+	var card := lane.players[PLAYER].card_at(slot)
+	if card == null:
+		return
+	if card.target == CardData.Target.NONE:
+		lane.play_card(PLAYER, slot)
+		selected = -1
+	else:
+		selected = -1 if selected == slot else slot
+
+
+func _cycle(slot: int) -> void:
+	if lane.cycle_card(PLAYER, slot) and selected == slot:
+		selected = -1
+
+
+func _move_input() -> Vector2:
+	var dir := Vector2.ZERO
+	if Input.is_physical_key_pressed(KEY_A) or Input.is_physical_key_pressed(KEY_LEFT):
+		dir.x -= 1
+	if Input.is_physical_key_pressed(KEY_D) or Input.is_physical_key_pressed(KEY_RIGHT):
+		dir.x += 1
+	if Input.is_physical_key_pressed(KEY_W) or Input.is_physical_key_pressed(KEY_UP):
+		dir.y -= 1
+	if Input.is_physical_key_pressed(KEY_S) or Input.is_physical_key_pressed(KEY_DOWN):
+		dir.y += 1
+	return dir
+
+
+## Shows where the selected card would land and whether it can be played there.
+func _draw_targeting() -> void:
+	var card := lane.players[PLAYER].card_at(selected) if selected >= 0 else null
+	if card == null:
+		return
+	var at := lane.get_local_mouse_position()
+	var places_tower := card.kind == CardData.Kind.TOWER or card.uses_script()
+	if places_tower:
+		overlay.draw_arc(
+			lane.hero.position, Lane.PLACE_RADIUS, 0.0, TAU, 48, Palette.PATH_EDGE, 2.0
+		)
+	if not Lane.FIELD.has_point(at):
+		return
+	var ok := lane.can_play_card(PLAYER, selected, at)
+	var color := Palette.VALID if ok else Palette.INVALID
+	for effect in card.effects:
+		if effect is PlaceTowerEffect:
+			overlay.draw_arc(at, effect.tower.attack_range, 0.0, TAU, 48, color, 2.0)
+		elif effect is LureEffect:
+			overlay.draw_arc(at, effect.radius, 0.0, TAU, 32, color, 2.0)
+		elif effect is TeleportEffect:
+			var to := (
+				lane.hero.position + (at - lane.hero.position).limit_length(effect.max_distance)
+			)
+			overlay.draw_line(lane.hero.position, to, color, 2.0)
+	overlay.draw_rect(Rect2(at - Vector2(5, 5), Vector2(10, 10)), color, false, 2.0)

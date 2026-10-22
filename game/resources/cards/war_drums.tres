@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="CardData" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/cards/card_art_war_drums.png" id="1_uobfi"]
+[ext_resource type="Script" path="res://scripts/data/effects/card_effect.gd" id="2_mwuiu"]
+[ext_resource type="Script" path="res://scripts/data/effects/buff_effect.gd" id="3_cgdns"]
+[ext_resource type="Script" path="res://scripts/data/card_data.gd" id="4_i52hi"]
+
+[sub_resource type="Resource" id="Resource_nkecn"]
+script = ExtResource("3_cgdns")
+
+[resource]
+script = ExtResource("4_i52hi")
+id = &"war_drums"
+display_name = "War Drums"
+kind = 3
+rarity = 1
+cost = 3
+target = 0
+text = "Towers near your hero fire 50% faster for 10 s."
+art = ExtResource("1_uobfi")
+effects = Array[ExtResource("2_mwuiu")]([SubResource("Resource_nkecn")])

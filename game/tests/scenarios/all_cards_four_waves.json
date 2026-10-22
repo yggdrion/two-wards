@@ -1,0 +1,22 @@
+{
+	"description": "One copy of every card; plays towers, buffs, a lure and a bolt over 4 waves.",
+	"seed": 3,
+	"deck": ["arrow_tower", "frost_totem", "ballista", "arcane_bolt", "mend", "blink", "storm_spire", "decoy_effigy", "war_drums", "arcane_focus", "mirror_image", "time_warp"],
+	"waves": 4,
+	"actions": [
+		{"hero": [320, 128], "t": 0.0},
+		{"at": [300, 120], "play": "arrow_tower", "t": 0.0},
+		{"at": [344, 120], "play": "frost_totem", "t": 4.12},
+		{"at": [280, 156], "play": "storm_spire", "t": 14.23},
+		{"play": "arcane_focus", "t": 18.32},
+		{"at": [200, 160], "play": "decoy_effigy", "t": 19.87},
+		{"cycle": "mirror_image", "t": 36.4},
+		{"play": "war_drums", "t": 36.92},
+		{"at": [200, 152], "play": "arcane_bolt", "t": 38.47},
+		{"cycle": "blink", "t": 46.22},
+		{"cycle": "mend", "t": 48.28},
+		{"cycle": "decoy_effigy", "t": 50.35},
+		{"play": "arcane_focus", "t": 50.87}
+	],
+	"expect": {"result": "won", "waves_cleared": 4, "crystal_hp": 20, "gold": 65, "hash": "9b32598b9af92976"}
+}

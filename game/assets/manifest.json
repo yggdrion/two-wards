@@ -39,6 +39,61 @@
 			"status": "placeholder"
 		},
 		{
+			"id": "card_art_frost_totem",
+			"type": "card_art",
+			"status": "placeholder"
+		},
+		{
+			"id": "card_art_ballista",
+			"type": "card_art",
+			"status": "placeholder"
+		},
+		{
+			"id": "card_art_arcane_bolt",
+			"type": "card_art",
+			"status": "placeholder"
+		},
+		{
+			"id": "card_art_mend",
+			"type": "card_art",
+			"status": "placeholder"
+		},
+		{
+			"id": "card_art_blink",
+			"type": "card_art",
+			"status": "placeholder"
+		},
+		{
+			"id": "card_art_storm_spire",
+			"type": "card_art",
+			"status": "placeholder"
+		},
+		{
+			"id": "card_art_decoy_effigy",
+			"type": "card_art",
+			"status": "placeholder"
+		},
+		{
+			"id": "card_art_war_drums",
+			"type": "card_art",
+			"status": "placeholder"
+		},
+		{
+			"id": "card_art_arcane_focus",
+			"type": "card_art",
+			"status": "placeholder"
+		},
+		{
+			"id": "card_art_mirror_image",
+			"type": "card_art",
+			"status": "placeholder"
+		},
+		{
+			"id": "card_art_time_warp",
+			"type": "card_art",
+			"status": "placeholder"
+		},
+		{
 			"id": "icon_energy",
 			"type": "icon",
 			"status": "placeholder"

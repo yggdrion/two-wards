@@ -65,3 +65,19 @@ func test_dead_enemy_ignores_steps_and_damage() -> void:
 	enemy.take_damage(5)
 	assert_float(enemy.progress).is_equal(0.0)
 	assert_int(enemy.hp).is_equal(0)
+
+
+func test_slow_reduces_speed_until_it_wears_off() -> void:
+	var enemy := _make_enemy(_make_unit(10, 20.0), 1000.0)
+	enemy.apply_slow(0.5, 1.0)
+	enemy.step(1.0)
+	assert_float(enemy.progress).is_equal_approx(10.0, 0.01)
+	enemy.step(1.0)
+	assert_float(enemy.progress).is_equal_approx(30.0, 0.01)
+
+
+func test_held_enemy_does_not_move() -> void:
+	var enemy := _make_enemy(_make_unit(10, 20.0))
+	enemy.held = true
+	enemy.step(1.0)
+	assert_float(enemy.progress).is_equal(0.0)

@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="TowerData" format=3]
+
+[ext_resource type="Script" path="res://scripts/data/tower_data.gd" id="1_tower"]
+
+[resource]
+script = ExtResource("1_tower")
+id = &"ballista"
+display_name = "Ballista"
+attack_range = 160.0
+damage = 25
+fire_interval = 2.0
+pierce = true

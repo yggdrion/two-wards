@@ -6,6 +6,6 @@
 script = ExtResource("1_tower")
 id = &"arrow_tower"
 display_name = "Arrow Tower"
-attack_range = 64.0
+attack_range = 128.0
 damage = 15
 fire_interval = 0.8

@@ -1,0 +1,19 @@
+[gd_resource type="Resource" script_class="CardData" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/cards/card_art_decoy_effigy.png" id="1_qkxu7"]
+[ext_resource type="Script" path="res://scripts/data/effects/card_effect.gd" id="2_0j4ci"]
+[ext_resource type="Script" path="res://scripts/data/effects/lure_effect.gd" id="3_0fse1"]
+[ext_resource type="Script" path="res://scripts/data/card_data.gd" id="4_gqa7d"]
+
+[sub_resource type="Resource" id="Resource_mmp37"]
+script = ExtResource("3_0fse1")
+
+[resource]
+script = ExtResource("4_gqa7d")
+id = &"decoy_effigy"
+display_name = "Decoy Effigy"
+rarity = 1
+cost = 3
+text = "Goblins near the effigy stop for 5 s."
+art = ExtResource("1_qkxu7")
+effects = Array[ExtResource("2_0j4ci")]([SubResource("Resource_mmp37")])
