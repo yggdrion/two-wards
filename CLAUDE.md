@@ -10,17 +10,21 @@ M1 (Skeleton) is in progress: Godot project in `game/` with a gray-box lane, one
 
 Tooling: Godot 4.7.2 (GDScript), gdUnit4 v6.2.2, gdtoolkit 4.5.0. Planned later: `bun test` for the lobby.
 
-    # Tests (headless). Installs pinned gdUnit4 into game/addons/gdUnit4 (gitignored), imports, runs res://tests.
-    GODOT_BIN=/path/to/godot ./tools/run_tests.sh
-    # Single suite: append gdUnit4 args, e.g. -a res://tests/tower_test.gd
-    GODOT_BIN=/path/to/godot ./tools/run_tests.sh -a res://tests/tower_test.gd
+The Godot version is pinned in `.godot-version`. `tools/install_godot.sh` downloads it to `.tools/godot/<version>/` (gitignored), checks it against `tools/godot-<version>.sha512` and prints the binary path. To bump Godot, change `.godot-version` and add the matching `.sha512` file with the lines from the release's `SHA512-SUMS.txt`.
+
+    # Run the editor/game with the pinned Godot (installs on first use)
+    ./tools/godot.sh --path game -e
+    ./tools/godot.sh --path game
+
+    # Tests (headless). Uses the pinned Godot (or GODOT_BIN, which must match), installs pinned
+    # gdUnit4 into game/addons/gdUnit4 (gitignored), imports, runs res://tests.
+    ./tools/run_tests.sh
+    # Single suite: append gdUnit4 args
+    ./tools/run_tests.sh -a res://tests/tower_test.gd
 
     # Lint and format check (pip install "gdtoolkit==4.5.0")
     gdlint game/scripts game/tests
     gdformat --check game/scripts game/tests
-
-    # Run the game
-    godot --path game
 
 CI (`.github/workflows/ci.yml`) runs lint and the tests on every push. Commit the `*.gd.uid` files Godot generates next to scripts.
 

@@ -8,6 +8,9 @@ export_presets.cfg.local
 game/reports/
 game/gdunit4_testadapter/
 
+# Pinned tool downloads (tools/install_godot.sh)
+.tools/
+
 # Tooling
 __pycache__/
 .venv/

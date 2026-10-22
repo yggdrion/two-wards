@@ -1,9 +1,17 @@
 #!/usr/bin/env bash
-# Runs all gdUnit4 tests headless. Needs GODOT_BIN pointing at Godot 4.7.2.
+# Runs all gdUnit4 tests headless with the pinned Godot version.
+# Set GODOT_BIN to use your own binary; it must match .godot-version.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-GODOT_BIN="${GODOT_BIN:-godot}"
+VERSION="$(tr -d '[:space:]' < "$ROOT/.godot-version")"
+GODOT_BIN="${GODOT_BIN:-$("$ROOT/tools/install_godot.sh")}"
+
+ACTUAL="$("$GODOT_BIN" --headless --version)"
+case "$ACTUAL" in
+	"$VERSION".stable.*) ;;
+	*) echo "GODOT_BIN is Godot $ACTUAL, but .godot-version pins $VERSION" >&2; exit 1 ;;
+esac
 
 "$ROOT/tools/install_gdunit4.sh"
 cd "$ROOT/game"
