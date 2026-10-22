@@ -14,7 +14,8 @@ Small does not mean ugly: the PoC has to end as a pretty, polished pixel-art gam
 
 A real-time co-op tower defense roguelite in a **dark-fantasy** setting, where towers, spells and hero abilities come from a shared card deck. Title: **Two Wards** — two wizards defend a Heart Crystal against waves of monsters.
 
-- **In a run:** each player moves a hero, gains energy over time, and plays cards from a hand of 3. Towers can only be placed near your own hero.
+- **In a run:** each player gains energy over time and plays cards from a hand of 3 by clicking anywhere on the field. There is no avatar on the field.
+- **Heroes:** before a run each player picks one of two wizards. A wizard never appears on the field; it gives a passive buff to the whole battlefield, and the two buffs add up in co-op. In the run, each player sees their partner's name, wizard portrait and hand of cards in a partner panel.
 - **Co-op:** both players bring their own 8-card deck; the decks merge into one shared run deck. Cards can be passed to the partner.
 - **Between waves:** a short break and a card reward added to the run deck.
 - **Meta:** runs earn gold, gold buys boosters, boosters grow the collection, the collection feeds the deck builder.
@@ -27,7 +28,8 @@ The PoC is one map, two players, twelve cards and one full meta loop. Anything n
 | --- | --- | --- |
 | Map | 1 map, 1 lane, spawn → core | Multiple lanes, branching run map, map variety |
 | Players | 2 players online co-op, host-authoritative | 3–4 players, host migration, dedicated servers |
-| Units | 1 hero (idle, walk, cast, hit; 4 directions; player 2 as a palette swap), 2 goblin types (fast runner, armored brute) with walk, attack, hit, death | Hero classes, bosses, elites |
+| Units | 2 goblin types (fast runner, armored brute) with walk, attack, hit, death | Bosses, elites |
+| Heroes | 2 wizards, each with one battlefield buff; hero select in the main menu; portraits only, never on the field | More heroes, hero classes (hero-specific card pools), hero leveling |
 | Terrain | 1 tileset (ground, path, walls) with autotiling, about 12 props for one biome | More biomes |
 | Cards | 12 cards, 3 rarities, energy, hand of 3, shared deck, card passing | Combo cards, card upgrades, keywords |
 | Run | 10 waves, card reward after each wave | Events, shops, elites, branching paths |
@@ -76,9 +78,8 @@ Players find each other through the lobby by room code, then exchange game traff
 
 ### Key choices
 
-- **Godot 4.7.2, GDScript.** Data in `Resource` files: `CardData`, `UnitData`, `WaveData`.
-- **Host-authoritative netcode.** Clients send inputs and card events; the host validates and broadcasts results. Hero positions are the only continuous sync.
-- **Each client owns its hero.** A client moves its own hero locally and streams the position (~20 Hz). The host checks plausibility (max speed, walkable tile) and validates tower placement against the last position it received. No client-side prediction needed.
+- **Godot 4.7.2, GDScript.** Data in `Resource` files: `CardData`, `UnitData`, `WaveData`, `HeroData` (name, portrait, battlefield buff).
+- **Host-authoritative netcode.** Clients send card events (play, cycle, pass) with a target point; the host validates and broadcasts results. There is no continuous sync: each player's wizard is fixed at run start and has no position. The partner panel shows the partner's hand from the same broadcasts.
 - **Transport abstraction.** One setting switches ENet (local dev, tests) and WebRTC (online).
 - **Local saves.** JSON per profile with a version field.
 - **Lobby server** in TypeScript on Bun, one stateless-ish container; rooms expire after the game starts.
@@ -102,7 +103,7 @@ Twelve cards across three rarities cover every card type once or more; the meta 
 
 `CardData` holds a list of effect resources; most cards are pure data, a few odd ones use a script.
 
-- Effect types: `DamageEffect`, `SlowEffect`, `HealEffect`, `PlaceTowerEffect` (references a `TowerData`), `BuffEffect`, `CostModifierEffect`, `TeleportEffect`, `LureEffect`. Each carries its own targeting, radius and duration fields.
+- Effect types: `DamageEffect`, `SlowEffect`, `HealEffect`, `PlaceTowerEffect` (references a `TowerData`), `BuffEffect`, `CostModifierEffect`, `EmpowerEffect`, `LureEffect`. Each carries its own targeting, radius and duration fields.
 - `ScriptedEffect` is the escape hatch for cards no generic effect covers: Time Warp (needs crystal HP history) and Mirror Image (copies a tower).
 - A new effect type is code; a new card built from existing effects is not. The retro counts how many cards needed the escape hatch.
 
@@ -110,7 +111,8 @@ Twelve cards across three rarities cover every card type once or more; the meta 
 
 - Energy regenerates 1 per 2 s, max 10. Cards cost 1–7.
 - Hand of 3; a played card is replaced from the deck at once. Cycling a card costs 1 energy.
-- Towers can only be placed within a radius around your own hero.
+- Towers can be placed anywhere on the field that is off the path and keeps the minimum spacing to other towers.
+- Wizard buffs apply to the whole battlefield for the whole run. Two players with the same wizard get its buff twice.
 - Passing a card to the partner costs 1 energy.
 - Deck empty → discard pile is shuffled back in.
 
@@ -123,10 +125,10 @@ Twelve cards across three rarities cover every card type once or more; the meta 
 | Ballista | Tower | Common | 4 | Pierces, hits enemies in a line |
 | Arcane Bolt | Spell | Common | 1 | Small damage to one enemy |
 | Mend | Spell | Common | 2 | Heals the crystal and nearby towers |
-| Blink | Hero | Common | 1 | Hero teleports a short distance, brief invulnerability |
+| Empower | Hero | Common | 1 | Your wizard's battlefield buff counts double for 8 s |
 | Storm Spire | Tower | Rare | 5 | Chain lightning across 3 targets |
 | Decoy Effigy | Spell | Rare | 3 | Lures enemies to a point for 5 s |
-| War Drums | Buff | Rare | 3 | Towers near hero +50% fire rate for 10 s |
+| War Drums | Buff | Rare | 3 | Towers near the target point +50% fire rate for 10 s |
 | Arcane Focus | Buff | Rare | 2 | Next card costs 0 |
 | Mirror Image | Spell | Epic | 6 | Copies a tower for 30 s |
 | Time Warp | Spell | Epic | 7 | Restores crystal HP lost in the last 10 s |
@@ -143,11 +145,11 @@ Twelve cards across three rarities cover every card type once or more; the meta 
 
 - Deck size exactly 8; max 2 copies per card; only owned copies count.
 - Up to 3 saved decks per profile; one is marked active for the lobby.
-- Lobby shows each player's deck; at run start both decks merge into a 16-card shared deck.
+- Lobby shows each player's deck and wizard; at run start both decks merge into a 16-card shared deck.
 
 ### Persistence
 
-- Local JSON save per profile: collection, gold, decks, pity counter, save version.
+- Local JSON save per profile: collection, gold, decks, selected wizard, pity counter, save version.
 - Save on every meta change; load with a migration step keyed on the version.
 - Server-side profiles are out of scope; the lobby server could host them later.
 
@@ -159,10 +161,10 @@ The PoC ends as a pretty, polished pixel-art game, not a gray box with sprites (
 
 | Aspect | Decision |
 | --- | --- |
-| Mood | Evening in a natural meadow, lit by magic. Ground looks real (grass, dirt path, stone walls, trees, rocks) but is toned down to evening, never bright daylight. Everything the players own (crystal, towers, spells, the hero's staff) glows and lights its surroundings. Approved by Rapha 2026-10-22 from the mockups in the project files (`art-direction/evening_a_lit.png`); the final art must be more detailed and more "pixel" than those code-drawn mockups. Reference: Stardew Valley and Sea of Stars for the ground, Hyper Light Drifter and Moonlighter at night for the light |
+| Mood | Evening in a natural meadow, lit by magic. Ground looks real (grass, dirt path, stone walls, trees, rocks) but is toned down to evening, never bright daylight. Everything the players own (crystal, towers, spells) glows and lights its surroundings. Approved by Rapha 2026-10-22 from the mockups in the project files (`art-direction/evening_a_lit.png`); the final art must be more detailed and more "pixel" than those code-drawn mockups. Reference: Stardew Valley and Sea of Stars for the ground, Hyper Light Drifter and Moonlighter at night for the light |
 | Palette use | Endesga 32 only. Grass uses `193c3e` `265c42` `3e8948` (base `265c42`, lit `63c74d` only inside light pools), the dirt path `3e2731` `733e39` `b86f50` `e4a672`, walls and rocks the blue-gray stone ramp `262b44` `3a4466` `5a6988` `8b9bb4`. Players and their magic own teal and blue (`0099db` `2ce8f5`), plus warm gold (`feae34` `fee761`) for rewards. Goblins own green with red and orange accents. Red (`e43b44`) is reserved for damage and danger |
 | Readability | Units are the highest-contrast thing on screen; terrain never uses `181425` outlines or the brightest ramp colors. Every unit gets the engine shadow ellipse. Goblins sit on green grass, so their skin uses the light green (`3e8948` `63c74d`) against the darker grass base, keeps the closed `181425` outline and gets red or orange eyes and gear; check this in the A1 target frame and shift the goblin hue toward olive if they blend in |
-| Lighting | Godot 2D lights: a `CanvasModulate` dims the lane to evening (and edges a little darker), and `PointLight2D`s on the crystal, hero staff, towers and spells light it back up. No normal maps (they would double the art). Lights are flat, hard-edged textures so the light itself looks pixelated |
+| Lighting | Godot 2D lights: a `CanvasModulate` dims the lane to evening (and edges a little darker), and `PointLight2D`s on the crystal, towers and spells light it back up. No normal maps (they would double the art). Lights are flat, hard-edged textures so the light itself looks pixelated |
 | Palette on screen | Lights tint sprites off-palette. Try a full-screen shader that snaps the final image back to Endesga 32 in A2; keep it if it looks better, drop it if it bands |
 | Motion | Everything alive moves: units idle, the crystal pulses, grass and banners sway (vertex shader), ambient motes drift. Nothing on screen is perfectly still for more than a second |
 | VFX ambition | Pixel-crisp effects only: no soft particles, no blur, no additive glow textures with soft alpha. Hits get a 1-frame white flash, impacts a 4–6 frame sprite burst, deaths a short dissolve. Screen shake is small and snapped to whole pixels |
@@ -175,8 +177,7 @@ Sizes follow the style guide (64×64 unit frames, 32×32 tiles, 128×96 card art
 
 | Group | Assets | Animations / variants | Made by |
 | --- | --- | --- | --- |
-| Hero | 1 wizard (blue/teal) | idle, walk, cast (cards), hit; `down` `up` `side` | PixelLab base + rotate + animate, Aseprite cleanup. `side` profile hand-drawn |
-| Partner tint | Player 2 wizard | Same strips, recolored | Code: palette-swap shader (teal robe → second ramp), no extra art |
+| Wizards | Frost (the existing blue/teal hero) and Ember (new, warm) | Bust portrait for the HUD partner panel; full-body idle `down` for the hero select | PixelLab (Frost reuses the existing hero frames), Aseprite cleanup |
 | Goblin runner | Small, fast | walk, attack, hit, death; 3 dirs | PixelLab + Aseprite |
 | Goblin brute | Armored, slow | walk, attack, hit, death; 3 dirs | PixelLab + Aseprite |
 | Towers | Arrow Tower, Frost Totem, Ballista, Storm Spire | idle (gem glow), fire; one direction, they don't rotate; build-up animation by shader | PixelLab base, Aseprite for frames |
@@ -184,7 +185,7 @@ Sizes follow the style guide (64×64 unit frames, 32×32 tiles, 128×96 card art
 | Heart Crystal | 1, about 64×96 | idle pulse, hit crack, low-HP state | PixelLab base, Aseprite animation, light by code |
 | Terrain | Ground, path, wall/cliff edge tileset with transitions; 1 ground variant set | Autotile set | PixelLab tileset tool, Aseprite seam fixes |
 | Props | About 12: rocks, dead trees, ruins, torches, banners, bones, grass tufts, crystal shards, spawn portal | Torches and portal animated | PixelLab, Aseprite |
-| VFX | Arrow, bolt, frost burst, lightning chain, heal, blink, lure aura, drum pulse, focus sparkle, time-warp rewind, hit spark, death puff, gold pop | 4–8 frame flipbooks | Mostly code (GPU particles with 1–2 px pixel textures, shaders, `Line2D` lightning); flipbooks hand-drawn or PixelLab where code looks cheap |
+| VFX | Arrow, bolt, frost burst, lightning chain, heal, empower glow, lure aura, drum pulse, focus sparkle, time-warp rewind, hit spark, death puff, gold pop | 4–8 frame flipbooks | Mostly code (GPU particles with 1–2 px pixel textures, shaders, `Line2D` lightning); flipbooks hand-drawn or PixelLab where code looks cheap |
 | Card frames | Common, rare, epic; full 144×208 and compact 96×128 | Static, epic gets a shimmer shader | Claude draws in code (Python, on-palette), Aseprite polish |
 | Card art | 12 × 128×96 | Static | PixelLab with the card-art anchor as style reference, Aseprite cleanup |
 | Icons | Energy, gold, crystal HP, deck, discard, wave, card types (tower, spell, hero, buff), rarity gems | Static | Hand-drawn in Aseprite or by Claude in code; 32×32 is small enough that AI saves little |
@@ -201,18 +202,18 @@ Sizes follow the style guide (64×64 unit frames, 32×32 tiles, 128×96 card art
 
 ### PixelLab budget
 
-Counted in generation calls, with about 2.5 attempts per kept result (the hero needed 7 calls for 2 kept frames).
+Counted in generation calls, with about 2.5 attempts per kept result (the first hero needed 7 calls for 2 kept frames).
 
 | Group | Kept results | Calls |
 | --- | --- | --- |
-| Hero (finish walk, cast, hit) | ~10 | ~25 |
+| Wizards (Ember idle, 2 portraits) | ~4 | ~10 |
 | Two goblins (base, 2 rotations, 4 anims × 3 dirs each) | ~30 | ~75 |
 | Towers, effigy, crystal | ~14 | ~35 |
 | Tiles and props | ~18 | ~45 |
 | Card art (12) and booster pack | ~14 | ~35 |
 | VFX flipbooks where code isn't enough | ~8 | ~20 |
 | Buffer for redos after the look review | | ~65 |
-| **Total** | | **~300** |
+| **Total** | | **~285** |
 
 The trial has 30 of 40 left (checked 2026-10-22). Rapha will upgrade when A1 starts; the budget is not a hard limit, so spend on quality (more attempts per asset) rather than settling. Animation calls on PixelLab's newer models cost more than one generation each; pick the tier from this table and the current pricing page. One or two months of the plan should cover the PoC; cancel afterwards (see Risks).
 
@@ -220,7 +221,7 @@ The trial has 30 of 40 left (checked 2026-10-22). Rapha will upgrade when A1 sta
 
 | Step | Runs beside | Deliverables | Exit criteria |
 | --- | --- | --- | --- |
-| A1 Look target | M3 | Paid PixelLab plan; style guide v2 (new asset types, display font, light and VFX rules); validator and `build_assets` learn towers, props, VFX, UI; anchors: hero (side profile, walk), goblin runner, base tiles, one tower, crystal, one card art; one **target frame**: a 640×360 mockup of a run with HUD, composed from the anchors | Rapha approves the target frame. Everything after copies its look |
+| A1 Look target | M3 | Paid PixelLab plan; style guide v2 (new asset types, display font, light and VFX rules); validator and `build_assets` learn towers, props, VFX, UI; anchors: Frost wizard portrait, goblin runner, base tiles, one tower, crystal, one card art; one **target frame**: a 640×360 mockup of a run with HUD, composed from the anchors | Rapha approves the target frame. Everything after copies its look |
 | A2 Run screen | M4, M5 | All units, towers, crystal, tileset, props; 2D lighting and dusk modulate; shaders; particles and juice; ambient motion | A run looks like the target frame in motion; tests still green |
 | A3 Cards and UI | M5 | Card frames, 12 card arts, icons, HUD skin, the M3 meta screens skinned, pack-opening animation | The card and meta screens match the run screen |
 | A4 Menus and polish | M7 | Title logo, main menu, lobby screen, run-end screen, transitions; a polish pass over everything in the side-by-side review | Full loop looks finished end to end |
@@ -286,7 +287,7 @@ A card in-game = rarity frame (hand-made, 3 variants) + 128×96 art + cost, name
 
 ### Anchor assets first
 
-Hero, goblin runner, base tileset, one tower, the Heart Crystal and one card art are polished by hand before mass generation, then combined into the A1 target frame. All later assets reference them.
+The Frost wizard portrait, goblin runner, base tileset, one tower, the Heart Crystal and one card art are polished by hand before mass generation, then combined into the A1 target frame. All later assets reference them.
 
 ## Testing and CI
 
@@ -314,14 +315,15 @@ Desync detection: host and client hash the game state at the end of each wave; t
 
 ## Milestones
 
-Eight milestones; M4–M5 (networking) and M6 (assets) can run in parallel once M3 is done. The art track A1–A4 (see [Art direction](#art-direction)) runs beside them; M6 is where it must be finished. Each ends with green CI and a short playable check.
+Eight milestones plus M3b (heroes, added after the M3 playtest); M4–M5 (networking) and M6 (assets) can run in parallel once M3b is done. The art track A1–A4 (see [Art direction](#art-direction)) runs beside them; M6 is where it must be finished. Each ends with green CI and a short playable check.
 
 | # | Milestone | Deliverables | Exit criteria |
 | --- | --- | --- | --- |
 | M1 | Skeleton | Repo layout, Godot project, gray-box lane, 1 enemy, 1 tower, CI with first test | Enemy walks to core, tower kills it; CI green |
 | M2 | In-run card system | Energy, hand, deck, cycling, effect resources + `ScriptedEffect`, 12 cards as resources, compact/full card UI, scenario test harness | All 12 cards playable solo; unit tests for each card; first scenario tests green |
 | M3 | Meta system | Save file, collection, gold, boosters + pack opening, deck builder, pity | Booster distribution test passes; save survives restart |
-| M4 | Local networking | Checkpoint first: decide pure sim core vs Node-based sim. Then ENet host/join, client-owned heroes, card events via RPC, deck merge, card passing | Headless network test (replaying scenarios) passes with zero hash mismatches |
+| M3b | Heroes | Remove the field hero and its movement; `HeroData` with the two wizards and their battlefield buffs; hero select screen; selected wizard in the save (version bump + migration); Empower replaces Blink; War Drums targets a point; placement anywhere off the path | Buffs and Empower covered by unit tests; scenarios re-pinned; a solo run plays with either wizard |
+| M4 | Local networking | Checkpoint first: decide pure sim core vs Node-based sim. Then ENet host/join, card events via RPC, deck merge, card passing, partner panel (name, wizard, hand) | Headless network test (replaying scenarios) passes with zero hash mismatches |
 | M5 | Lobby + WebRTC | Lobby/signaling server, room codes, WebRTC transport, coturn, deployed to cluster | Two players on different networks complete 10 waves |
 | M6 | Art and juice | A1–A3 of the art track finished: all units, towers, tiles, props, cards and UI in final art; lighting, shaders, VFX and juice | All assets pass validation; side-by-side review looks consistent; a run matches the A1 target frame |
 | M7 | Full loop | Main menu, lobby screen with deck preview, run → rewards → gold → booster flow | Full loop completed in co-op by two people in one session |
@@ -335,7 +337,7 @@ The biggest risk is WebRTC on desktop; the fallback is ENet with port forwarding
 | --- | --- | --- |
 | WebRTC desktop setup (needs `webrtc-native` GDExtension) is fiddly | M5 slips | Transport abstraction from M4; ENet or WebSocket relay as fallback |
 | AI art drifts in style | Inconsistent look | Anchors, palette lock, validation hook, Aseprite cleanup |
-| AI art can't reach the polish bar | PoC looks cheap | A1 target frame is the gate before mass generation; more hand work in Aseprite on the assets that fill the screen (tiles, hero, crystal); code-made VFX and light carry a lot of the look |
+| AI art can't reach the polish bar | PoC looks cheap | A1 target frame is the gate before mass generation; more hand work in Aseprite on the assets that fill the screen (tiles, crystal, towers); code-made VFX and light carry a lot of the look |
 | Art track eats the schedule | Networking slips | Art runs beside the code milestones; scope is the asset list above, and new art ideas go to the backlog |
 | Real-time sync bugs | Desyncs in play | Host-authoritative model, event-based card plays, per-wave state hashes |
 | Scope creep into "the real game" | PoC never ends | Scope table is binding; new ideas go to a backlog |
@@ -355,7 +357,7 @@ The biggest risk is WebRTC on desktop; the fallback is ENet with port forwarding
 - [x] Tests: scenario tests on top of unit tests; the network test reuses them
 - [x] Card UI: compact 96×128 hand, full 144×208 card on hover; font m5x7 at 2×
 - [x] Resolution (2026-10-22, after the first hero sprite): 640×360 base with 64×64 units and 32×32 tiles, so sprites keep their on-screen size with twice the detail. Was 320×180 with 32×32 units
-- [x] Hero sync: each client owns its hero position, host checks plausibility
+- [x] Hero role (2026-10-22, after the M3 playtest): no hero on the field. Each player picks one of two wizards that buffs the whole battlefield; wizards show only in the partner panel and the hero select. Replaces "each client owns its hero position", so there is no continuous sync
 - [x] Sim structure: M1 stays Node-based; pure sim core vs Nodes decided at the start of M4
 - [x] WebRTC: no early spike; proven in M5 with the ENet/WebSocket fallback
 - [x] Art goal (2026-10-22): full pixel-art route, the PoC must end up pretty and polished; art track A1–A4 beside the code milestones

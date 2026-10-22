@@ -78,8 +78,8 @@ Two Wards: a real-time 2-player co-op tower defense roguelite with a card deck. 
 
 ## Architecture rules
 
-- **Data-driven content.** Cards, units and waves are `Resource` files (`CardData`, `UnitData`, `WaveData`). A simple new card must be one `.tres` + art, no code change. Card behaviour is a list of effect resources on `CardData`; `ScriptedEffect` is the escape hatch for odd cards (Time Warp, Mirror Image).
-- **Host-authoritative netcode.** Host simulates enemies/towers and validates plays; clients send inputs and card events only. Hero positions are the only continuous sync. Each client owns its own hero position; the host checks plausibility and validates tower placement against it.
+- **Data-driven content.** Cards, units, waves and heroes are `Resource` files (`CardData`, `UnitData`, `WaveData`, `HeroData`). A simple new card must be one `.tres` + art, no code change. Card behaviour is a list of effect resources on `CardData`; `ScriptedEffect` is the escape hatch for odd cards (Time Warp, Mirror Image).
+- **Host-authoritative netcode.** Host simulates enemies/towers and validates plays; clients send inputs and card events only. There is no continuous sync: heroes (wizards) are not on the field and only give battlefield buffs, so card events with a target point are the only player input.
 - **Transport abstraction.** One setting switches ENet (local dev, tests) and WebRTC (online). Keep gameplay code transport-agnostic.
 - **Lobby never sees gameplay.** It only does room codes and WebRTC signaling; rooms expire once the game starts. coturn provides STUN/TURN.
 - **Desync detection.** Host and client hash game state at the end of each wave; the headless network test fails on mismatch.
