@@ -40,13 +40,22 @@ Every script in `tools/` has a PowerShell twin (`.ps1`) for Windows; keep both i
     gdlint game/scripts game/tests
     gdformat --check game/scripts game/tests
 
+    # Assets (pip install -r tools/requirements.txt). Python scripts work the same on Windows (use `py`).
+    python tools/validate_assets.py                          # size, palette, transparency, naming, manifest
+    python -m unittest discover -s tools -p "test_*.py"      # validator tests
+    python tools/make_placeholders.py                        # redraw PNGs for manifest entries with status "placeholder"
+    ./tools/build_assets.sh                                  # rebuild game/resources/generated/*.tres (.ps1 on Windows)
+    pre-commit install                                       # run the validator on every commit
+
+After adding or changing a PNG or a manifest entry, run the validator and `build_assets`, then commit the PNG, its `.import` file and the regenerated `.tres`. Never edit `game/resources/generated/` by hand.
+
 CI (`.github/workflows/ci.yml`) runs on every push: lint, the tests (Linux and Windows), and a Linux export (`export.sh`) plus a Windows export (`export.ps1` on a Windows runner). Builds are uploaded as artifacts only from `main` or manual runs. Export presets live in `game/export_presets.cfg` (`Linux`, `Windows Desktop`). Commit the `*.gd.uid` files Godot generates next to scripts.
 
 Some CI jobs stay off until their entry point exists:
 
 - `tools/run_network_test.sh`: headless host + client over ENet, exit non-zero on a per-wave hash mismatch (M4)
 - `lobby/package.json` (+ `bun.lock`, `Dockerfile`): `bun test` and the container build (M5)
-- `tools/validate_assets.py`: asset validation in the lint job
+- `tools/validate_assets.py`: asset validation and its unittest suite in the lint job (active since the asset pipeline landed); the Linux test job also fails if `build_assets` changes anything under `game/`
 
 ## Code conventions
 
@@ -79,4 +88,4 @@ Two Wards: a real-time 2-player co-op tower defense roguelite with a card deck. 
 
 ## Asset rules
 
-Every PNG must pass the validation script (pre-commit + CI): Endesga 32 palette only, sizes units 32×32 / tiles 16×16 / card art 64×48 / icons 16×16, transparency, and naming `unit_<name>_<anim>_<dir>.png`, `tile_<set>_<nn>.png`, `card_art_<id>.png`. Full style guide in `docs/PLAN.md`.
+Every PNG under `game/assets/` must pass `tools/validate_assets.py` (pre-commit + CI): Endesga 32 palette only, alpha 0 or 255, per-frame sizes units 32×32 / tiles 16×16 / card art 64×48 / icons 16×16, units as horizontal strips of frames, directions `down`/`up`/`side` (left = `flip_h`), and naming `units/<name>/unit_<name>_<anim>_<dir>.png`, `tiles/<set>/tile_<set>_<nn>.png`, `cards/card_art_<id>.png`, `icons/icon_<name>.png`. Every PNG needs an entry in `game/assets/manifest.json`, which also holds frame counts, fps and loop. Full style guide in `docs/PLAN.md`.

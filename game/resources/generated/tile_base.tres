@@ -1,0 +1,28 @@
+[gd_resource type="TileSet" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/tiles/base/tile_base_00.png" id="1_mnhn4"]
+[ext_resource type="Texture2D" path="res://assets/tiles/base/tile_base_01.png" id="2_wntcs"]
+[ext_resource type="Texture2D" path="res://assets/tiles/base/tile_base_02.png" id="3_65p6h"]
+[ext_resource type="Texture2D" path="res://assets/tiles/base/tile_base_03.png" id="4_d6ono"]
+
+[sub_resource type="TileSetAtlasSource" id="tile_00"]
+texture = ExtResource("1_mnhn4")
+0:0/0 = 0
+
+[sub_resource type="TileSetAtlasSource" id="tile_01"]
+texture = ExtResource("2_wntcs")
+0:0/0 = 0
+
+[sub_resource type="TileSetAtlasSource" id="tile_02"]
+texture = ExtResource("3_65p6h")
+0:0/0 = 0
+
+[sub_resource type="TileSetAtlasSource" id="tile_03"]
+texture = ExtResource("4_d6ono")
+0:0/0 = 0
+
+[resource]
+sources/0 = SubResource("tile_00")
+sources/1 = SubResource("tile_01")
+sources/2 = SubResource("tile_02")
+sources/3 = SubResource("tile_03")
