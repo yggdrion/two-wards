@@ -10,7 +10,7 @@ It validates six pillars end to end: Godot project structure, AI-assisted coding
 
 ## Game concept
 
-A real-time co-op tower defense roguelite in a **high-fantasy** setting, where towers, spells and hero abilities come from a shared card deck. Working title: **Crystal Keep** — two wizards defend a Heart Crystal against waves of monsters.
+A real-time co-op tower defense roguelite in a **dark-fantasy** setting, where towers, spells and hero abilities come from a shared card deck. Working title: **Crystal Keep** — two wizards defend a Heart Crystal against waves of monsters.
 
 - **In a run:** each player moves a hero, gains energy over time, and plays cards from a hand of 3. Towers can only be placed near your own hero.
 - **Co-op:** both players bring their own 8-card deck; the decks merge into one shared run deck. Cards can be passed to the partner.
@@ -25,7 +25,7 @@ The PoC is one map, two players, twelve cards and one full meta loop. Anything n
 | --- | --- | --- |
 | Map | 1 map, 1 lane, spawn → core | Multiple lanes, branching run map, map variety |
 | Players | 2 players online co-op, host-authoritative | 3–4 players, host migration, dedicated servers |
-| Units | 1 hero (idle + walk, 4 directions), 2 enemy types | Hero classes, bosses, elites |
+| Units | 1 hero (idle + walk, 4 directions), 2 goblin types (fast runner, armored brute) | Hero classes, bosses, elites |
 | Terrain | 1 tileset (ground, path, walls) with autotiling | Biomes, decoration sets |
 | Cards | 12 cards, 3 rarities, energy, hand of 3, shared deck, card passing | Combo cards, card upgrades, keywords |
 | Run | 10 waves, card reward after each wave | Events, shops, elites, branching paths |
@@ -73,11 +73,11 @@ Players find each other through the lobby by room code, then exchange game traff
 
 ### Key choices
 
-- **Godot 4.x stable, GDScript.** Data in `Resource` files: `CardData`, `UnitData`, `WaveData`.
+- **Godot 4.7.2, GDScript.** Data in `Resource` files: `CardData`, `UnitData`, `WaveData`.
 - **Host-authoritative netcode.** Clients send inputs and card events; the host validates and broadcasts results. Hero positions are the only continuous sync.
 - **Transport abstraction.** One setting switches ENet (local dev, tests) and WebRTC (online).
 - **Local saves.** JSON per profile with a version field.
-- **Lobby server** as one stateless-ish container; rooms expire after the game starts.
+- **Lobby server** in TypeScript on Bun, one stateless-ish container; rooms expire after the game starts.
 
 ### Repo layout
 
@@ -149,11 +149,11 @@ Consistency comes from a written style guide, four hand-polished anchor assets, 
 | --- | --- |
 | Base resolution | 320×180, integer scaling, Nearest filter |
 | Sizes | Units 32×32, tiles 16×16, card art 64×48, icons 16×16 |
-| Palette | One fixed 32-color Lospec palette; no other colors |
+| Palette | Endesga 32 (Lospec); no other colors |
 | Perspective | Top-down 3/4 for units, terrain and props |
 | Light | From top-left; shadows bottom-right |
 | Outlines | 1px dark outline on units and towers; none on terrain |
-| Color coding | Players blue/teal, enemies red/orange, neutral gray |
+| Color coding | Players blue/teal; goblins green with red/orange accents (eyes, weapons); neutral gray |
 | Contrast | Terrain desaturated and low contrast; units high contrast |
 | Animation | Idle 4 frames, walk 6, attack 4–6, 8–12 fps |
 | Naming | `unit_<name>_<anim>_<dir>.png`, `tile_<set>_<nn>.png`, `card_art_<id>.png` |
@@ -189,7 +189,7 @@ Every push runs unit tests, a headless network test and the asset validation; ma
 | Unit | gdUnit4 | Energy regen, hand/draw/cycle, card effects, wave spawning, deck validation, save load + migration |
 | Statistical | gdUnit4 | 10,000 simulated boosters match drop rates within tolerance; pity triggers at 10 |
 | Network | 2 headless Godot instances (ENet, localhost) | Host + client connect, merge decks, play scripted card events, compare state hashes per wave |
-| Lobby server | Go/Node test suite | Room create/join, signaling relay, room cleanup |
+| Lobby server | bun test | Room create/join, signaling relay, room cleanup |
 | Assets | Validation script | Size, palette, transparency, naming for every PNG |
 | Manual | Two real machines on different networks | WebRTC through NAT, TURN fallback, full loop playtest |
 
@@ -230,13 +230,13 @@ The biggest risk is WebRTC on desktop; the fallback is ENet with port forwarding
 | Scope creep into "the real game" | PoC never ends | Scope table is binding; new ideas go to a backlog |
 | Tool subscription costs | Small ongoing cost | One PixelLab plan for the PoC duration, cancel if not used |
 
-### Open decisions
+### Decisions
 
-- [ ] Lobby server language: Go or Node
-- [ ] Enemy faction for the PoC (e.g. goblins, undead, wild beasts)
-- [ ] Mood: cute and colorful vs darker
-- [ ] Exact Lospec palette
-- [ ] Test framework: gdUnit4 (proposed) or GUT
-- [x] Repo hosting: GitHub (`yggdrion/card-defense`)
-- [ ] CI runner: GitHub Actions or own runner in the cluster
-- [ ] Godot version to pin (latest 4.x stable at start)
+- [x] Lobby server: TypeScript on Bun
+- [x] Enemy faction: goblins (fast runner + armored brute)
+- [x] Mood: dark fantasy
+- [x] Palette: Endesga 32
+- [x] Test framework: gdUnit4
+- [x] Repo: GitHub (yggdrion/card-defense)
+- [x] CI: GitHub Actions hosted runners
+- [x] Godot version: 4.7.2
