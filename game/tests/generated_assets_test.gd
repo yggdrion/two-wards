@@ -24,10 +24,10 @@ func test_hero_sprite_frames_match_manifest() -> void:
 			assert_float(frames.get_animation_speed(anim_name)).is_equal(float(spec["fps"]))
 			assert_bool(frames.get_animation_loop(anim_name)).is_equal(spec["loop"])
 			var frame: AtlasTexture = frames.get_frame_texture(anim_name, 0)
-			assert_vector(frame.get_size()).is_equal(Vector2(32, 32))
+			assert_vector(frame.get_size()).is_equal(Vector2(64, 64))
 
 
 func test_base_tile_set_has_one_source_per_tile() -> void:
 	var tile_set: TileSet = load("res://resources/generated/tile_base.tres")
 	assert_int(tile_set.get_source_count()).is_equal(int(_manifest_entry("tile_base")["count"]))
-	assert_vector(Vector2(tile_set.tile_size)).is_equal(Vector2(16, 16))
+	assert_vector(Vector2(tile_set.tile_size)).is_equal(Vector2(32, 32))

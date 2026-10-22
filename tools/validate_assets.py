@@ -25,10 +25,10 @@ REPO = Path(__file__).resolve().parent.parent
 DEFAULT_ROOT = REPO / "game" / "assets"
 PALETTE_FILE = Path(__file__).resolve().parent / "endesga32.hex"
 
-UNIT_FRAME = 32
-TILE_SIZE = (16, 16)
-CARD_ART_SIZE = (64, 48)
-ICON_SIZE = (16, 16)
+UNIT_FRAME = 64
+TILE_SIZE = (32, 32)
+CARD_ART_SIZE = (128, 96)
+ICON_SIZE = (32, 32)
 
 # Prefix -> (folder under the asset root, file name pattern).
 NAME_RULES = {

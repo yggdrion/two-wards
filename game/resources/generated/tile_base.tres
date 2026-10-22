@@ -7,21 +7,26 @@
 
 [sub_resource type="TileSetAtlasSource" id="tile_00"]
 texture = ExtResource("1_mnhn4")
+texture_region_size = Vector2i(32, 32)
 0:0/0 = 0
 
 [sub_resource type="TileSetAtlasSource" id="tile_01"]
 texture = ExtResource("2_wntcs")
+texture_region_size = Vector2i(32, 32)
 0:0/0 = 0
 
 [sub_resource type="TileSetAtlasSource" id="tile_02"]
 texture = ExtResource("3_65p6h")
+texture_region_size = Vector2i(32, 32)
 0:0/0 = 0
 
 [sub_resource type="TileSetAtlasSource" id="tile_03"]
 texture = ExtResource("4_d6ono")
+texture_region_size = Vector2i(32, 32)
 0:0/0 = 0
 
 [resource]
+tile_size = Vector2i(32, 32)
 sources/0 = SubResource("tile_00")
 sources/1 = SubResource("tile_01")
 sources/2 = SubResource("tile_02")

@@ -5,6 +5,10 @@
 			"id": "unit_hero",
 			"type": "unit",
 			"status": "placeholder",
+			"final": [
+				"units/hero/unit_hero_idle_down.png",
+				"units/hero/unit_hero_idle_up.png"
+			],
 			"dirs": ["down", "up", "side"],
 			"anims": {
 				"idle": {"frames": 4, "fps": 8, "loop": true},
