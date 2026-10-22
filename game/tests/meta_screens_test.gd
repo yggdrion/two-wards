@@ -3,15 +3,19 @@ extends GdUnitTestSuite
 
 const APP_SCENE := preload("res://scenes/main.tscn")
 const PATH := "user://test_saves/app_profile.json"
+const SETTINGS_PATH := "user://test_saves/app_settings.cfg"
 
 
 func before_test() -> void:
+	DirAccess.make_dir_recursive_absolute(PATH.get_base_dir())
 	DirAccess.remove_absolute(PATH)
+	DirAccess.remove_absolute(SETTINGS_PATH)
 
 
 func _app() -> App:
 	var app: App = APP_SCENE.instantiate()
 	app.save_path = PATH
+	app.settings_path = SETTINGS_PATH
 	add_child(app)
 	auto_free(app)
 	return app
@@ -108,3 +112,24 @@ func test_run_uses_active_deck_and_pays_gold() -> void:
 	assert_int(app.profile.gold).is_equal(30)
 	game.finished.emit()
 	assert_int(app.current).is_equal(App.Screen.CAMP)
+
+
+func test_camp_toggles_fullscreen_and_remembers_it() -> void:
+	var app := _app()
+	var camp: CampScreen = app._screen
+	assert_str(camp.fullscreen_button.text).contains("off")
+	camp.fullscreen_button.pressed.emit()
+	assert_bool(app.display.fullscreen).is_true()
+	assert_str(camp.fullscreen_button.text).contains("on")
+	app.free()
+	assert_bool(_app().display.fullscreen).is_true()
+
+
+func test_f11_toggles_fullscreen_on_any_screen() -> void:
+	var app := _app()
+	app.show_screen(App.Screen.COLLECTION)
+	var key := InputEventKey.new()
+	key.physical_keycode = KEY_F11
+	key.pressed = true
+	app._input(key)
+	assert_bool(app.display.fullscreen).is_true()

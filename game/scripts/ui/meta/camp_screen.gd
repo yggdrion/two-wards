@@ -3,7 +3,10 @@ extends MetaScreen
 ## The hub between runs: start a run with the active deck, open boosters, browse the
 ## collection, build decks.
 
+## Optional; when set, the camp shows a fullscreen toggle.
+var display: DisplaySettings
 var start_button: Button
+var fullscreen_button: Button
 var booster_button: Button
 var _deck_label: Label
 
@@ -12,7 +15,7 @@ func build() -> void:
 	add_header("Two Wards", false)
 	var menu := VBoxContainer.new()
 	menu.add_theme_constant_override("separation", 8)
-	menu.position = Vector2(220, 96)
+	menu.position = Vector2(220, 80)
 	menu.size = Vector2(200, 0)
 	add_child(menu)
 	start_button = button("Start run", func() -> void: navigate.emit(App.Screen.RUN))
@@ -26,6 +29,11 @@ func build() -> void:
 		button("Decks", func() -> void: navigate.emit(App.Screen.DECKS)),
 	]:
 		menu.add_child(item)
+	if display != null:
+		fullscreen_button = button("", display.toggle_fullscreen)
+		menu.add_child(fullscreen_button)
+		display.changed.connect(_refresh_fullscreen)
+		_refresh_fullscreen()
 	_deck_label = label("", &"DimLabel")
 	_deck_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_deck_label.position = Vector2(0, 280)
@@ -42,3 +50,7 @@ func refresh() -> void:
 		_deck_label.text = "Deck: %s" % deck_name
 	else:
 		_deck_label.text = "Deck %s is not ready, fix it in Decks" % deck_name
+
+
+func _refresh_fullscreen() -> void:
+	fullscreen_button.text = "Fullscreen: %s (F11)" % ("on" if display.fullscreen else "off")

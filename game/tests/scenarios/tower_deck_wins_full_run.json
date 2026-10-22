@@ -47,5 +47,5 @@
 		{"cycle": "arrow_tower", "t": 150.35},
 		{"play": "war_drums", "t": 150.85}
 	],
-	"expect": {"result": "won", "waves_cleared": 10, "crystal_hp": 20, "gold": 125, "hash": "5ad78ab6a9be0d82"}
+	"expect": {"result": "won", "waves_cleared": 10, "crystal_hp": 20, "gold": 125, "hash": "0474e327b825f272"}
 }

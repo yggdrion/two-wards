@@ -10,8 +10,11 @@ const THEME := preload("res://resources/ui/theme.tres")
 
 ## Where the profile is saved; tests point this at a temp file.
 @export var save_path := SaveStore.path_for("default")
+## Where display options are saved; tests point this at a temp file.
+@export var settings_path := DisplaySettings.PATH
 
 var profile: Profile
+var display: DisplaySettings
 var catalog: CardCatalog
 var current: Screen = Screen.CAMP
 var _ui: CanvasLayer
@@ -25,6 +28,8 @@ func _ready() -> void:
 	catalog = CardCatalog.load_dir()
 	profile = SaveStore.load_or_create(save_path)
 	profile.changed.connect(save)
+	display = DisplaySettings.load_from(settings_path)
+	display.apply()
 	_ui = CanvasLayer.new()
 	add_child(_ui)
 	_root = Control.new()
@@ -32,6 +37,13 @@ func _ready() -> void:
 	_root.size = MetaScreen.SCREEN
 	_ui.add_child(_root)
 	show_screen(Screen.CAMP)
+
+
+## F11 and Alt+Enter work on every screen, in and out of runs.
+func _input(event: InputEvent) -> void:
+	if DisplaySettings.is_toggle_event(event):
+		display.toggle_fullscreen()
+		get_viewport().set_input_as_handled()
 
 
 func save() -> void:
@@ -59,7 +71,9 @@ func show_screen(screen: Screen) -> void:
 		Screen.DECKS:
 			view = DeckBuilderScreen.new()
 		_:
-			view = CampScreen.new()
+			var camp := CampScreen.new()
+			camp.display = display
+			view = camp
 	view.setup(profile, catalog)
 	view.navigate.connect(func(next: int) -> void: show_screen(next as Screen))
 	_root.add_child(view)
