@@ -40,7 +40,7 @@ The PoC passes when every pillar meets its check below and two people on differe
 
 | Pillar | Proven when |
 | --- | --- |
-| Godot | Cards, units and waves are data-driven `Resource` files; adding a card = one `.tres` file + art, no code change for simple cards |
+| Godot | Cards, units and waves are data-driven `Resource` files; adding a simple card = one `.tres` file + art, no code change. At least 9 of the 12 cards are pure data; the rest use a `ScriptedEffect` |
 | Coding | Claude Code implements a new card or enemy from a short description, and existing tests stay green |
 | Testing | Unit tests cover cards, energy, waves, boosters, deck validation, saves; a headless host + client test verifies sync; all run in CI on every push |
 | Asset generation | Assets made with the style guide + PixelLab + Aseprite pass the validation script and look consistent side by side in-game |
@@ -75,6 +75,7 @@ Players find each other through the lobby by room code, then exchange game traff
 
 - **Godot 4.7.2, GDScript.** Data in `Resource` files: `CardData`, `UnitData`, `WaveData`.
 - **Host-authoritative netcode.** Clients send inputs and card events; the host validates and broadcasts results. Hero positions are the only continuous sync.
+- **Each client owns its hero.** A client moves its own hero locally and streams the position (~20 Hz). The host checks plausibility (max speed, walkable tile) and validates tower placement against the last position it received. No client-side prediction needed.
 - **Transport abstraction.** One setting switches ENet (local dev, tests) and WebRTC (online).
 - **Local saves.** JSON per profile with a version field.
 - **Lobby server** in TypeScript on Bun, one stateless-ish container; rooms expire after the game starts.
@@ -93,6 +94,14 @@ docs/          Style guide, design notes, this plan
 ## Cards and meta system
 
 Twelve cards across three rarities cover every card type once or more; the meta loop runs on one currency and local saves. All numbers below are starting values for tuning.
+
+### Card effects
+
+`CardData` holds a list of effect resources; most cards are pure data, a few odd ones use a script.
+
+- Effect types: `DamageEffect`, `SlowEffect`, `HealEffect`, `PlaceTowerEffect` (references a `TowerData`), `BuffEffect`, `CostModifierEffect`, `TeleportEffect`, `LureEffect`. Each carries its own targeting, radius and duration fields.
+- `ScriptedEffect` is the escape hatch for cards no generic effect covers: Time Warp (needs crystal HP history) and Mirror Image (copies a tower).
+- A new effect type is code; a new card built from existing effects is not. The retro counts how many cards needed the escape hatch.
 
 ### In-run rules
 
@@ -148,7 +157,7 @@ Consistency comes from a written style guide, four hand-polished anchor assets, 
 | Rule | Decision |
 | --- | --- |
 | Base resolution | 320×180, integer scaling, Nearest filter |
-| Sizes | Per frame: units 32×32, tiles 16×16, card art 64×48, icons 16×16. Card frame size TBD |
+| Sizes | Per frame: units 32×32, tiles 16×16, card art 64×48, icons 16×16. Card frame 72×104 (full), 48×64 (compact) |
 | Spritesheets | One PNG per unit, animation and direction: a horizontal strip of 32×32 frames (walk = 192×32) |
 | Directions | `down`, `up`, `side` (facing right); left is `side` with `flip_h` |
 | Transparency | Alpha is 0 or 255 only, no soft edges |
@@ -160,7 +169,8 @@ Consistency comes from a written style guide, four hand-polished anchor assets, 
 | Contrast | Terrain desaturated and low contrast; units high contrast |
 | Animation | Idle 4 frames, walk 6, attack 4–6, 8–12 fps. Frame count, fps and loop live in `game/assets/manifest.json`, not in file names |
 | Naming | `units/<name>/unit_<name>_<anim>_<dir>.png`, `tiles/<set>/tile_<set>_<nn>.png`, `cards/card_art_<id>.png`, `icons/icon_<name>.png` (all under `game/assets/`) |
-| Font | Pixel font TBD (free license, e.g. m5x7 or Pixel Operator); imported without antialiasing, used at integer sizes |
+| Font | m5x7 (free license), imported without antialiasing, used at 1× |
+| Cards on screen | Hand shows compact cards (48×64: art crop, cost, name); hover or select shows the full 72×104 card. Base resolution stays 320×180 |
 
 ### Tools
 
@@ -204,8 +214,9 @@ Every push runs unit tests, a headless network test and the asset validation; ma
 | Layer | Tool | What it covers |
 | --- | --- | --- |
 | Unit | gdUnit4 | Energy regen, hand/draw/cycle, card effects, wave spawning, deck validation, save load + migration |
+| Scenario | gdUnit4, headless | Scripted runs: seed + deck + timed card plays, run N waves, assert crystal HP, gold earned and final state hash. Catches balance and behaviour regressions |
 | Statistical | gdUnit4 | 10,000 simulated boosters match drop rates within tolerance; pity triggers at 10 |
-| Network | 2 headless Godot instances (ENet, localhost) | Host + client connect, merge decks, play scripted card events, compare state hashes per wave |
+| Network | 2 headless Godot instances (ENet, localhost) | Host + client connect, merge decks, replay the scenario scripts, compare state hashes per wave |
 | Lobby server | bun test | Room create/join, signaling relay, room cleanup |
 | Assets | Validation script | Size, palette, transparency, naming for every PNG |
 | Manual | Two real machines on different networks | WebRTC through NAT, TURN fallback, full loop playtest |
@@ -213,7 +224,7 @@ Every push runs unit tests, a headless network test and the asset validation; ma
 ### CI pipeline
 
 1. Lint GDScript (gdtoolkit) and run asset validation.
-2. Unit and statistical tests.
+2. Unit, statistical and scenario tests.
 3. Headless network test.
 4. Lobby server tests and container build.
 5. On main: Windows + Linux exports as build artifacts.
@@ -227,9 +238,9 @@ Eight milestones; M4–M5 (networking) and M6 (assets) can run in parallel once 
 | # | Milestone | Deliverables | Exit criteria |
 | --- | --- | --- | --- |
 | M1 | Skeleton | Repo layout, Godot project, gray-box lane, 1 enemy, 1 tower, CI with first test | Enemy walks to core, tower kills it; CI green |
-| M2 | In-run card system | Energy, hand, deck, cycling, 12 cards as resources, placeholder card UI | All 12 cards playable solo; unit tests for each card |
+| M2 | In-run card system | Energy, hand, deck, cycling, effect resources + `ScriptedEffect`, 12 cards as resources, compact/full card UI, scenario test harness | All 12 cards playable solo; unit tests for each card; first scenario tests green |
 | M3 | Meta system | Save file, collection, gold, boosters + pack opening, deck builder, pity | Booster distribution test passes; save survives restart |
-| M4 | Local networking | ENet host/join, synced heroes, card events via RPC, deck merge, card passing | Headless network test passes with zero hash mismatches |
+| M4 | Local networking | Checkpoint first: decide pure sim core vs Node-based sim. Then ENet host/join, client-owned heroes, card events via RPC, deck merge, card passing | Headless network test (replaying scenarios) passes with zero hash mismatches |
 | M5 | Lobby + WebRTC | Lobby/signaling server, room codes, WebRTC transport, coturn, deployed to cluster | Two players on different networks complete 10 waves |
 | M6 | Asset pipeline | Style guide, palette, anchors, validation hook, import scripts, all gray boxes replaced | All assets pass validation; side-by-side review looks consistent |
 | M7 | Full loop | Main menu, lobby screen with deck preview, run → rewards → gold → booster flow | Full loop completed in co-op by two people in one session |
@@ -257,3 +268,9 @@ The biggest risk is WebRTC on desktop; the fallback is ENet with port forwarding
 - [x] Repo: GitHub (yggdrion/two-wards)
 - [x] CI: GitHub Actions hosted runners
 - [x] Godot version: 4.7.2
+- [x] Card effects: composable effect resources + `ScriptedEffect` escape hatch
+- [x] Tests: scenario tests on top of unit tests; the network test reuses them
+- [x] Card UI: compact 48×64 hand, full 72×104 card on hover; font m5x7 at 1×
+- [x] Hero sync: each client owns its hero position, host checks plausibility
+- [x] Sim structure: M1 stays Node-based; pure sim core vs Nodes decided at the start of M4
+- [x] WebRTC: no early spike; proven in M5 with the ENet/WebSocket fallback
