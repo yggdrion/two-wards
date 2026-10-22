@@ -22,11 +22,18 @@ The Godot version is pinned in `.godot-version`. `tools/install_godot.sh` downlo
     # Single suite: append gdUnit4 args
     ./tools/run_tests.sh -a res://tests/tower_test.gd
 
+Every script in `tools/` has a PowerShell twin (`.ps1`) for Windows; keep both in sync. CI runs the tests with the `.sh` scripts on Linux and the `.ps1` scripts on Windows.
+
+    # Windows (PowerShell 5.1 or 7). If scripts are blocked, prefix with: powershell -ExecutionPolicy Bypass -File
+    .\tools\godot.ps1 --path game -e
+    .\tools\run_tests.ps1
+    .\tools\run_tests.ps1 -a res://tests/tower_test.gd
+
     # Lint and format check (pip install "gdtoolkit==4.5.0")
     gdlint game/scripts game/tests
     gdformat --check game/scripts game/tests
 
-CI (`.github/workflows/ci.yml`) runs lint and the tests on every push. Commit the `*.gd.uid` files Godot generates next to scripts.
+CI (`.github/workflows/ci.yml`) runs lint and the tests (Linux and Windows) on every push. Commit the `*.gd.uid` files Godot generates next to scripts.
 
 ## Code conventions
 

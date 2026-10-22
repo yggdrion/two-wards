@@ -37,3 +37,16 @@ jobs:
           name: gdunit4-report
           path: game/reports/
           if-no-files-found: ignore
+
+  test-windows:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Cache Godot
+        uses: actions/cache@v4
+        with:
+          path: .tools/godot
+          key: godot-${{ runner.os }}-${{ hashFiles('.godot-version', 'tools/godot-*.sha512') }}
+      - name: Run gdUnit4 tests
+        shell: pwsh
+        run: ./tools/run_tests.ps1
