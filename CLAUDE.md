@@ -4,9 +4,42 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## State of the repo
 
-Planning only — no code yet. Next milestone is M1 (Skeleton). `docs/PLAN.md` is the source of truth for scope, architecture, card/meta numbers, style guide, testing and milestones; read it before starting work. Its scope table is binding: anything listed as "out of scope" goes to a backlog, not into the PoC.
+M1 (Skeleton) is in progress: Godot project in `game/` with a gray-box lane, one goblin, one tower, gdUnit4 tests and CI. `docs/PLAN.md` is the source of truth for scope, architecture, card/meta numbers, style guide, testing and milestones; read it before starting work. Its scope table is binding: anything listed as "out of scope" goes to a backlog, not into the PoC.
 
-There are no build, lint or test commands yet. When M1 adds them, document them here. Planned tooling: Godot 4.7.2 (GDScript), gdUnit4, gdtoolkit lint, `bun test` for the lobby, GitHub Actions CI.
+## Commands
+
+Tooling: Godot 4.7.2 (GDScript), gdUnit4 v6.2.2, gdtoolkit 4.5.0. Planned later: `bun test` for the lobby.
+
+The Godot version is pinned in `.godot-version`. `tools/install_godot.sh` downloads it to `.tools/godot/<version>/` (gitignored), checks it against `tools/godot-<version>.sha512` and prints the binary path. To bump Godot, change `.godot-version` and add the matching `.sha512` file with the lines from the release's `SHA512-SUMS.txt`.
+
+    # Run the editor/game with the pinned Godot (installs on first use)
+    ./tools/godot.sh --path game -e
+    ./tools/godot.sh --path game
+
+    # Tests (headless). Uses the pinned Godot (or GODOT_BIN, which must match), installs pinned
+    # gdUnit4 into game/addons/gdUnit4 (gitignored), imports, runs res://tests.
+    ./tools/run_tests.sh
+    # Single suite: append gdUnit4 args
+    ./tools/run_tests.sh -a res://tests/tower_test.gd
+
+Every script in `tools/` has a PowerShell twin (`.ps1`) for Windows; keep both in sync. CI runs the tests with the `.sh` scripts on Linux and the `.ps1` scripts on Windows.
+
+    # Windows (PowerShell 5.1 or 7). If scripts are blocked, prefix with: powershell -ExecutionPolicy Bypass -File
+    .\tools\godot.ps1 --path game -e
+    .\tools\run_tests.ps1
+    .\tools\run_tests.ps1 -a res://tests/tower_test.gd
+
+    # Lint and format check (pip install "gdtoolkit==4.5.0")
+    gdlint game/scripts game/tests
+    gdformat --check game/scripts game/tests
+
+CI (`.github/workflows/ci.yml`) runs lint and the tests (Linux and Windows) on every push. Commit the `*.gd.uid` files Godot generates next to scripts.
+
+## Code conventions
+
+- Simulation advances only through explicit `step(delta)` / `Lane.tick(delta)` calls, never real time inside logic. Tests set `lane.autorun = false` and tick with a fixed delta; the network host will drive the same path.
+- Gray-box drawing uses `_draw()` with colors from `scripts/palette.gd` (Endesga 32 only) until M6 replaces it with art.
+- Test files live in `game/tests/` and are named `*_test.gd`.
 
 ## What this is
 
@@ -14,7 +47,7 @@ Two Wards: a real-time 2-player co-op tower defense roguelite with a card deck. 
 
 ## Planned layout
 
-    game/          Godot project (scenes, scripts, resources, tests)
+    game/          Godot project: scenes/, scripts/{data,lane}/, resources/, tests/
     lobby/         Lobby/signaling server (TypeScript on Bun) + tests + Dockerfile
     deploy/        Kubernetes manifests: lobby, coturn, monitoring config
     assets-src/    Aseprite sources, palette, anchors

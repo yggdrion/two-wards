@@ -1,0 +1,16 @@
+# Godot
+game/.godot/
+game/addons/gdUnit4/
+*.translation
+export_presets.cfg.local
+
+# Test output
+game/reports/
+game/gdunit4_testadapter/
+
+# Pinned tool downloads (tools/install_godot.sh)
+.tools/
+
+# Tooling
+__pycache__/
+.venv/
