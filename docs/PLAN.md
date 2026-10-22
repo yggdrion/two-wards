@@ -159,10 +159,10 @@ The PoC ends as a pretty, polished pixel-art game, not a gray box with sprites (
 
 | Aspect | Decision |
 | --- | --- |
-| Mood | Dusk dark fantasy, lit by magic. The world is cold and dim; everything the players own (crystal, towers, spells) glows. Reference: Hyper Light Drifter, Moonlighter at night, Children of Morta |
-| Palette use | Endesga 32 only. Ground and walls use the muted blue-purple and gray-green ramps (`262b44` `3a4466` `5a6988`, `193c3e` `265c42`), low contrast. Players and their magic own teal and blue (`0099db` `2ce8f5`), plus warm gold (`feae34` `fee761`) for the crystal and rewards. Goblins own green with red and orange accents. Red (`e43b44`) is reserved for damage and danger |
-| Readability | Units are the highest-contrast thing on screen; terrain never uses `181425` outlines or the brightest ramp colors. Every unit gets the engine shadow ellipse |
-| Lighting | Godot 2D lights: a `CanvasModulate` darkens the lane to dusk, and `PointLight2D`s on the crystal, hero staff, towers and spells light it back up. No normal maps (they would double the art). Lights are flat, hard-edged textures so the light itself looks pixelated |
+| Mood | Evening in a natural meadow, lit by magic. Ground looks real (grass, dirt path, stone walls, trees, rocks) but is toned down to evening, never bright daylight. Everything the players own (crystal, towers, spells, the hero's staff) glows and lights its surroundings. Approved by Rapha 2026-10-22 from the mockups in the project files (`art-direction/evening_a_lit.png`); the final art must be more detailed and more "pixel" than those code-drawn mockups. Reference: Stardew Valley and Sea of Stars for the ground, Hyper Light Drifter and Moonlighter at night for the light |
+| Palette use | Endesga 32 only. Grass uses `193c3e` `265c42` `3e8948` (base `265c42`, lit `63c74d` only inside light pools), the dirt path `3e2731` `733e39` `b86f50` `e4a672`, walls and rocks the blue-gray stone ramp `262b44` `3a4466` `5a6988` `8b9bb4`. Players and their magic own teal and blue (`0099db` `2ce8f5`), plus warm gold (`feae34` `fee761`) for rewards. Goblins own green with red and orange accents. Red (`e43b44`) is reserved for damage and danger |
+| Readability | Units are the highest-contrast thing on screen; terrain never uses `181425` outlines or the brightest ramp colors. Every unit gets the engine shadow ellipse. Goblins sit on green grass, so their skin uses the light green (`3e8948` `63c74d`) against the darker grass base, keeps the closed `181425` outline and gets red or orange eyes and gear; check this in the A1 target frame and shift the goblin hue toward olive if they blend in |
+| Lighting | Godot 2D lights: a `CanvasModulate` dims the lane to evening (and edges a little darker), and `PointLight2D`s on the crystal, hero staff, towers and spells light it back up. No normal maps (they would double the art). Lights are flat, hard-edged textures so the light itself looks pixelated |
 | Palette on screen | Lights tint sprites off-palette. Try a full-screen shader that snaps the final image back to Endesga 32 in A2; keep it if it looks better, drop it if it bands |
 | Motion | Everything alive moves: units idle, the crystal pulses, grass and banners sway (vertex shader), ambient motes drift. Nothing on screen is perfectly still for more than a second |
 | VFX ambition | Pixel-crisp effects only: no soft particles, no blur, no additive glow textures with soft alpha. Hits get a 1-frame white flash, impacts a 4–6 frame sprite burst, deaths a short dissolve. Screen shake is small and snapped to whole pixels |
@@ -214,7 +214,7 @@ Counted in generation calls, with about 2.5 attempts per kept result (the hero n
 | Buffer for redos after the look review | | ~65 |
 | **Total** | | **~300** |
 
-The trial has 30 of 40 left (checked 2026-10-22), so the art track needs a paid plan before A1's anchors. Animation calls on PixelLab's newer models cost more than one generation each; check the current pricing page and pick the tier from this table. One or two months of the plan should cover the PoC; cancel afterwards (see Risks).
+The trial has 30 of 40 left (checked 2026-10-22). Rapha will upgrade when A1 starts; the budget is not a hard limit, so spend on quality (more attempts per asset) rather than settling. Animation calls on PixelLab's newer models cost more than one generation each; pick the tier from this table and the current pricing page. One or two months of the plan should cover the PoC; cancel afterwards (see Risks).
 
 ### Art track
 
@@ -359,5 +359,5 @@ The biggest risk is WebRTC on desktop; the fallback is ENet with port forwarding
 - [x] Sim structure: M1 stays Node-based; pure sim core vs Nodes decided at the start of M4
 - [x] WebRTC: no early spike; proven in M5 with the ENet/WebSocket fallback
 - [x] Art goal (2026-10-22): full pixel-art route, the PoC must end up pretty and polished; art track A1–A4 beside the code milestones
-- [ ] Look: dusk dark fantasy lit by magic (proposed, waiting for Rapha)
-- [ ] PixelLab paid tier (before A1)
+- [x] Look (2026-10-22): natural evening meadow lit by magic, more detailed than the mockups
+- [ ] PixelLab paid tier: Rapha upgrades when A1 starts
