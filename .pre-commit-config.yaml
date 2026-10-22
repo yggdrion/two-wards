@@ -1,0 +1,11 @@
+# Install once: pip install pre-commit && pre-commit install (works the same on Windows).
+repos:
+  - repo: local
+    hooks:
+      - id: validate-assets
+        name: Validate assets (size, palette, transparency, naming)
+        entry: python tools/validate_assets.py
+        language: python
+        additional_dependencies: ["pillow==12.3.0"]
+        files: ^game/assets/
+        pass_filenames: false

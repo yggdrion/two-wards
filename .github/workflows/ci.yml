@@ -41,8 +41,8 @@ jobs:
         with:
           python-version: "3.12"
       - run: pip install "gdtoolkit==${GDTOOLKIT_VERSION}"
-      - run: gdlint game/scripts game/tests
-      - run: gdformat --check game/scripts game/tests
+      - run: gdlint game/scripts game/tests game/tools
+      - run: gdformat --check game/scripts game/tests game/tools
       - name: Validate assets
         if: needs.detect.outputs.assets == 'true'
         run: |
@@ -68,6 +68,12 @@ jobs:
           name: gdunit4-report
           path: game/reports/
           if-no-files-found: ignore
+      - name: Check generated asset resources are up to date
+        run: |
+          ./tools/build_assets.sh
+          # Fails if the import changed or added files (stale .tres or missing .import).
+          git status --porcelain game/
+          test -z "$(git status --porcelain game/)"
 
   test-windows:
     runs-on: windows-latest

@@ -1,0 +1,43 @@
+{
+	"version": 1,
+	"assets": [
+		{
+			"id": "unit_hero",
+			"type": "unit",
+			"status": "placeholder",
+			"dirs": ["down", "up", "side"],
+			"anims": {
+				"idle": {"frames": 4, "fps": 8, "loop": true},
+				"walk": {"frames": 6, "fps": 10, "loop": true},
+				"attack": {"frames": 5, "fps": 12, "loop": false}
+			}
+		},
+		{
+			"id": "unit_goblin_runner",
+			"type": "unit",
+			"status": "placeholder",
+			"dirs": ["down", "up", "side"],
+			"anims": {
+				"idle": {"frames": 4, "fps": 8, "loop": true},
+				"walk": {"frames": 6, "fps": 12, "loop": true},
+				"attack": {"frames": 4, "fps": 12, "loop": false}
+			}
+		},
+		{
+			"id": "tile_base",
+			"type": "tileset",
+			"status": "placeholder",
+			"count": 4
+		},
+		{
+			"id": "card_art_arrow_tower",
+			"type": "card_art",
+			"status": "placeholder"
+		},
+		{
+			"id": "icon_energy",
+			"type": "icon",
+			"status": "placeholder"
+		}
+	]
+}

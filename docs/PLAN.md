@@ -148,15 +148,19 @@ Consistency comes from a written style guide, four hand-polished anchor assets, 
 | Rule | Decision |
 | --- | --- |
 | Base resolution | 320×180, integer scaling, Nearest filter |
-| Sizes | Units 32×32, tiles 16×16, card art 64×48, icons 16×16 |
+| Sizes | Per frame: units 32×32, tiles 16×16, card art 64×48, icons 16×16. Card frame size TBD |
+| Spritesheets | One PNG per unit, animation and direction: a horizontal strip of 32×32 frames (walk = 192×32) |
+| Directions | `down`, `up`, `side` (facing right); left is `side` with `flip_h` |
+| Transparency | Alpha is 0 or 255 only, no soft edges |
 | Palette | Endesga 32 (Lospec); no other colors |
 | Perspective | Top-down 3/4 for units, terrain and props |
 | Light | From top-left; shadows bottom-right |
 | Outlines | 1px dark outline on units and towers; none on terrain |
 | Color coding | Players blue/teal; goblins green with red/orange accents (eyes, weapons); neutral gray |
 | Contrast | Terrain desaturated and low contrast; units high contrast |
-| Animation | Idle 4 frames, walk 6, attack 4–6, 8–12 fps |
-| Naming | `unit_<name>_<anim>_<dir>.png`, `tile_<set>_<nn>.png`, `card_art_<id>.png` |
+| Animation | Idle 4 frames, walk 6, attack 4–6, 8–12 fps. Frame count, fps and loop live in `game/assets/manifest.json`, not in file names |
+| Naming | `units/<name>/unit_<name>_<anim>_<dir>.png`, `tiles/<set>/tile_<set>_<nn>.png`, `cards/card_art_<id>.png`, `icons/icon_<name>.png` (all under `game/assets/`) |
+| Font | Pixel font TBD (free license, e.g. m5x7 or Pixel Operator); imported without antialiasing, used at integer sizes |
 
 ### Tools
 
@@ -171,6 +175,19 @@ Consistency comes from a written style guide, four hand-polished anchor assets, 
 3. Export PNG; pre-commit hook runs the validation script (size, palette, transparency, name).
 4. Godot import script builds `SpriteFrames` and `TileSet` resources.
 5. Mark the manifest entry done.
+
+Implementation:
+
+| Piece | Where |
+| --- | --- |
+| Asset manifest (id, type, frames, fps, loop, status `todo`/`placeholder`/`done`) | `game/assets/manifest.json` |
+| Palette | `tools/endesga32.hex` (validator), `assets-src/palette/endesga-32.gpl` (Aseprite) |
+| Validator (Python + Pillow, also checks the manifest) | `tools/validate_assets.py`, tests in `tools/test_validate_assets.py` |
+| Placeholder art for `placeholder` entries | `tools/make_placeholders.py` |
+| Import script → `game/resources/generated/*.tres` (committed; CI fails if stale) | `game/tools/build_assets.gd`, run via `tools/build_assets.sh` / `.ps1` |
+| Pre-commit hook | `.pre-commit-config.yaml` |
+
+All of it runs natively on Windows; no global texture atlas for the PoC (strips are small atlases already).
 
 ### Cards are composed, not baked
 
