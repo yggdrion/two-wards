@@ -133,10 +133,10 @@ Twelve cards across three rarities cover every card type once or more; the meta 
 
 ### Collection and boosters
 
-- New profile starts with the 6 commons.
+- New profile starts with 2 copies of each of the 6 commons and an 8-card starter deck (one copy each would not fill a deck).
 - Gold per run = 10 per wave survived + 25 for a win.
 - Booster costs 50 gold and holds 3 cards; each slot rolls 70% common, 25% rare, 5% epic.
-- Pity: an epic is guaranteed after 10 boosters without one.
+- Pity: the 10th booster in a row without an epic holds one.
 - Pack opening: cards flip one at a time; new cards are marked.
 
 ### Deck building

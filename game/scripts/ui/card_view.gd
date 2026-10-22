@@ -38,6 +38,11 @@ var selected := false:
 	set(value):
 		selected = value
 		queue_redraw()
+## Shows the card back (booster opening, cards not owned yet).
+var face_down := false:
+	set(value):
+		face_down = value
+		queue_redraw()
 
 
 func _init() -> void:
@@ -68,6 +73,9 @@ static func rarity_color(rarity: CardData.Rarity) -> Color:
 
 func _draw() -> void:
 	var rect := Rect2(Vector2.ZERO, size)
+	if face_down:
+		_draw_back(rect)
+		return
 	if card == null:
 		draw_rect(rect, Palette.PANEL)
 		draw_rect(rect.grow(-BORDER / 2.0), Palette.PATH_EDGE, false, BORDER)
@@ -103,3 +111,22 @@ func _draw_cost() -> void:
 		badge.grow(-BORDER / 2.0), Palette.ENERGY if affordable else Palette.INVALID, false, BORDER
 	)
 	UiFont.draw_centered(self, 12, 5, str(cost), Palette.ENERGY if affordable else Palette.INVALID)
+
+
+func _draw_back(rect: Rect2) -> void:
+	draw_rect(rect, Palette.PLAYER_DARK)
+	var inner := rect.grow(-8)
+	draw_rect(inner, Palette.PANEL)
+	var center := rect.get_center()
+	var r := minf(inner.size.x, inner.size.y) * 0.3
+	var diamond := PackedVector2Array(
+		[
+			center + Vector2(0, -r),
+			center + Vector2(r, 0),
+			center + Vector2(0, r),
+			center + Vector2(-r, 0)
+		]
+	)
+	draw_colored_polygon(diamond, Palette.PLAYER_DARK)
+	draw_polyline(diamond + PackedVector2Array([diamond[0]]), Palette.CRYSTAL, BORDER)
+	draw_rect(rect.grow(-BORDER / 2.0), Palette.PATH_EDGE, false, BORDER)
