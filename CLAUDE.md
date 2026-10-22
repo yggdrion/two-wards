@@ -6,6 +6,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 M1 and M2 are done; M3 (meta system) adds the save file, boosters, collection and deck builder. The main scene is `scenes/main.tscn` (`App`: meta screens, then runs `scenes/game.tscn` with the active deck). Meta screens build their controls in code on `resources/ui/theme.tres`, so the art pass only swaps styleboxes. `docs/PLAN.md` is the source of truth for scope, architecture, card/meta numbers, style guide, testing and milestones; read it before starting work. Its scope table is binding: anything listed as "out of scope" goes to a backlog, not into the PoC.
 
+## Always run the local check
+
+This applies to every session, human or Claude: CI is lean (see below), so the local check is the real gate.
+
+- Before every push, run the full check, `./tools/check.sh` (Windows: `.\tools\check.ps1`), and push only when it ends with "All checks passed". If it fails, fix the cause and run it again; never push past a failure or use `git push --no-verify` to skip it.
+- While iterating, run `./tools/check.sh --quick` (lint and asset validator, no Godot) after each change to GDScript, assets or the manifest, and the gdUnit4 suite you touched (`./tools/run_tests.sh -a res://tests/<suite>_test.gd`).
+- In each PR description, say that the full check passed (test count) or what was not run and why.
+- After a change to the Windows-only path (`*.ps1`, export presets), also trigger a manual CI run ("Run workflow" on the branch), since PR runs skip Windows.
+
 ## Commands
 
 Tooling: Godot 4.7.2 (GDScript), gdUnit4 v6.2.2, gdtoolkit 4.5.0. Planned later: `bun test` for the lobby.
