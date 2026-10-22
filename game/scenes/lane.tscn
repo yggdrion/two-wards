@@ -1,40 +1,42 @@
 [gd_scene format=3]
 
 [ext_resource type="Script" path="res://scripts/lane/lane.gd" id="1_lane"]
-[ext_resource type="Resource" path="res://resources/waves/wave_01.tres" id="2_wave"]
+[ext_resource type="Script" path="res://scripts/data/wave_data.gd" id="2_wave_script"]
 [ext_resource type="Script" path="res://scripts/lane/heart_crystal.gd" id="3_core"]
-[ext_resource type="Script" path="res://scripts/lane/tower.gd" id="4_tower"]
-[ext_resource type="Resource" path="res://resources/towers/arrow_tower.tres" id="5_arrow"]
+[ext_resource type="Script" path="res://scripts/lane/hero.gd" id="4_hero"]
+[ext_resource type="Resource" path="res://resources/decks/dev_all_cards.tres" id="5_deck"]
+[ext_resource type="Resource" path="res://resources/waves/wave_01.tres" id="w01"]
+[ext_resource type="Resource" path="res://resources/waves/wave_02.tres" id="w02"]
+[ext_resource type="Resource" path="res://resources/waves/wave_03.tres" id="w03"]
+[ext_resource type="Resource" path="res://resources/waves/wave_04.tres" id="w04"]
+[ext_resource type="Resource" path="res://resources/waves/wave_05.tres" id="w05"]
+[ext_resource type="Resource" path="res://resources/waves/wave_06.tres" id="w06"]
+[ext_resource type="Resource" path="res://resources/waves/wave_07.tres" id="w07"]
+[ext_resource type="Resource" path="res://resources/waves/wave_08.tres" id="w08"]
+[ext_resource type="Resource" path="res://resources/waves/wave_09.tres" id="w09"]
+[ext_resource type="Resource" path="res://resources/waves/wave_10.tres" id="w10"]
 
 [sub_resource type="Curve2D" id="Curve2D_lane"]
 _data = {
-"points": PackedVector2Array(0, 0, 0, 0, -8, 40, 0, 0, 0, 0, 100, 40, 0, 0, 0, 0, 100, 130, 0, 0, 0, 0, 220, 130, 0, 0, 0, 0, 220, 70, 0, 0, 0, 0, 290, 70)
+"points": PackedVector2Array(0, 0, 0, 0, -8, 30, 0, 0, 0, 0, 100, 30, 0, 0, 0, 0, 100, 96, 0, 0, 0, 0, 220, 96, 0, 0, 0, 0, 220, 50, 0, 0, 0, 0, 290, 50)
 }
 point_count = 6
 
 [node name="Lane" type="Node2D"]
 script = ExtResource("1_lane")
-wave = ExtResource("2_wave")
+waves = Array[ExtResource("2_wave_script")]([ExtResource("w01"), ExtResource("w02"), ExtResource("w03"), ExtResource("w04"), ExtResource("w05"), ExtResource("w06"), ExtResource("w07"), ExtResource("w08"), ExtResource("w09"), ExtResource("w10")])
+deck = ExtResource("5_deck")
 
 [node name="Path" type="Path2D" parent="."]
 curve = SubResource("Curve2D_lane")
 
 [node name="Towers" type="Node2D" parent="."]
 
-[node name="ArrowTower" type="Node2D" parent="Towers"]
-position = Vector2(130, 100)
-script = ExtResource("4_tower")
-data = ExtResource("5_arrow")
-
 [node name="Enemies" type="Node2D" parent="."]
 
 [node name="HeartCrystal" type="Node2D" parent="."]
 script = ExtResource("3_core")
 
-[node name="Status" type="Label" parent="."]
-offset_left = 4.0
-offset_top = 2.0
-offset_right = 160.0
-offset_bottom = 14.0
-theme_override_font_sizes/font_size = 8
-text = "Crystal"
+[node name="Hero" type="Node2D" parent="."]
+position = Vector2(60, 60)
+script = ExtResource("4_hero")

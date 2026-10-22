@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="DeckData" format=3]
+
+[ext_resource type="Script" path="res://scripts/data/card_data.gd" id="1_bhydn"]
+[ext_resource type="Resource" path="res://resources/cards/arrow_tower.tres" id="2_72n7v"]
+[ext_resource type="Resource" path="res://resources/cards/frost_totem.tres" id="3_w7vmc"]
+[ext_resource type="Resource" path="res://resources/cards/ballista.tres" id="4_gmvx4"]
+[ext_resource type="Resource" path="res://resources/cards/arcane_bolt.tres" id="5_3vp04"]
+[ext_resource type="Resource" path="res://resources/cards/mend.tres" id="6_46iih"]
+[ext_resource type="Resource" path="res://resources/cards/blink.tres" id="7_2u4u5"]
+[ext_resource type="Resource" path="res://resources/cards/storm_spire.tres" id="8_7ed08"]
+[ext_resource type="Resource" path="res://resources/cards/decoy_effigy.tres" id="9_16s6c"]
+[ext_resource type="Resource" path="res://resources/cards/war_drums.tres" id="10_626ik"]
+[ext_resource type="Resource" path="res://resources/cards/arcane_focus.tres" id="11_586ke"]
+[ext_resource type="Resource" path="res://resources/cards/mirror_image.tres" id="12_4287d"]
+[ext_resource type="Resource" path="res://resources/cards/time_warp.tres" id="13_8b8c0"]
+[ext_resource type="Script" path="res://scripts/data/deck_data.gd" id="14_46v5y"]
+
+[resource]
+script = ExtResource("14_46v5y")
+id = &"dev_all_cards"
+display_name = "All cards (dev)"
+cards = Array[ExtResource("1_bhydn")]([ExtResource("2_72n7v"), ExtResource("3_w7vmc"), ExtResource("4_gmvx4"), ExtResource("5_3vp04"), ExtResource("6_46iih"), ExtResource("7_2u4u5"), ExtResource("8_7ed08"), ExtResource("9_16s6c"), ExtResource("10_626ik"), ExtResource("11_586ke"), ExtResource("12_4287d"), ExtResource("13_8b8c0")])

@@ -82,14 +82,38 @@ def draw_tile(index: int) -> Image.Image:
     return tile
 
 
-def draw_card_art() -> Image.Image:
+# Card art placeholders: towers get a tower silhouette, everything else an orb.
+# The accent color tells cards apart until real art lands.
+CARD_ART = {
+    "arrow_tower": ("tower", YELLOW),
+    "frost_totem": ("tower", "#2ce8f5"),
+    "ballista": ("tower", BROWN),
+    "storm_spire": ("tower", "#0099db"),
+    "arcane_bolt": ("orb", "#b55088"),
+    "mend": ("orb", "#63c74d"),
+    "blink": ("orb", "#2ce8f5"),
+    "decoy_effigy": ("orb", "#feae34"),
+    "war_drums": ("orb", RED),
+    "arcane_focus": ("orb", YELLOW),
+    "mirror_image": ("orb", "#c0cbdc"),
+    "time_warp": ("orb", ORANGE),
+}
+
+
+def draw_card_art(card_id: str) -> Image.Image:
+    shape, accent = CARD_ART.get(card_id, ("tower", YELLOW))
     art = Image.new("RGBA", (64, 48), "#262b44")
     draw = ImageDraw.Draw(art)
     draw.rectangle((0, 34, 63, 47), fill="#3a4466")
-    draw.rectangle((24, 12, 39, 40), fill="#8b9bb4", outline=OUTLINE)
-    draw.rectangle((32, 13, 38, 39), fill="#5a6988")
-    draw.rectangle((21, 8, 42, 13), fill=BROWN, outline=OUTLINE)
-    draw.line((44, 10, 58, 4), fill=YELLOW)
+    if shape == "tower":
+        draw.rectangle((24, 12, 39, 40), fill="#8b9bb4", outline=OUTLINE)
+        draw.rectangle((32, 13, 38, 39), fill="#5a6988")
+        draw.rectangle((21, 8, 42, 13), fill=BROWN, outline=OUTLINE)
+        draw.line((44, 10, 58, 4), fill=accent)
+    else:
+        draw.ellipse((20, 8, 43, 31), fill=accent, outline=OUTLINE)
+        draw.ellipse((25, 12, 31, 18), fill=WHITE)
+        draw.line((31, 32, 31, 40), fill=OUTLINE)
     return art
 
 
@@ -110,7 +134,7 @@ def render(entry: dict, rel: str) -> Image.Image:
     if kind == "tileset":
         return draw_tile(int(Path(rel).stem.rsplit("_", 1)[1]))
     if kind == "card_art":
-        return draw_card_art()
+        return draw_card_art(entry["id"].removeprefix("card_art_"))
     if kind == "icon":
         return draw_icon()
     raise ValueError(f"no placeholder for type {kind!r}")

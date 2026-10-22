@@ -54,3 +54,62 @@ func test_skips_dead_enemies() -> void:
 	var alive := _make_enemy_at(10.0)
 	var enemies: Array[Enemy] = [dead, alive]
 	assert_object(tower.find_target(enemies)).is_same(alive)
+
+
+func test_area_hits_every_enemy_in_range() -> void:
+	var tower := _make_tower(30.0, 5, 1.0)
+	tower.data.area = true
+	var enemies: Array[Enemy] = [_make_enemy_at(10.0), _make_enemy_at(25.0), _make_enemy_at(50.0)]
+	tower.step(0.1, enemies)
+	assert_array(enemies.map(func(e: Enemy) -> int: return e.hp)).is_equal([95, 95, 100])
+
+
+func test_pierce_hits_the_line() -> void:
+	var tower := _make_tower(100.0, 5, 1.0)
+	tower.data.pierce = true
+	var off_line := _make_enemy_at(20.0)
+	off_line.position = Vector2(20, 30)
+	var enemies: Array[Enemy] = [_make_enemy_at(10.0), _make_enemy_at(60.0), off_line]
+	tower.step(0.1, enemies)
+	assert_array(enemies.map(func(e: Enemy) -> int: return e.hp)).is_equal([95, 95, 100])
+
+
+func test_chain_jumps_to_nearby_enemies() -> void:
+	var tower := _make_tower(100.0, 5, 1.0)
+	tower.data.chain_count = 3
+	tower.data.chain_range = 20.0
+	var enemies: Array[Enemy] = [
+		_make_enemy_at(90.0), _make_enemy_at(75.0), _make_enemy_at(60.0), _make_enemy_at(45.0)
+	]
+	tower.step(0.1, enemies)
+	assert_array(enemies.map(func(e: Enemy) -> int: return e.hp)).is_equal([95, 95, 95, 100])
+
+
+func test_slow_without_damage() -> void:
+	var tower := _make_tower(30.0, 0, 1.0)
+	tower.data.slow_factor = 0.5
+	tower.data.slow_duration = 1.0
+	var enemies: Array[Enemy] = [_make_enemy_at(10.0)]
+	tower.step(0.1, enemies)
+	assert_int(enemies[0].hp).is_equal(100)
+	assert_bool(enemies[0].is_slowed()).is_true()
+
+
+func test_buff_speeds_up_fire_rate() -> void:
+	var tower := _make_tower(100.0, 5, 1.0)
+	tower.apply_buff(2.0, 10.0)
+	var enemies: Array[Enemy] = [_make_enemy_at(10.0)]
+	for i in 10:
+		tower.step(0.25, enemies)
+	# Shots at t=0.25, 0.75, 1.25, 1.75, 2.25.
+	assert_int(enemies[0].hp).is_equal(75)
+
+
+func test_timed_tower_expires() -> void:
+	var tower: Tower = auto_free(Tower.new())
+	tower.setup(TowerData.new(), 1.0)
+	var none: Array[Enemy] = []
+	tower.step(0.5, none)
+	assert_bool(tower.is_expired()).is_false()
+	tower.step(0.6, none)
+	assert_bool(tower.is_expired()).is_true()

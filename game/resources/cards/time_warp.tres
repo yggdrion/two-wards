@@ -1,0 +1,25 @@
+[gd_resource type="Resource" script_class="CardData" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/cards/card_art_time_warp.png" id="1_g6hgt"]
+[ext_resource type="Script" path="res://scripts/data/effects/card_effect.gd" id="2_g643f"]
+[ext_resource type="Script" path="res://scripts/cards/time_warp.gd" id="3_nqkr8"]
+[ext_resource type="Script" path="res://scripts/data/effects/scripted_effect.gd" id="4_2s3in"]
+[ext_resource type="Script" path="res://scripts/data/card_data.gd" id="5_imgu6"]
+
+[sub_resource type="Resource" id="Resource_8qpcv"]
+script = ExtResource("4_2s3in")
+handler = ExtResource("3_nqkr8")
+params = {
+"window": 10.0
+}
+
+[resource]
+script = ExtResource("5_imgu6")
+id = &"time_warp"
+display_name = "Time Warp"
+rarity = 2
+cost = 7
+target = 0
+text = "Restore crystal HP lost in the last 10 s."
+art = ExtResource("1_g6hgt")
+effects = Array[ExtResource("2_g643f")]([SubResource("Resource_8qpcv")])

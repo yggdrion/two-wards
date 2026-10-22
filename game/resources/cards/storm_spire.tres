@@ -1,0 +1,22 @@
+[gd_resource type="Resource" script_class="CardData" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/cards/card_art_storm_spire.png" id="1_uyvqg"]
+[ext_resource type="Script" path="res://scripts/data/effects/card_effect.gd" id="2_u3ncj"]
+[ext_resource type="Script" path="res://scripts/data/effects/place_tower_effect.gd" id="3_vai51"]
+[ext_resource type="Resource" path="res://resources/towers/storm_spire.tres" id="4_o45wm"]
+[ext_resource type="Script" path="res://scripts/data/card_data.gd" id="5_m4y7w"]
+
+[sub_resource type="Resource" id="Resource_r7psv"]
+script = ExtResource("3_vai51")
+tower = ExtResource("4_o45wm")
+
+[resource]
+script = ExtResource("5_m4y7w")
+id = &"storm_spire"
+display_name = "Storm Spire"
+kind = 0
+rarity = 1
+cost = 5
+text = "Tower. Lightning chains to 3 goblins."
+art = ExtResource("1_uyvqg")
+effects = Array[ExtResource("2_u3ncj")]([SubResource("Resource_r7psv")])

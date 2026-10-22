@@ -1,0 +1,13 @@
+[gd_resource type="Resource" script_class="TowerData" format=3]
+
+[ext_resource type="Script" path="res://scripts/data/tower_data.gd" id="1_tower"]
+
+[resource]
+script = ExtResource("1_tower")
+id = &"storm_spire"
+display_name = "Storm Spire"
+attack_range = 56.0
+damage = 12
+fire_interval = 1.2
+chain_count = 3
+chain_range = 32.0

@@ -1,0 +1,21 @@
+[gd_resource type="Resource" script_class="CardData" format=3]
+
+[ext_resource type="Texture2D" path="res://assets/cards/card_art_arrow_tower.png" id="1_2ax1o"]
+[ext_resource type="Script" path="res://scripts/data/effects/card_effect.gd" id="2_d4s11"]
+[ext_resource type="Script" path="res://scripts/data/effects/place_tower_effect.gd" id="3_05ncw"]
+[ext_resource type="Resource" path="res://resources/towers/arrow_tower.tres" id="4_ys4ff"]
+[ext_resource type="Script" path="res://scripts/data/card_data.gd" id="5_o8ae8"]
+
+[sub_resource type="Resource" id="Resource_r6gmk"]
+script = ExtResource("3_05ncw")
+tower = ExtResource("4_ys4ff")
+
+[resource]
+script = ExtResource("5_o8ae8")
+id = &"arrow_tower"
+display_name = "Arrow Tower"
+kind = 0
+cost = 3
+text = "Tower. Shoots the leading goblin."
+art = ExtResource("1_2ax1o")
+effects = Array[ExtResource("2_d4s11")]([SubResource("Resource_r6gmk")])

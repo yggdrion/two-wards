@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="WaveData" format=3]
+
+[ext_resource type="Script" path="res://scripts/data/wave_data.gd" id="1_wave"]
+[ext_resource type="Resource" path="res://resources/units/goblin_brute.tres" id="2_unit"]
+
+[resource]
+script = ExtResource("1_wave")
+id = &"wave_03"
+enemy = ExtResource("2_unit")
+count = 2
+spawn_interval = 3.0
+start_delay = 1.0
