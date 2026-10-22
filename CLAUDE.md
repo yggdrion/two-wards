@@ -14,10 +14,10 @@ This applies to every session, human or Claude: GitHub CI is off (see below), so
 - While iterating, run `./tools/check.sh --quick` (lint and asset validator, no Godot) after each change to GDScript, assets or the manifest, and the gdUnit4 suite you touched (`./tools/run_tests.sh -a res://tests/<suite>_test.gd`).
 - In each PR description, say that the full check passed (test count) or what was not run and why.
 - After a change to the Windows-only path (`*.ps1`, export presets), ask Rapha to run `.\tools\check.ps1` on Windows before merging, since the container only runs the Linux check.
-- Playtest builds are local too, never a manual CI run. After a milestone or major step, Claude builds the Windows exe in its own environment and hands it to Rapha:
-  1. Run the full check, then `./tools/export.sh windows` on the commit to test (the Linux export aborts at the very end but still writes the binary; check that `build/windows/two-wards.exe` exists).
-  2. Copy it to the project files as `/mnt/project-files/builds/two-wards-<milestone>-<short sha>.exe` and attach it to the thread message.
-  3. Add a short "what to try" list. Rapha can also build it on their PC with `.\tools\check.ps1 -Export` (into `build\windows\`).
+- Playtest builds are made on Rapha's Windows PC (win11rtx2), never by a CI run or in the cloud container. After a milestone or major step:
+  1. Run the full check here, push, then start a Remote Control session on Rapha's PC in `C:\Users\rapha\workspace` that checks out the branch in `two-wards` and runs `.\tools\check.ps1 -Export` (no commits or pushes from there).
+  2. Give Rapha the local path, `C:\Users\rapha\workspace\two-wards\build\windows\two-wards.exe`, plus a short "what to try" list. Don't attach executables or give container paths.
+  3. Godot sometimes crashes on exit right after writing the export (Windows 0xC0000005, Linux "Aborted"); the exe is fine. If that fails the check, run `.\tools\export.ps1 windows` once more.
 
 ## Commands
 
