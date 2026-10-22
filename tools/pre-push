@@ -1,0 +1,10 @@
+#!/bin/sh
+# Git pre-push hook: runs the local CI checks before every push.
+# Install with ./tools/check.sh --install-hook or .\tools\check.ps1 -InstallHook.
+# Skip once with: git push --no-verify
+cd "$(git rev-parse --show-toplevel)" || exit 1
+# Git for Windows runs hooks in its bundled sh; use the PowerShell twin there.
+if [ "$OS" = "Windows_NT" ]; then
+	exec powershell.exe -NoProfile -ExecutionPolicy Bypass -File tools/check.ps1
+fi
+exec ./tools/check.sh

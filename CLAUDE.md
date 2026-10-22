@@ -6,6 +6,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 M1 and M2 are done; M3 (meta system) adds the save file, boosters, collection and deck builder. The main scene is `scenes/main.tscn` (`App`: meta screens, then runs `scenes/game.tscn` with the active deck). Meta screens build their controls in code on `resources/ui/theme.tres`, so the art pass only swaps styleboxes. `docs/PLAN.md` is the source of truth for scope, architecture, card/meta numbers, style guide, testing and milestones; read it before starting work. Its scope table is binding: anything listed as "out of scope" goes to a backlog, not into the PoC.
 
+## Always run the local check
+
+This applies to every session, human or Claude: CI is lean (see below), so the local check is the real gate.
+
+- Before every push, run the full check, `./tools/check.sh` (Windows: `.\tools\check.ps1`), and push only when it ends with "All checks passed". If it fails, fix the cause and run it again; never push past a failure or use `git push --no-verify` to skip it.
+- While iterating, run `./tools/check.sh --quick` (lint and asset validator, no Godot) after each change to GDScript, assets or the manifest, and the gdUnit4 suite you touched (`./tools/run_tests.sh -a res://tests/<suite>_test.gd`).
+- In each PR description, say that the full check passed (test count) or what was not run and why.
+- After a change to the Windows-only path (`*.ps1`, export presets), also trigger a manual CI run ("Run workflow" on the branch), since PR runs skip Windows.
+
 ## Commands
 
 Tooling: Godot 4.7.2 (GDScript), gdUnit4 v6.2.2, gdtoolkit 4.5.0. Planned later: `bun test` for the lobby.
@@ -49,7 +58,15 @@ Every script in `tools/` has a PowerShell twin (`.ps1`) for Windows; keep both i
 
 After adding or changing a PNG or a manifest entry, run the validator and `build_assets`, then commit the PNG, its `.import` file and the regenerated `.tres`. Never edit `game/resources/generated/` by hand.
 
-CI (`.github/workflows/ci.yml`) runs on every push: lint, the tests (Linux and Windows), and a Linux export (`export.sh`) plus a Windows export (`export.ps1` on a Windows runner). Builds are uploaded as artifacts only from `main` or manual runs. Export presets live in `game/export_presets.cfg` (`Linux`, `Windows Desktop`). Commit the `*.gd.uid` files Godot generates next to scripts.
+Run the local check before pushing; it mirrors CI and stops at the first failure:
+
+    ./tools/check.sh                 # lint, format, asset validator, gdUnit4 tests, generated-asset drift
+    ./tools/check.sh --quick         # lint + asset validator only, no Godot
+    ./tools/check.sh --export        # also export Linux and Windows builds to build/
+    ./tools/check.sh --install-hook  # git pre-push hook that runs the check (skip once: git push --no-verify)
+    .\tools\check.ps1 [-Quick] [-Export] [-InstallHook]   # Windows; -Export builds build/windows/ for playtests
+
+CI (`.github/workflows/ci.yml`) is lean to save Actions minutes (the repo is private): it runs on pull requests and pushes to `main`, skips docs-only changes (`docs/**`, `*.md`) and cancels a PR's older run on a new push. PR runs do lint and the Linux tests; the Windows job (`check.ps1`) and the Linux export (`export.sh`) plus Windows export (`export.ps1` on a Windows runner) run only on `main` and manual runs, which upload the builds as artifacts. For a playable Windows build of a branch, use "Run workflow" on the CI workflow or `.\tools\check.ps1 -Export` locally. The header of `ci.yml` says how to switch back to full CI on every push. Export presets live in `game/export_presets.cfg` (`Linux`, `Windows Desktop`). Commit the `*.gd.uid` files Godot generates next to scripts.
 
 Some CI jobs stay off until their entry point exists:
 
