@@ -62,6 +62,7 @@ try {
         if ($LASTEXITCODE) { return }
         if ((Get-Snapshot) -ne $Before) {
             git status --porcelain game/
+            git --no-pager diff game/ | Select-Object -First 80
             throw 'build_assets changed files under game/: commit the regenerated .tres and .import files.'
         }
     }

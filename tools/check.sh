@@ -59,6 +59,7 @@ BEFORE="$(snapshot)"
 ./tools/build_assets.sh >/dev/null
 if [ "$(snapshot)" != "$BEFORE" ]; then
 	git status --porcelain game/
+	git --no-pager diff game/ | head -n 80
 	echo "build_assets changed files under game/: commit the regenerated .tres and .import files." >&2
 	exit 1
 fi
