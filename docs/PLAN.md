@@ -8,6 +8,8 @@ The PoC proves that one person with AI tooling can build, test, network and ship
 
 It validates six pillars end to end: Godot project structure, AI-assisted coding, automated testing, AI asset generation, online co-op networking, and build/deploy. The output is a playable full loop plus a retro that decides how the real game gets built.
 
+Small does not mean ugly: the PoC has to end as a pretty, polished pixel-art game. The [Art direction](#art-direction) section sets the bar and the art track that gets there.
+
 ## Game concept
 
 A real-time co-op tower defense roguelite in a **dark-fantasy** setting, where towers, spells and hero abilities come from a shared card deck. Title: **Two Wards** — two wizards defend a Heart Crystal against waves of monsters.
@@ -25,14 +27,14 @@ The PoC is one map, two players, twelve cards and one full meta loop. Anything n
 | --- | --- | --- |
 | Map | 1 map, 1 lane, spawn → core | Multiple lanes, branching run map, map variety |
 | Players | 2 players online co-op, host-authoritative | 3–4 players, host migration, dedicated servers |
-| Units | 1 hero (idle + walk, 4 directions), 2 goblin types (fast runner, armored brute) | Hero classes, bosses, elites |
-| Terrain | 1 tileset (ground, path, walls) with autotiling | Biomes, decoration sets |
+| Units | 1 hero (idle, walk, cast, hit; 4 directions; player 2 as a palette swap), 2 goblin types (fast runner, armored brute) with walk, attack, hit, death | Hero classes, bosses, elites |
+| Terrain | 1 tileset (ground, path, walls) with autotiling, about 12 props for one biome | More biomes |
 | Cards | 12 cards, 3 rarities, energy, hand of 3, shared deck, card passing | Combo cards, card upgrades, keywords |
 | Run | 10 waves, card reward after each wave | Events, shops, elites, branching paths |
 | Meta | Gold, boosters, collection, deck builder, local save | Idle camp, server-side profiles, crafting |
 | Networking | Lobby server with room codes, WebRTC P2P, STUN/TURN | Matchmaking, reconnect, Steam transport |
 | Platforms | Windows + Linux desktop | Web, macOS, controller support |
-| Polish | Pack-opening animation, minimal SFX | Music, juice, settings menu, localization |
+| Polish | Full pixel art for every screen, 2D lighting, shaders, VFX, juice (shake, hit flash, hit-stop, damage numbers), pack-opening animation, minimal SFX | Music, settings menu, localization |
 
 ## Success criteria
 
@@ -44,6 +46,7 @@ The PoC passes when every pillar meets its check below and two people on differe
 | Coding | Claude Code implements a new card or enemy from a short description, and existing tests stay green |
 | Testing | Unit tests cover cards, energy, waves, boosters, deck validation, saves; a headless host + client test verifies sync; all run in CI on every push |
 | Asset generation | Assets made with the style guide + PixelLab + Aseprite pass the validation script and look consistent side by side in-game |
+| Art | No gray box or placeholder is left on any screen, and a run looks like the approved target frame from A1 |
 | Networking | Two players on different home networks join by room code and play 10 waves without desync |
 | Build / deploy | CI produces Windows + Linux builds; lobby server and coturn run as containers in the cluster with metrics in Grafana |
 | Full loop | Menu → deck builder → lobby → run → gold → booster → deck builder works in one session, and the save survives a restart |
@@ -148,6 +151,82 @@ Twelve cards across three rarities cover every card type once or more; the meta 
 - Save on every meta change; load with a migration step keyed on the version.
 - Server-side profiles are out of scope; the lobby server could host them later.
 
+## Art direction
+
+The PoC ends as a pretty, polished pixel-art game, not a gray box with sprites (decided 2026-10-22). Visual quality counts as much as the pipeline: a screenshot of a run should look like a finished indie game. The art track below runs beside the code milestones, so no milestone waits on art and art never waits on a milestone it doesn't need.
+
+### Look
+
+| Aspect | Decision |
+| --- | --- |
+| Mood | Evening in a natural meadow, lit by magic. Ground looks real (grass, dirt path, stone walls, trees, rocks) but is toned down to evening, never bright daylight. Everything the players own (crystal, towers, spells, the hero's staff) glows and lights its surroundings. Approved by Rapha 2026-10-22 from the mockups in the project files (`art-direction/evening_a_lit.png`); the final art must be more detailed and more "pixel" than those code-drawn mockups. Reference: Stardew Valley and Sea of Stars for the ground, Hyper Light Drifter and Moonlighter at night for the light |
+| Palette use | Endesga 32 only. Grass uses `193c3e` `265c42` `3e8948` (base `265c42`, lit `63c74d` only inside light pools), the dirt path `3e2731` `733e39` `b86f50` `e4a672`, walls and rocks the blue-gray stone ramp `262b44` `3a4466` `5a6988` `8b9bb4`. Players and their magic own teal and blue (`0099db` `2ce8f5`), plus warm gold (`feae34` `fee761`) for rewards. Goblins own green with red and orange accents. Red (`e43b44`) is reserved for damage and danger |
+| Readability | Units are the highest-contrast thing on screen; terrain never uses `181425` outlines or the brightest ramp colors. Every unit gets the engine shadow ellipse. Goblins sit on green grass, so their skin uses the light green (`3e8948` `63c74d`) against the darker grass base, keeps the closed `181425` outline and gets red or orange eyes and gear; check this in the A1 target frame and shift the goblin hue toward olive if they blend in |
+| Lighting | Godot 2D lights: a `CanvasModulate` dims the lane to evening (and edges a little darker), and `PointLight2D`s on the crystal, hero staff, towers and spells light it back up. No normal maps (they would double the art). Lights are flat, hard-edged textures so the light itself looks pixelated |
+| Palette on screen | Lights tint sprites off-palette. Try a full-screen shader that snaps the final image back to Endesga 32 in A2; keep it if it looks better, drop it if it bands |
+| Motion | Everything alive moves: units idle, the crystal pulses, grass and banners sway (vertex shader), ambient motes drift. Nothing on screen is perfectly still for more than a second |
+| VFX ambition | Pixel-crisp effects only: no soft particles, no blur, no additive glow textures with soft alpha. Hits get a 1-frame white flash, impacts a 4–6 frame sprite burst, deaths a short dissolve. Screen shake is small and snapped to whole pixels |
+
+Juice is presentation only. VFX, screen shake, hit-stop and damage numbers react to signals from the simulation and never change sim timing or state, so tests, scenario hashes and netcode stay deterministic. Hit-stop freezes animation playback, not `Lane.tick`.
+
+### Asset list
+
+Sizes follow the style guide (64×64 unit frames, 32×32 tiles, 128×96 card art, 32×32 icons). New types (towers, props, VFX, UI) get naming and size rules in the style guide and the validator during A1.
+
+| Group | Assets | Animations / variants | Made by |
+| --- | --- | --- | --- |
+| Hero | 1 wizard (blue/teal) | idle, walk, cast (cards), hit; `down` `up` `side` | PixelLab base + rotate + animate, Aseprite cleanup. `side` profile hand-drawn |
+| Partner tint | Player 2 wizard | Same strips, recolored | Code: palette-swap shader (teal robe → second ramp), no extra art |
+| Goblin runner | Small, fast | walk, attack, hit, death; 3 dirs | PixelLab + Aseprite |
+| Goblin brute | Armored, slow | walk, attack, hit, death; 3 dirs | PixelLab + Aseprite |
+| Towers | Arrow Tower, Frost Totem, Ballista, Storm Spire | idle (gem glow), fire; one direction, they don't rotate; build-up animation by shader | PixelLab base, Aseprite for frames |
+| Card props | Decoy Effigy, Mirror Image copy | Effigy: idle. Mirror Image: any tower with a ghost shader | PixelLab (effigy), code (ghost) |
+| Heart Crystal | 1, about 64×96 | idle pulse, hit crack, low-HP state | PixelLab base, Aseprite animation, light by code |
+| Terrain | Ground, path, wall/cliff edge tileset with transitions; 1 ground variant set | Autotile set | PixelLab tileset tool, Aseprite seam fixes |
+| Props | About 12: rocks, dead trees, ruins, torches, banners, bones, grass tufts, crystal shards, spawn portal | Torches and portal animated | PixelLab, Aseprite |
+| VFX | Arrow, bolt, frost burst, lightning chain, heal, blink, lure aura, drum pulse, focus sparkle, time-warp rewind, hit spark, death puff, gold pop | 4–8 frame flipbooks | Mostly code (GPU particles with 1–2 px pixel textures, shaders, `Line2D` lightning); flipbooks hand-drawn or PixelLab where code looks cheap |
+| Card frames | Common, rare, epic; full 144×208 and compact 96×128 | Static, epic gets a shimmer shader | Claude draws in code (Python, on-palette), Aseprite polish |
+| Card art | 12 × 128×96 | Static | PixelLab with the card-art anchor as style reference, Aseprite cleanup |
+| Icons | Energy, gold, crystal HP, deck, discard, wave, card types (tower, spell, hero, buff), rarity gems | Static | Hand-drawn in Aseprite or by Claude in code; 32×32 is small enough that AI saves little |
+| HUD and UI | Panels, buttons, energy bar, wave banner, tooltip, 9-slice frames, cursor | Hover/press states | Claude in code (9-slice PNGs + Godot `Theme`), Aseprite polish |
+| Meta screens | Booster pack (closed, tearing), collection grid, deck builder, gold counter | Pack-opening flipbook + tweens | PixelLab pack art, code for the rest |
+| Menus | Title logo, main menu backdrop (built from game tiles and props), lobby screen, loading, run-end screen | Parallax and ambient particles | Logo hand-lettered in Aseprite, backdrop composed in Godot |
+| Font | m5x7 for text; a chunkier display font for titles and damage numbers | — | Free-license pixel font, chosen in A1 |
+
+### Who makes what
+
+- **PixelLab** (Claude drives the API): first drafts of everything organic: units, rotations, animations, towers, crystal, tiles, props, card art, the booster pack.
+- **Aseprite** (Rapha, with Claude preparing palette-snapped files): every PixelLab output gets a pass for outline, light, placement and stray colors; side profiles and timing of key animations are hand work. Sources live in `assets-src/`.
+- **Claude in code**: geometric and repeated art (card frames, UI 9-slices, icons where simple), all shaders (hit flash, dissolve, palette swap, ghost, sway, shimmer, optional palette snap), particles, 2D lighting, screen shake, hit-stop, damage numbers, tweens and transitions.
+
+### PixelLab budget
+
+Counted in generation calls, with about 2.5 attempts per kept result (the hero needed 7 calls for 2 kept frames).
+
+| Group | Kept results | Calls |
+| --- | --- | --- |
+| Hero (finish walk, cast, hit) | ~10 | ~25 |
+| Two goblins (base, 2 rotations, 4 anims × 3 dirs each) | ~30 | ~75 |
+| Towers, effigy, crystal | ~14 | ~35 |
+| Tiles and props | ~18 | ~45 |
+| Card art (12) and booster pack | ~14 | ~35 |
+| VFX flipbooks where code isn't enough | ~8 | ~20 |
+| Buffer for redos after the look review | | ~65 |
+| **Total** | | **~300** |
+
+The trial has 30 of 40 left (checked 2026-10-22). Rapha will upgrade when A1 starts; the budget is not a hard limit, so spend on quality (more attempts per asset) rather than settling. Animation calls on PixelLab's newer models cost more than one generation each; pick the tier from this table and the current pricing page. One or two months of the plan should cover the PoC; cancel afterwards (see Risks).
+
+### Art track
+
+| Step | Runs beside | Deliverables | Exit criteria |
+| --- | --- | --- | --- |
+| A1 Look target | M3 | Paid PixelLab plan; style guide v2 (new asset types, display font, light and VFX rules); validator and `build_assets` learn towers, props, VFX, UI; anchors: hero (side profile, walk), goblin runner, base tiles, one tower, crystal, one card art; one **target frame**: a 640×360 mockup of a run with HUD, composed from the anchors | Rapha approves the target frame. Everything after copies its look |
+| A2 Run screen | M4, M5 | All units, towers, crystal, tileset, props; 2D lighting and dusk modulate; shaders; particles and juice; ambient motion | A run looks like the target frame in motion; tests still green |
+| A3 Cards and UI | M5 | Card frames, 12 card arts, icons, HUD skin, the M3 meta screens skinned, pack-opening animation | The card and meta screens match the run screen |
+| A4 Menus and polish | M7 | Title logo, main menu, lobby screen, run-end screen, transitions; a polish pass over everything in the side-by-side review | Full loop looks finished end to end |
+
+Code milestones prepare for it: M3 builds its screens on a Godot `Theme` and 9-slice panels so A3 only swaps textures, and gray-box `_draw()` code stays only until A2 replaces it.
+
 ## Asset pipeline and style guide
 
 Consistency comes from a written style guide, four hand-polished anchor assets, and a validation script that blocks off-style files. AI generates; Aseprite and the script enforce.
@@ -207,7 +286,7 @@ A card in-game = rarity frame (hand-made, 3 variants) + 128×96 art + cost, name
 
 ### Anchor assets first
 
-Hero, one enemy, the base tileset and one card art are polished by hand before mass generation. All later assets reference them.
+Hero, goblin runner, base tileset, one tower, the Heart Crystal and one card art are polished by hand before mass generation, then combined into the A1 target frame. All later assets reference them.
 
 ## Testing and CI
 
@@ -235,7 +314,7 @@ Desync detection: host and client hash the game state at the end of each wave; t
 
 ## Milestones
 
-Eight milestones; M4–M5 (networking) and M6 (assets) can run in parallel once M3 is done. Each ends with green CI and a short playable check.
+Eight milestones; M4–M5 (networking) and M6 (assets) can run in parallel once M3 is done. The art track A1–A4 (see [Art direction](#art-direction)) runs beside them; M6 is where it must be finished. Each ends with green CI and a short playable check.
 
 | # | Milestone | Deliverables | Exit criteria |
 | --- | --- | --- | --- |
@@ -244,7 +323,7 @@ Eight milestones; M4–M5 (networking) and M6 (assets) can run in parallel once 
 | M3 | Meta system | Save file, collection, gold, boosters + pack opening, deck builder, pity | Booster distribution test passes; save survives restart |
 | M4 | Local networking | Checkpoint first: decide pure sim core vs Node-based sim. Then ENet host/join, client-owned heroes, card events via RPC, deck merge, card passing | Headless network test (replaying scenarios) passes with zero hash mismatches |
 | M5 | Lobby + WebRTC | Lobby/signaling server, room codes, WebRTC transport, coturn, deployed to cluster | Two players on different networks complete 10 waves |
-| M6 | Asset pipeline | Style guide, palette, anchors, validation hook, import scripts, all gray boxes replaced | All assets pass validation; side-by-side review looks consistent |
+| M6 | Art and juice | A1–A3 of the art track finished: all units, towers, tiles, props, cards and UI in final art; lighting, shaders, VFX and juice | All assets pass validation; side-by-side review looks consistent; a run matches the A1 target frame |
 | M7 | Full loop | Main menu, lobby screen with deck preview, run → rewards → gold → booster flow | Full loop completed in co-op by two people in one session |
 | M8 | Retro | Notes per pillar: what worked, what hurt, time spent, decisions for the real game | Go/no-go and approach for the full game decided |
 
@@ -256,9 +335,11 @@ The biggest risk is WebRTC on desktop; the fallback is ENet with port forwarding
 | --- | --- | --- |
 | WebRTC desktop setup (needs `webrtc-native` GDExtension) is fiddly | M5 slips | Transport abstraction from M4; ENet or WebSocket relay as fallback |
 | AI art drifts in style | Inconsistent look | Anchors, palette lock, validation hook, Aseprite cleanup |
+| AI art can't reach the polish bar | PoC looks cheap | A1 target frame is the gate before mass generation; more hand work in Aseprite on the assets that fill the screen (tiles, hero, crystal); code-made VFX and light carry a lot of the look |
+| Art track eats the schedule | Networking slips | Art runs beside the code milestones; scope is the asset list above, and new art ideas go to the backlog |
 | Real-time sync bugs | Desyncs in play | Host-authoritative model, event-based card plays, per-wave state hashes |
 | Scope creep into "the real game" | PoC never ends | Scope table is binding; new ideas go to a backlog |
-| Tool subscription costs | Small ongoing cost | One PixelLab plan for the PoC duration, cancel if not used |
+| Tool subscription costs | Small ongoing cost | One PixelLab plan for about 300 generations (see PixelLab budget), cancel after A3 |
 
 ### Decisions
 
@@ -277,3 +358,6 @@ The biggest risk is WebRTC on desktop; the fallback is ENet with port forwarding
 - [x] Hero sync: each client owns its hero position, host checks plausibility
 - [x] Sim structure: M1 stays Node-based; pure sim core vs Nodes decided at the start of M4
 - [x] WebRTC: no early spike; proven in M5 with the ENet/WebSocket fallback
+- [x] Art goal (2026-10-22): full pixel-art route, the PoC must end up pretty and polished; art track A1–A4 beside the code milestones
+- [x] Look (2026-10-22): natural evening meadow lit by magic, more detailed than the mockups
+- [ ] PixelLab paid tier: Rapha upgrades when A1 starts
