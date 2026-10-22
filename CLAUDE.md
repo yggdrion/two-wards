@@ -84,8 +84,8 @@ Two Wards: a real-time 2-player co-op tower defense roguelite with a card deck. 
 - **Lobby never sees gameplay.** It only does room codes and WebRTC signaling; rooms expire once the game starts. coturn provides STUN/TURN.
 - **Desync detection.** Host and client hash game state at the end of each wave; the headless network test fails on mismatch.
 - **Saves.** Local JSON per profile with a version field; load runs a migration keyed on that version.
-- **Cards are composed at runtime** (rarity frame + 64×48 art + text in a pixel font). Never bake numbers into art.
+- **Cards are composed at runtime** (rarity frame + 128×96 art + text in a pixel font). Never bake numbers into art.
 
 ## Asset rules
 
-Every PNG under `game/assets/` must pass `tools/validate_assets.py` (pre-commit + CI): Endesga 32 palette only, alpha 0 or 255, per-frame sizes units 32×32 / tiles 16×16 / card art 64×48 / icons 16×16, units as horizontal strips of frames, directions `down`/`up`/`side` (left = `flip_h`), and naming `units/<name>/unit_<name>_<anim>_<dir>.png`, `tiles/<set>/tile_<set>_<nn>.png`, `cards/card_art_<id>.png`, `icons/icon_<name>.png`. Every PNG needs an entry in `game/assets/manifest.json`, which also holds frame counts, fps and loop. Full style guide in `docs/PLAN.md`.
+Every PNG under `game/assets/` must pass `tools/validate_assets.py` (pre-commit + CI): Endesga 32 palette only, alpha 0 or 255, base resolution 640×360, per-frame sizes units 64×64 / tiles 32×32 / card art 128×96 / icons 32×32, units as horizontal strips of frames, directions `down`/`up`/`side` (left = `flip_h`), and naming `units/<name>/unit_<name>_<anim>_<dir>.png`, `tiles/<set>/tile_<set>_<nn>.png`, `cards/card_art_<id>.png`, `icons/icon_<name>.png`. Every PNG needs an entry in `game/assets/manifest.json`, which also holds frame counts, fps and loop. Full style guide in `docs/STYLE_GUIDE.md` (summary table in `docs/PLAN.md`).

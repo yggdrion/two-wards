@@ -36,8 +36,8 @@ class ValidateAssetsTest(unittest.TestCase):
         self.root = Path(self._tmp.name) / "assets"
         self.root.mkdir()
         self.write_manifest(MANIFEST)
-        self.save("units/goblin_runner/unit_goblin_runner_walk_down.png", (64, 32))
-        self.save("tiles/base/tile_base_00.png", (16, 16), fill=OUTLINE)
+        self.save("units/goblin_runner/unit_goblin_runner_walk_down.png", (128, 64))
+        self.save("tiles/base/tile_base_00.png", (32, 32), fill=OUTLINE)
 
     def tearDown(self) -> None:
         self._tmp.cleanup()
@@ -85,27 +85,27 @@ class ValidateAssetsTest(unittest.TestCase):
         self.assertIn("1 semi-transparent pixels", error)
 
     def test_strip_width_must_match_frame_count(self) -> None:
-        self.save("units/goblin_runner/unit_goblin_runner_walk_down.png", (96, 32))
+        self.save("units/goblin_runner/unit_goblin_runner_walk_down.png", (192, 64))
         self.assertEqual(
             self.errors(),
-            ["units/goblin_runner/unit_goblin_runner_walk_down.png: size 96x32, expected 64x32"],
+            ["units/goblin_runner/unit_goblin_runner_walk_down.png: size 192x64, expected 128x64"],
         )
 
     def test_missing_alpha_channel_is_reported(self) -> None:
-        self.save("tiles/base/tile_base_00.png", (16, 16), fill=OUTLINE, mode="RGB")
+        self.save("tiles/base/tile_base_00.png", (32, 32), fill=OUTLINE, mode="RGB")
         self.assertEqual(self.errors(), ["tiles/base/tile_base_00.png: has no alpha channel"])
 
     def test_bad_names_and_folders(self) -> None:
-        self.save("units/hero/unit_hero_walk_left.png", (32, 32))
-        self.save("tiles/tile_base_01.png", (16, 16))
-        self.save("misc/sprite.png", (16, 16))
+        self.save("units/hero/unit_hero_walk_left.png", (64, 64))
+        self.save("tiles/tile_base_01.png", (32, 32))
+        self.save("misc/sprite.png", (32, 32))
         errors = self.errors()
         self.assertIn("unit_hero_walk_left.png: name does not match", errors[2])
         self.assertIn("misc/sprite.png: unknown asset prefix", errors[0])
         self.assertIn("tiles/tile_base_01.png: must live in tiles/base/", errors[1])
 
     def test_unlisted_file_is_reported(self) -> None:
-        self.save("icons/icon_gold.png", (16, 16))
+        self.save("icons/icon_gold.png", (32, 32))
         self.assertEqual(self.errors(), ["icons/icon_gold.png: not listed in manifest.json"])
 
     def test_bad_manifest_status(self) -> None:

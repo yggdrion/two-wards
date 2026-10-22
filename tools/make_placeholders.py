@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 """Draws placeholder PNGs for every manifest entry with status "placeholder".
 
-The placeholders follow the style guide (sizes, Endesga 32, hard alpha, 1px dark
-outline on units) so the validator and the Godot import script can be exercised
-long before real art exists. Entries marked "done" are never touched.
+The placeholders follow the style guide (Endesga 32, hard alpha, dark outline on
+units). They are drawn at the old 320x180 sizes and scaled up 2x to the sizes the
+validator expects so the validator and the Godot import script can be exercised
+long before real art exists. Entries marked "done" and files listed in an
+entry's "final" array are never touched.
 
 Usage (Linux, macOS, Windows):
     python tools/make_placeholders.py          # py tools\\make_placeholders.py on Windows
@@ -20,7 +22,10 @@ from pathlib import Path
 from PIL import Image, ImageDraw
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from validate_assets import DEFAULT_ROOT, UNIT_FRAME, expected_files  # noqa: E402
+from validate_assets import DEFAULT_ROOT, expected_files  # noqa: E402
+
+# Placeholders are drawn on a half-size grid and scaled up to the validator's sizes.
+UNIT_FRAME = 32
 
 # Endesga 32 colors, named by use.
 OUTLINE = "#181425"
@@ -117,10 +122,13 @@ def main(root: Path = DEFAULT_ROOT) -> int:
     for entry in manifest["assets"]:
         if entry["status"] != "placeholder":
             continue
-        for rel in expected_files(entry):
+        for rel, size in expected_files(entry).items():
+            # Real art for part of an entry (e.g. one direction) is listed in "final".
+            if rel in entry.get("final", []):
+                continue
             path = root / rel
             path.parent.mkdir(parents=True, exist_ok=True)
-            render(entry, rel).save(path, optimize=True)
+            render(entry, rel).resize(size, Image.Resampling.NEAREST).save(path, optimize=True)
             written += 1
     print(f"Wrote {written} placeholder PNG file(s) under {root}.")
     return 0

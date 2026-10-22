@@ -154,11 +154,13 @@ Consistency comes from a written style guide, four hand-polished anchor assets, 
 
 ### Style guide (draft values)
 
+The full rules (color count, placement in the frame, outline, camera, light, directions, review checklist and PixelLab settings) are in [STYLE_GUIDE.md](STYLE_GUIDE.md). This table is the summary.
+
 | Rule | Decision |
 | --- | --- |
-| Base resolution | 320×180, integer scaling, Nearest filter |
-| Sizes | Per frame: units 32×32, tiles 16×16, card art 64×48, icons 16×16. Card frame 72×104 (full), 48×64 (compact) |
-| Spritesheets | One PNG per unit, animation and direction: a horizontal strip of 32×32 frames (walk = 192×32) |
+| Base resolution | 640×360, integer scaling (3× at 1080p, 4× at 1440p, 6× at 4K), Nearest filter |
+| Sizes | Per frame: units 64×64, tiles 32×32, card art 128×96, icons 32×32. Card frame 144×208 (full), 96×128 (compact) |
+| Spritesheets | One PNG per unit, animation and direction: a horizontal strip of 64×64 frames (walk = 384×64) |
 | Directions | `down`, `up`, `side` (facing right); left is `side` with `flip_h` |
 | Transparency | Alpha is 0 or 255 only, no soft edges |
 | Palette | Endesga 32 (Lospec); no other colors |
@@ -169,8 +171,8 @@ Consistency comes from a written style guide, four hand-polished anchor assets, 
 | Contrast | Terrain desaturated and low contrast; units high contrast |
 | Animation | Idle 4 frames, walk 6, attack 4–6, 8–12 fps. Frame count, fps and loop live in `game/assets/manifest.json`, not in file names |
 | Naming | `units/<name>/unit_<name>_<anim>_<dir>.png`, `tiles/<set>/tile_<set>_<nn>.png`, `cards/card_art_<id>.png`, `icons/icon_<name>.png` (all under `game/assets/`) |
-| Font | m5x7 (free license), imported without antialiasing, used at 1× |
-| Cards on screen | Hand shows compact cards (48×64: art crop, cost, name); hover or select shows the full 72×104 card. Base resolution stays 320×180 |
+| Font | m5x7 (free license), imported without antialiasing, drawn at 2× |
+| Cards on screen | Hand shows compact cards (96×128: art crop, cost, name); hover or select shows the full 144×208 card |
 
 ### Tools
 
@@ -190,7 +192,7 @@ Implementation:
 
 | Piece | Where |
 | --- | --- |
-| Asset manifest (id, type, frames, fps, loop, status `todo`/`placeholder`/`done`) | `game/assets/manifest.json` |
+| Asset manifest (id, type, frames, fps, loop, status `todo`/`placeholder`/`done`, optional `final` list of finished files inside a `placeholder` entry) | `game/assets/manifest.json` |
 | Palette | `tools/endesga32.hex` (validator), `assets-src/palette/endesga-32.gpl` (Aseprite) |
 | Validator (Python + Pillow, also checks the manifest) | `tools/validate_assets.py`, tests in `tools/test_validate_assets.py` |
 | Placeholder art for `placeholder` entries | `tools/make_placeholders.py` |
@@ -201,7 +203,7 @@ All of it runs natively on Windows; no global texture atlas for the PoC (strips 
 
 ### Cards are composed, not baked
 
-A card in-game = rarity frame (hand-made, 3 variants) + 64×48 art + cost, name and text rendered at runtime with a pixel font. Balance changes never need new art.
+A card in-game = rarity frame (hand-made, 3 variants) + 128×96 art + cost, name and text rendered at runtime with a pixel font. Balance changes never need new art.
 
 ### Anchor assets first
 
@@ -270,7 +272,8 @@ The biggest risk is WebRTC on desktop; the fallback is ENet with port forwarding
 - [x] Godot version: 4.7.2
 - [x] Card effects: composable effect resources + `ScriptedEffect` escape hatch
 - [x] Tests: scenario tests on top of unit tests; the network test reuses them
-- [x] Card UI: compact 48×64 hand, full 72×104 card on hover; font m5x7 at 1×
+- [x] Card UI: compact 96×128 hand, full 144×208 card on hover; font m5x7 at 2×
+- [x] Resolution (2026-10-22, after the first hero sprite): 640×360 base with 64×64 units and 32×32 tiles, so sprites keep their on-screen size with twice the detail. Was 320×180 with 32×32 units
 - [x] Hero sync: each client owns its hero position, host checks plausibility
 - [x] Sim structure: M1 stays Node-based; pure sim core vs Nodes decided at the start of M4
 - [x] WebRTC: no early spike; proven in M5 with the ENet/WebSocket fallback

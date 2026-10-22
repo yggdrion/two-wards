@@ -5,8 +5,8 @@ extends SceneTree
 
 const MANIFEST_PATH := "res://assets/manifest.json"
 const OUT_DIR := "res://resources/generated"
-const UNIT_FRAME := 32
-const TILE_SIZE := Vector2i(16, 16)
+const UNIT_FRAME := 64
+const TILE_SIZE := Vector2i(32, 32)
 
 
 func _initialize() -> void:
