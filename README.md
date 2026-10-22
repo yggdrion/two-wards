@@ -1,4 +1,4 @@
-# Card Defense (working title: Crystal Keep)
+# Two Wards
 
 Proof of concept for a real-time co-op tower defense roguelite with a card system, built in Godot 4 with pixel art.
 

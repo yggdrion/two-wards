@@ -1,4 +1,4 @@
-# Card Defense PoC – Project Plan
+# Two Wards PoC – Project Plan
 
 Oct 22, 2026 · @Rapha
 
@@ -10,7 +10,7 @@ It validates six pillars end to end: Godot project structure, AI-assisted coding
 
 ## Game concept
 
-A real-time co-op tower defense roguelite in a **dark-fantasy** setting, where towers, spells and hero abilities come from a shared card deck. Working title: **Crystal Keep** — two wizards defend a Heart Crystal against waves of monsters.
+A real-time co-op tower defense roguelite in a **dark-fantasy** setting, where towers, spells and hero abilities come from a shared card deck. Title: **Two Wards** — two wizards defend a Heart Crystal against waves of monsters.
 
 - **In a run:** each player moves a hero, gains energy over time, and plays cards from a hand of 3. Towers can only be placed near your own hero.
 - **Co-op:** both players bring their own 8-card deck; the decks merge into one shared run deck. Cards can be passed to the partner.
@@ -237,6 +237,6 @@ The biggest risk is WebRTC on desktop; the fallback is ENet with port forwarding
 - [x] Mood: dark fantasy
 - [x] Palette: Endesga 32
 - [x] Test framework: gdUnit4
-- [x] Repo: GitHub (yggdrion/card-defense)
+- [x] Repo: GitHub (yggdrion/two-wards)
 - [x] CI: GitHub Actions hosted runners
 - [x] Godot version: 4.7.2
