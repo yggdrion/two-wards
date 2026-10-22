@@ -1,0 +1,110 @@
+extends GdUnitTestSuite
+## The App and its meta screens, driven through the same calls the buttons make.
+
+const APP_SCENE := preload("res://scenes/main.tscn")
+const PATH := "user://test_saves/app_profile.json"
+
+
+func before_test() -> void:
+	DirAccess.remove_absolute(PATH)
+
+
+func _app() -> App:
+	var app: App = APP_SCENE.instantiate()
+	app.save_path = PATH
+	add_child(app)
+	auto_free(app)
+	return app
+
+
+func test_starts_on_camp_with_new_profile() -> void:
+	var app := _app()
+	assert_int(app.current).is_equal(App.Screen.CAMP)
+	var camp: CampScreen = app._screen
+	assert_bool(camp.start_button.disabled).is_false()
+	assert_bool(FileAccess.file_exists(PATH)).is_true()
+
+
+func test_save_survives_restart() -> void:
+	var app := _app()
+	app.profile.add_gold(70)
+	app.profile.add_card("war_drums")
+	app.free()
+	var again := _app()
+	assert_int(again.profile.gold).is_equal(70)
+	assert_int(again.profile.owned("war_drums")).is_equal(1)
+
+
+func test_camp_blocks_run_with_invalid_deck() -> void:
+	var app := _app()
+	app.profile.set_deck_cards(0, ["mend"])
+	var camp: CampScreen = app._screen
+	assert_bool(camp.start_button.disabled).is_true()
+
+
+func test_booster_screen_opens_and_reveals() -> void:
+	var app := _app()
+	app.profile.add_gold(Booster.COST)
+	app.show_screen(App.Screen.BOOSTER)
+	var screen: BoosterScreen = app._screen
+	screen.open_booster()
+	assert_bool(screen.is_animating()).is_true()
+	screen.reveal_all()
+	assert_bool(screen.is_animating()).is_false()
+	assert_int(app.profile.gold).is_equal(0)
+	assert_bool(screen.open_button.disabled).is_true()
+	for i in Booster.SLOTS:
+		assert_bool(screen.cards[i].visible).is_true()
+		assert_bool(screen.cards[i].face_down).is_false()
+		assert_object(screen.cards[i].card).is_same(screen.pulls[i]["card"])
+		assert_bool(screen.new_badges[i].visible).is_equal(screen.pulls[i]["new"])
+
+
+func test_collection_dims_unowned_cards() -> void:
+	var app := _app()
+	app.show_screen(App.Screen.COLLECTION)
+	var screen: CollectionScreen = app._screen
+	assert_int(screen.views.size()).is_equal(12)
+	for view in screen.views:
+		var owned := app.profile.owned(String(view.card.id)) > 0
+		assert_bool(view.modulate == Color.WHITE).is_equal(owned)
+
+
+func test_deck_builder_adds_and_removes() -> void:
+	var app := _app()
+	app.show_screen(App.Screen.DECKS)
+	var screen: DeckBuilderScreen = app._screen
+	screen.select_deck(1)
+	screen.add_card("mend")
+	screen.add_card("mend")
+	screen.add_card("mend")
+	assert_array(app.profile.deck_cards(1)).is_equal(["mend", "mend"])
+	screen.remove_card("mend")
+	assert_array(app.profile.deck_cards(1)).is_equal(["mend"])
+	assert_bool(screen.active_button.disabled).is_true()
+
+
+func test_deck_builder_sets_active_deck() -> void:
+	var app := _app()
+	app.profile.set_deck_cards(1, Profile.STARTER_DECK)
+	app.show_screen(App.Screen.DECKS)
+	var screen: DeckBuilderScreen = app._screen
+	screen.select_deck(1)
+	assert_bool(screen.active_button.disabled).is_false()
+	screen.active_button.pressed.emit()
+	assert_int(app.profile.active_deck).is_equal(1)
+
+
+func test_run_uses_active_deck_and_pays_gold() -> void:
+	var app := _app()
+	app.show_screen(App.Screen.RUN)
+	var game: RunScreen = app._screen
+	var lane: Lane = game.get_node("Lane")
+	lane.autorun = false
+	lane.set_physics_process(false)
+	assert_int(lane.deck.cards.size()).is_equal(DeckRules.SIZE)
+	lane.gold = 30
+	lane.run_lost.emit()
+	assert_int(app.profile.gold).is_equal(30)
+	game.finished.emit()
+	assert_int(app.current).is_equal(App.Screen.CAMP)

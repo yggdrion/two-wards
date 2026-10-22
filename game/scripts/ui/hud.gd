@@ -11,6 +11,7 @@ const TOP := Lane.FIELD.end.y + 4.0
 const CARD_X := 208.0
 const CARD_GAP := CardView.COMPACT_SIZE.x + 8.0
 const RIGHT_X := SCREEN.x - 116.0
+const CONTINUE_HINT := "Click to continue"
 const ENERGY_ICON := preload("res://assets/icons/icon_energy.png")
 
 var lane: Lane
@@ -108,15 +109,21 @@ func _draw_energy(player: PlayerState, pos: Vector2) -> void:
 
 func _draw_banner() -> void:
 	var text := ""
+	var hint := ""
 	match lane.phase:
 		Lane.Phase.BREAK:
 			text = "Wave %d cleared" % (lane.wave_index + 1)
 		Lane.Phase.WON:
 			text = "Victory! +%d gold" % lane.gold
+			hint = CONTINUE_HINT
 		Lane.Phase.LOST:
-			text = "The crystal shattered"
+			text = "The crystal shattered. +%d gold" % lane.gold
+			hint = CONTINUE_HINT
 	if text.is_empty():
 		return
-	var w := UiFont.width(text) + 16
-	draw_rect(Rect2(SCREEN.x / 2.0 - w / 2.0, 4, w, 22), Palette.PANEL)
+	var w := maxf(UiFont.width(text), UiFont.width(hint)) + 16
+	var h := 22.0 if hint.is_empty() else 22.0 + UiFont.LINE
+	draw_rect(Rect2(SCREEN.x / 2.0 - w / 2.0, 4, w, h), Palette.PANEL)
 	UiFont.draw_centered(self, SCREEN.x / 2.0, 6, text, Palette.TEXT)
+	if not hint.is_empty():
+		UiFont.draw_centered(self, SCREEN.x / 2.0, 6 + UiFont.LINE, hint, Palette.CARD_TEXT_DIM)

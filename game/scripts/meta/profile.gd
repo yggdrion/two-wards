@@ -1,0 +1,129 @@
+class_name Profile
+extends RefCounted
+## One player's persistent meta state: gold, owned cards, saved decks and the booster pity
+## counter. SaveStore writes it to JSON after every change (see the changed signal).
+
+## Emitted after every change, so the owner can save at once.
+signal changed
+
+## A new profile owns STARTER_COPIES of each of these and gets STARTER_DECK as its first deck.
+const STARTER_CARDS: Array[String] = [
+	"arrow_tower", "frost_totem", "ballista", "arcane_bolt", "mend", "blink"
+]
+const STARTER_COPIES := 2
+const STARTER_DECK: Array[String] = [
+	"arrow_tower",
+	"arrow_tower",
+	"frost_totem",
+	"frost_totem",
+	"ballista",
+	"arcane_bolt",
+	"arcane_bolt",
+	"mend",
+]
+
+var profile_name := "default"
+var gold := 0
+## Owned copies per card id.
+var collection: Dictionary = {}
+## Saved decks: {"name": String, "cards": Array of card ids}. Up to DeckRules.MAX_DECKS.
+var decks: Array[Dictionary] = []
+## Index into decks of the deck taken into the next run.
+var active_deck := 0
+## Boosters opened since the last epic (Booster.PITY).
+var boosters_since_epic := 0
+
+
+static func create(name: String = "default") -> Profile:
+	var profile := Profile.new()
+	profile.profile_name = name
+	for card_id in STARTER_CARDS:
+		profile.collection[card_id] = STARTER_COPIES
+	profile.decks.append({"name": "Starter", "cards": STARTER_DECK.duplicate()})
+	for i in range(1, DeckRules.MAX_DECKS):
+		profile.decks.append({"name": "Deck %d" % (i + 1), "cards": []})
+	return profile
+
+
+func owned(card_id: String) -> int:
+	return int(collection.get(card_id, 0))
+
+
+func add_card(card_id: String) -> void:
+	collection[card_id] = owned(card_id) + 1
+	changed.emit()
+
+
+func add_gold(amount: int) -> void:
+	gold += amount
+	changed.emit()
+
+
+## Takes amount gold if there is enough; returns false and changes nothing otherwise.
+func spend_gold(amount: int) -> bool:
+	if gold < amount:
+		return false
+	gold -= amount
+	changed.emit()
+	return true
+
+
+func deck_cards(index: int) -> Array:
+	return decks[index]["cards"]
+
+
+func set_deck_cards(index: int, card_ids: Array) -> void:
+	decks[index]["cards"] = card_ids.duplicate()
+	changed.emit()
+
+
+func set_active_deck(index: int) -> void:
+	active_deck = clampi(index, 0, decks.size() - 1)
+	changed.emit()
+
+
+func is_deck_valid(index: int) -> bool:
+	return DeckRules.is_valid(deck_cards(index), collection)
+
+
+## The deck as a resource for Lane, with ids the catalog doesn't know left out.
+func deck_data(index: int, catalog: CardCatalog) -> DeckData:
+	var deck := DeckData.new()
+	deck.id = StringName("%s_%d" % [profile_name, index])
+	deck.display_name = decks[index]["name"]
+	for card_id: String in deck_cards(index):
+		if catalog.has(card_id):
+			deck.cards.append(catalog.get_card(card_id))
+	return deck
+
+
+func to_dict() -> Dictionary:
+	return {
+		"name": profile_name,
+		"gold": gold,
+		"collection": collection.duplicate(),
+		"decks": decks.duplicate(true),
+		"active_deck": active_deck,
+		"boosters_since_epic": boosters_since_epic,
+	}
+
+
+## Reads the current save format (SaveStore migrates older ones first).
+static func from_dict(data: Dictionary) -> Profile:
+	var profile := Profile.new()
+	profile.profile_name = str(data.get("name", "default"))
+	profile.gold = int(data.get("gold", 0))
+	var owned_cards: Dictionary = data.get("collection", {})
+	for card_id: String in owned_cards:
+		profile.collection[card_id] = int(owned_cards[card_id])
+	for deck: Dictionary in data.get("decks", []):
+		var cards: Array = []
+		for card_id: Variant in deck.get("cards", []):
+			cards.append(str(card_id))
+		profile.decks.append({"name": str(deck.get("name", "Deck")), "cards": cards})
+	while profile.decks.size() < DeckRules.MAX_DECKS:
+		profile.decks.append({"name": "Deck %d" % (profile.decks.size() + 1), "cards": []})
+	profile.decks.resize(DeckRules.MAX_DECKS)
+	profile.active_deck = clampi(int(data.get("active_deck", 0)), 0, DeckRules.MAX_DECKS - 1)
+	profile.boosters_since_epic = int(data.get("boosters_since_epic", 0))
+	return profile

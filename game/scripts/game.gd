@@ -1,6 +1,12 @@
+class_name RunScreen
 extends Node2D
 ## Solo run screen: the keyboard moves the hero, the hand picks a card, a click on the field
 ## targets it. Every action goes through Lane's play_card/cycle_card, as network input will.
+
+## The run is over (won or lost) and earned this much gold.
+signal run_ended(gold: int)
+## The player left the end-of-run banner.
+signal finished
 
 const PLAYER := 0
 
@@ -16,6 +22,8 @@ func _ready() -> void:
 	hud.card_pressed.connect(_select)
 	hud.cycle_requested.connect(_cycle)
 	overlay.draw.connect(_draw_targeting)
+	lane.run_won.connect(_on_run_over)
+	lane.run_lost.connect(_on_run_over)
 
 
 func _process(_delta: float) -> void:
@@ -27,6 +35,9 @@ func _process(_delta: float) -> void:
 
 
 func _unhandled_input(event: InputEvent) -> void:
+	if lane.is_over():
+		_input_after_run(event)
+		return
 	var key := event as InputEventKey
 	if key != null and key.pressed and not key.echo:
 		match key.physical_keycode:
@@ -45,6 +56,21 @@ func _unhandled_input(event: InputEvent) -> void:
 				selected = -1
 		elif click.button_index == MOUSE_BUTTON_RIGHT:
 			selected = -1
+
+
+func _input_after_run(event: InputEvent) -> void:
+	var key := event as InputEventKey
+	var click := event as InputEventMouseButton
+	if (
+		(key != null and key.pressed and key.physical_keycode in [KEY_ENTER, KEY_SPACE])
+		or (click != null and click.pressed and click.button_index == MOUSE_BUTTON_LEFT)
+	):
+		finished.emit()
+
+
+func _on_run_over() -> void:
+	selected = -1
+	run_ended.emit(lane.gold)
 
 
 func _select(slot: int) -> void:
