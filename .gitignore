@@ -14,3 +14,6 @@ game/gdunit4_testadapter/
 # Tooling
 __pycache__/
 .venv/
+
+# Exports (tools/export.sh)
+build/

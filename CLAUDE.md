@@ -22,18 +22,31 @@ The Godot version is pinned in `.godot-version`. `tools/install_godot.sh` downlo
     # Single suite: append gdUnit4 args
     ./tools/run_tests.sh -a res://tests/tower_test.gd
 
+    # Release export (Linux or Windows) to build/<platform>/. Installs the pinned export
+    # templates (checksum in tools/godot-<version>.sha512) on first use; only the two
+    # release templates are extracted from the ~1.3 GB .tpz.
+    ./tools/export.sh linux
+    ./tools/export.sh windows
+
 Every script in `tools/` has a PowerShell twin (`.ps1`) for Windows; keep both in sync. CI runs the tests with the `.sh` scripts on Linux and the `.ps1` scripts on Windows.
 
     # Windows (PowerShell 5.1 or 7). If scripts are blocked, prefix with: powershell -ExecutionPolicy Bypass -File
     .\tools\godot.ps1 --path game -e
     .\tools\run_tests.ps1
     .\tools\run_tests.ps1 -a res://tests/tower_test.gd
+    .\tools\export.ps1 windows
 
     # Lint and format check (pip install "gdtoolkit==4.5.0")
     gdlint game/scripts game/tests
     gdformat --check game/scripts game/tests
 
-CI (`.github/workflows/ci.yml`) runs lint and the tests (Linux and Windows) on every push. Commit the `*.gd.uid` files Godot generates next to scripts.
+CI (`.github/workflows/ci.yml`) runs on every push: lint, the tests (Linux and Windows), and a Linux export (`export.sh`) plus a Windows export (`export.ps1` on a Windows runner). Builds are uploaded as artifacts only from `main` or manual runs. Export presets live in `game/export_presets.cfg` (`Linux`, `Windows Desktop`). Commit the `*.gd.uid` files Godot generates next to scripts.
+
+Some CI jobs stay off until their entry point exists:
+
+- `tools/run_network_test.sh`: headless host + client over ENet, exit non-zero on a per-wave hash mismatch (M4)
+- `lobby/package.json` (+ `bun.lock`, `Dockerfile`): `bun test` and the container build (M5)
+- `tools/validate_assets.py`: asset validation in the lint job
 
 ## Code conventions
 
