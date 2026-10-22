@@ -8,16 +8,12 @@ M1, M2 and M3 (meta system: save file, boosters, collection, deck builder) are d
 
 ## Always run the local check
 
-This applies to every session, human or Claude: GitHub CI is off (see below), so the local check is the only gate.
+This applies to every session, human or Claude: GitHub CI runs on every push, and the local check catches the same failures before they cost a CI cycle.
 
 - Before every push, run the full check, `./tools/check.sh` (Windows: `.\tools\check.ps1`), and push only when it ends with "All checks passed". If it fails, fix the cause and run it again; never push past a failure or use `git push --no-verify` to skip it.
 - While iterating, run `./tools/check.sh --quick` (lint and asset validator, no Godot) after each change to GDScript, assets or the manifest, and the gdUnit4 suite you touched (`./tools/run_tests.sh -a res://tests/<suite>_test.gd`).
 - In each PR description, say that the full check passed (test count) or what was not run and why.
-- After a change to the Windows-only path (`*.ps1`, export presets), ask Rapha to run `.\tools\check.ps1` on Windows before merging, since the container only runs the Linux check.
-- Playtest builds are made on Rapha's Windows PC (win11rtx2), never by a CI run or in the cloud container. After a milestone or major step:
-  1. Run the full check here, push, then start a Remote Control session on Rapha's PC in `C:\Users\rapha\workspace` that checks out the branch in `two-wards` and runs `.\tools\check.ps1 -Export` (no commits or pushes from there).
-  2. Give Rapha the local path, `C:\Users\rapha\workspace\two-wards\build\windows\two-wards.exe`, plus a short "what to try" list. Don't attach executables or give container paths.
-  3. Godot sometimes crashes on exit right after writing the export (Windows 0xC0000005, Linux "Aborted"); the exe is fine. If that fails the check, run `.\tools\export.ps1 windows` once more.
+- Playtest builds come from CI. Every push exports Linux and Windows and uploads them as artifacts (`two-wards-<platform>-<sha>`). After every push, once the run is green, give Rapha the link to that run's page (its Artifacts section has the Windows build) and, after a milestone or major step, a short "what to try" list. Never build in the cloud container or on Rapha's PC for a playtest unless asked.
 
 ## Commands
 
@@ -70,7 +66,7 @@ Run the local check before pushing; it mirrors CI and stops at the first failure
     ./tools/check.sh --install-hook  # git pre-push hook that runs the check (skip once: git push --no-verify)
     .\tools\check.ps1 [-Quick] [-Export] [-InstallHook]   # Windows; -Export builds build/windows/ for playtests
 
-CI (`.github/workflows/ci.yml`) is off: it runs only when started by hand ("Run workflow"), never on pushes or pull requests (Rapha, 2026-10-22: "local only"). Don't start it unless Rapha asks. When run, it does lint, the Linux and Windows tests and both exports. The header of `ci.yml` says how to turn automatic runs back on. Export presets live in `game/export_presets.cfg` (`Linux`, `Windows Desktop`). Commit the `*.gd.uid` files Godot generates next to scripts.
+CI (`.github/workflows/ci.yml`) runs on every push to any branch (and by hand with "Run workflow"): lint and asset validation, gdUnit4 tests on Linux and Windows, then Linux and Windows exports that are uploaded as artifacts on every run. The repo is meant to be public, so Actions minutes are free. Export presets live in `game/export_presets.cfg` (`Linux`, `Windows Desktop`). Commit the `*.gd.uid` files Godot generates next to scripts.
 
 Some CI jobs stay off until their entry point exists:
 
