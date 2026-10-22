@@ -41,8 +41,8 @@ jobs:
         with:
           python-version: "3.12"
       - run: pip install "gdtoolkit==${GDTOOLKIT_VERSION}"
-      - run: gdlint game/scripts game/tests
-      - run: gdformat --check game/scripts game/tests
+      - run: gdlint game/scripts game/tests game/tools
+      - run: gdformat --check game/scripts game/tests game/tools
       - name: Validate assets
         if: needs.detect.outputs.assets == 'true'
         run: |

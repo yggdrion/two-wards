@@ -37,8 +37,8 @@ Every script in `tools/` has a PowerShell twin (`.ps1`) for Windows; keep both i
     .\tools\export.ps1 windows
 
     # Lint and format check (pip install "gdtoolkit==4.5.0")
-    gdlint game/scripts game/tests
-    gdformat --check game/scripts game/tests
+    gdlint game/scripts game/tests game/tools
+    gdformat --check game/scripts game/tests game/tools
 
     # Assets (pip install -r tools/requirements.txt). Python scripts work the same on Windows (use `py`).
     python tools/validate_assets.py                          # size, palette, transparency, naming, manifest
