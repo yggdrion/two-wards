@@ -9,8 +9,8 @@ name: CI
 #
 # Lean mode: run ./tools/check.sh (or .\tools\check.ps1) locally before pushing.
 # CI runs on PRs and main only; PR runs do Linux lint + tests, and the Windows
-# test job and exports run on main or on a manual run ("Run workflow" on any
-# branch gives a playable Windows build). For full CI on every push again, set
+# test job and exports run on main or on a manual run. Playtest builds are made
+# locally (.\tools\check.ps1 -Export), not here. For full CI on every push again, set
 # `push:` with no filters and drop the two `if: github.event_name != 'pull_request'`
 # lines on test-windows and export.
 
