@@ -4,7 +4,7 @@ extends Node2D
 ##
 ## In co-op each client owns its hero's position and the host checks it (M4).
 
-const SPEED := 60.0
+const SPEED := 120.0
 const FRAMES := preload("res://resources/generated/unit_hero_frames.tres")
 
 ## Desired direction; normalized when used.
@@ -12,7 +12,7 @@ var move_dir := Vector2.ZERO
 ## Seconds of invulnerability left (Blink). Nothing damages heroes yet.
 var invulnerable := 0.0
 ## Area the hero may walk in, in lane coordinates.
-var bounds := Rect2(0, 0, 320, 180)
+var bounds := Rect2(0, 0, 640, 360)
 var _facing := "down"
 var _flip := false
 var _sprite: AnimatedSprite2D
@@ -21,7 +21,7 @@ var _sprite: AnimatedSprite2D
 func _ready() -> void:
 	_sprite = AnimatedSprite2D.new()
 	_sprite.sprite_frames = FRAMES
-	_sprite.offset = Vector2(0, -10)
+	_sprite.offset = Vector2(0, -20)
 	add_child(_sprite)
 	_update_animation()
 

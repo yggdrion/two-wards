@@ -6,11 +6,11 @@ signal card_pressed(slot: int)
 signal cycle_requested(slot: int)
 
 ## Screen size in base pixels; everything below is laid out from it and Lane.FIELD.
-const SCREEN := Vector2(320, 180)
-const TOP := Lane.FIELD.end.y + 2.0
-const CARD_X := 104.0
-const CARD_GAP := CardView.COMPACT_SIZE.x + 4.0
-const RIGHT_X := SCREEN.x - 58.0
+const SCREEN := Vector2(640, 360)
+const TOP := Lane.FIELD.end.y + 4.0
+const CARD_X := 208.0
+const CARD_GAP := CardView.COMPACT_SIZE.x + 8.0
+const RIGHT_X := SCREEN.x - 116.0
 const ENERGY_ICON := preload("res://assets/icons/icon_energy.png")
 
 var lane: Lane
@@ -25,7 +25,7 @@ func _ready() -> void:
 	mouse_filter = MOUSE_FILTER_IGNORE
 	for i in PlayerState.HAND_SIZE:
 		var view := CardView.new()
-		view.position = Vector2(CARD_X + i * CARD_GAP, TOP + 1)
+		view.position = Vector2(CARD_X + i * CARD_GAP, TOP + 2)
 		view.pressed.connect(func(_v: CardView) -> void: card_pressed.emit(i))
 		view.cycle_requested.connect(func(_v: CardView) -> void: cycle_requested.emit(i))
 		view.mouse_entered.connect(func() -> void: _hovered = i)
@@ -53,7 +53,7 @@ func refresh() -> void:
 		var card := player.card_at(i)
 		view.card = card
 		view.selected = i == selected
-		view.position.y = TOP + (-3 if i == selected else 1)
+		view.position.y = TOP + (-6 if i == selected else 2)
 		if card != null:
 			view.shown_cost = player.cost_of(card)
 			view.affordable = player.energy.can_spend(view.shown_cost)
@@ -63,37 +63,37 @@ func refresh() -> void:
 		_preview.card = player.card_at(shown)
 		_preview.shown_cost = cards[shown].shown_cost
 		_preview.affordable = cards[shown].affordable
-		var x := clampf(cards[shown].position.x - 12, 0, SCREEN.x - CardView.FULL_SIZE.x)
-		_preview.position = Vector2(x, TOP - CardView.FULL_SIZE.y - 2)
+		var x := clampf(cards[shown].position.x - 24, 0, SCREEN.x - CardView.FULL_SIZE.x)
+		_preview.position = Vector2(x, TOP - CardView.FULL_SIZE.y - 4)
 	queue_redraw()
 
 
 func _draw() -> void:
 	draw_rect(Rect2(0, TOP, SCREEN.x, SCREEN.y - TOP), Palette.PANEL)
-	draw_line(Vector2(0, TOP), Vector2(SCREEN.x, TOP), Palette.PATH_EDGE)
+	draw_line(Vector2(0, TOP), Vector2(SCREEN.x, TOP), Palette.PATH_EDGE, 2.0)
 	if lane == null or lane.players.is_empty():
 		return
 	var player := lane.players[0]
 	UiFont.draw(
 		self,
-		Vector2(4, TOP + 3),
+		Vector2(8, TOP + 6),
 		"Wave %d/%d" % [lane.wave_index + 1, lane.waves.size()],
 		Palette.TEXT
 	)
 	UiFont.draw(
-		self, Vector2(4, TOP + 12), "Crystal %d/%d" % [lane.core.hp, lane.core.max_hp], Palette.TEXT
+		self, Vector2(8, TOP + 24), "Crystal %d/%d" % [lane.core.hp, lane.core.max_hp], Palette.TEXT
 	)
-	UiFont.draw(self, Vector2(4, TOP + 21), "Gold %d" % lane.gold, Palette.ENERGY)
-	_draw_energy(player, Vector2(4, TOP + 34))
+	UiFont.draw(self, Vector2(8, TOP + 42), "Gold %d" % lane.gold, Palette.ENERGY)
+	_draw_energy(player, Vector2(8, TOP + 68))
 	UiFont.draw(
-		self, Vector2(RIGHT_X, TOP + 3), "Deck %d" % player.deck.draw_pile.size(), Palette.TEXT
+		self, Vector2(RIGHT_X, TOP + 6), "Deck %d" % player.deck.draw_pile.size(), Palette.TEXT
 	)
 	UiFont.draw(
-		self, Vector2(RIGHT_X, TOP + 12), "Disc %d" % player.deck.discard_pile.size(), Palette.TEXT
+		self, Vector2(RIGHT_X, TOP + 24), "Disc %d" % player.deck.discard_pile.size(), Palette.TEXT
 	)
-	UiFont.draw(self, Vector2(RIGHT_X, TOP + 30), "1-3 play", Palette.CARD_TEXT_DIM)
-	UiFont.draw(self, Vector2(RIGHT_X, TOP + 39), "RMB/Q", Palette.CARD_TEXT_DIM)
-	UiFont.draw(self, Vector2(RIGHT_X, TOP + 48), "cycle 1", Palette.CARD_TEXT_DIM)
+	UiFont.draw(self, Vector2(RIGHT_X, TOP + 60), "1-3 play", Palette.CARD_TEXT_DIM)
+	UiFont.draw(self, Vector2(RIGHT_X, TOP + 78), "RMB/Q", Palette.CARD_TEXT_DIM)
+	UiFont.draw(self, Vector2(RIGHT_X, TOP + 96), "cycle 1", Palette.CARD_TEXT_DIM)
 	_draw_banner()
 
 
@@ -101,9 +101,9 @@ func _draw_energy(player: PlayerState, pos: Vector2) -> void:
 	draw_texture(ENERGY_ICON, pos)
 	var points := player.energy.points()
 	for i in Energy.MAX:
-		var cell := Rect2(pos.x + 18 + (i % 5) * 9, pos.y + 1 + (i / 5) * 8, 7, 6)
+		var cell := Rect2(pos.x + 36 + (i % 5) * 18, pos.y + 2 + (i / 5) * 16, 14, 12)
 		draw_rect(cell, Palette.ENERGY if i < points else Palette.PATH)
-	UiFont.draw(self, Vector2(pos.x, pos.y + 18), "Energy %d" % points, Palette.ENERGY)
+	UiFont.draw(self, Vector2(pos.x, pos.y + 36), "Energy %d" % points, Palette.ENERGY)
 
 
 func _draw_banner() -> void:
@@ -117,6 +117,6 @@ func _draw_banner() -> void:
 			text = "The crystal shattered"
 	if text.is_empty():
 		return
-	var w := UiFont.width(text) + 8
-	draw_rect(Rect2(SCREEN.x / 2.0 - w / 2.0, 2, w, 11), Palette.PANEL)
-	UiFont.draw_centered(self, SCREEN.x / 2.0, 3, text, Palette.TEXT)
+	var w := UiFont.width(text) + 16
+	draw_rect(Rect2(SCREEN.x / 2.0 - w / 2.0, 4, w, 22), Palette.PANEL)
+	UiFont.draw_centered(self, SCREEN.x / 2.0, 6, text, Palette.TEXT)

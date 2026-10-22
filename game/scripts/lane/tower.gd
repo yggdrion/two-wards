@@ -6,10 +6,10 @@ extends Node2D
 
 signal fired(target: Enemy)
 
-const SIZE := 10.0
+const SIZE := 20.0
 const SHOT_FLASH := 0.08
 ## Half-width of a piercing shot's line.
-const PIERCE_WIDTH := 6.0
+const PIERCE_WIDTH := 12.0
 
 @export var data: TowerData
 
@@ -138,18 +138,18 @@ func _nearest_unhit(from: Enemy, hits: Array[Enemy], enemies: Array[Enemy]) -> E
 func _draw() -> void:
 	if data == null:
 		return
-	draw_arc(Vector2.ZERO, data.attack_range, 0.0, TAU, 48, Palette.PLAYER_DARK, 1.0)
+	draw_arc(Vector2.ZERO, data.attack_range, 0.0, TAU, 48, Palette.PLAYER_DARK, 2.0)
 	var half := SIZE / 2.0
 	var body := Palette.FROST if data.slow_factor < 1.0 else Palette.PLAYER
 	if is_copy:
 		body = Palette.COPY
 	draw_rect(Rect2(-half, -half, SIZE, SIZE), body)
-	draw_rect(Rect2(-2, -2, 4, 4), Palette.SHOT if is_buffed() else Palette.PLAYER_DARK)
+	draw_rect(Rect2(-4, -4, 8, 8), Palette.SHOT if is_buffed() else Palette.PLAYER_DARK)
 	if _shot_timer > 0.0 and _shot_points.size() > 1:
 		if data.area:
-			draw_arc(Vector2.ZERO, data.attack_range, 0.0, TAU, 48, Palette.SHOT, 1.0)
+			draw_arc(Vector2.ZERO, data.attack_range, 0.0, TAU, 48, Palette.SHOT, 2.0)
 		elif data.chain_count > 1:
-			draw_polyline(_shot_points, Palette.SHOT, 1.0)
+			draw_polyline(_shot_points, Palette.SHOT, 2.0)
 		else:
 			for i in range(1, _shot_points.size()):
-				draw_line(Vector2.ZERO, _shot_points[i], Palette.SHOT, 1.0)
+				draw_line(Vector2.ZERO, _shot_points[i], Palette.SHOT, 2.0)

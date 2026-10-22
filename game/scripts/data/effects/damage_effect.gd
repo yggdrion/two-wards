@@ -3,7 +3,7 @@ extends CardEffect
 ## Damages enemies at the target: the nearest one, or all within radius.
 
 ## How close to the target an enemy must be for a single-target hit.
-const PICK_RADIUS := 12.0
+const PICK_RADIUS := 24.0
 
 @export var amount: int = 10
 ## 0 hits only the enemy nearest the target.

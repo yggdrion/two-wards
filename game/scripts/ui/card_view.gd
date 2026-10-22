@@ -2,16 +2,18 @@ class_name CardView
 extends Control
 ## Draws a card from its parts at runtime: rarity frame, art, cost and text in the pixel font.
 ##
-## Compact (48x64, the hand) shows an art crop, cost and name; full (72x104, on hover) adds the
+## Compact (96x128, the hand) shows an art crop, cost and name; full (144x208, on hover) adds the
 ## whole art and the rules text. Numbers are never baked into art.
 
 signal pressed(view: CardView)
 signal cycle_requested(view: CardView)
 
-const COMPACT_SIZE := Vector2(48, 64)
-const FULL_SIZE := Vector2(72, 104)
-## Part of the 64x48 art shown on a compact card.
-const COMPACT_CROP := Rect2(10, 8, 44, 30)
+const COMPACT_SIZE := Vector2(96, 128)
+const FULL_SIZE := Vector2(144, 208)
+## Part of the 128x96 art shown on a compact card.
+const COMPACT_CROP := Rect2(20, 16, 88, 60)
+## Width of the rarity frame and the cost badge outline.
+const BORDER := 2.0
 
 var card: CardData:
 	set(value):
@@ -68,7 +70,7 @@ func _draw() -> void:
 	var rect := Rect2(Vector2.ZERO, size)
 	if card == null:
 		draw_rect(rect, Palette.PANEL)
-		draw_rect(rect.grow(-0.5), Palette.PATH_EDGE, false, 1.0)
+		draw_rect(rect.grow(-BORDER / 2.0), Palette.PATH_EDGE, false, BORDER)
 		return
 	draw_rect(rect, Palette.CARD_BG)
 	if full:
@@ -76,26 +78,28 @@ func _draw() -> void:
 	else:
 		_draw_compact()
 	var border := Palette.SHOT if selected else rarity_color(card.rarity)
-	draw_rect(rect.grow(-0.5), border, false, 1.0)
+	draw_rect(rect.grow(-BORDER / 2.0), border, false, BORDER)
 	_draw_cost()
 
 
 func _draw_compact() -> void:
 	if card.art != null:
-		draw_texture_rect_region(card.art, Rect2(2, 2, 44, 30), COMPACT_CROP)
-	UiFont.draw_wrapped(self, Vector2(2, 34), card.display_name, 44, 3, Palette.TEXT)
+		draw_texture_rect_region(card.art, Rect2(4, 4, 88, 60), COMPACT_CROP)
+	UiFont.draw_wrapped(self, Vector2(4, 68), card.display_name, 88, 3, Palette.TEXT)
 
 
 func _draw_full() -> void:
 	if card.art != null:
-		draw_texture_rect(card.art, Rect2(4, 4, 64, 48), false)
-	UiFont.draw_centered(self, 36, 53, card.display_name, Palette.TEXT)
-	UiFont.draw_wrapped(self, Vector2(4, 63), card.text, 64, 5, Palette.CARD_TEXT_DIM)
+		draw_texture_rect(card.art, Rect2(8, 8, 128, 96), false)
+	UiFont.draw_centered(self, 72, 106, card.display_name, Palette.TEXT)
+	UiFont.draw_wrapped(self, Vector2(8, 126), card.text, 128, 5, Palette.CARD_TEXT_DIM)
 
 
 func _draw_cost() -> void:
 	var cost := card.cost if shown_cost < 0 else shown_cost
-	var badge := Rect2(1, 1, 9, 9)
+	var badge := Rect2(2, 2, 18, 18)
 	draw_rect(badge, Palette.PANEL)
-	draw_rect(badge.grow(-0.5), Palette.ENERGY if affordable else Palette.INVALID, false, 1.0)
-	UiFont.draw_centered(self, 5.5, 1, str(cost), Palette.ENERGY if affordable else Palette.INVALID)
+	draw_rect(
+		badge.grow(-BORDER / 2.0), Palette.ENERGY if affordable else Palette.INVALID, false, BORDER
+	)
+	UiFont.draw_centered(self, 11, 3, str(cost), Palette.ENERGY if affordable else Palette.INVALID)

@@ -27,7 +27,7 @@ func _run_until_over(lane: Lane) -> void:
 func test_tower_kills_the_whole_wave() -> void:
 	var waves: Array[WaveData] = [WAVE_01]
 	var lane := _make_lane(waves)
-	lane.place_tower(ARROW, Vector2(130, 64))
+	lane.place_tower(ARROW, Vector2(260, 128))
 	_run_until_over(lane)
 	assert_int(lane.phase).is_equal(Lane.Phase.WON)
 	assert_int(lane.core.hp).is_equal(lane.core.max_hp)
@@ -45,7 +45,7 @@ func test_without_towers_goblins_reach_the_core() -> void:
 func test_break_between_waves() -> void:
 	var waves: Array[WaveData] = [WAVE_01, WAVE_01]
 	var lane := _make_lane(waves)
-	lane.place_tower(ARROW, Vector2(130, 64))
+	lane.place_tower(ARROW, Vector2(260, 128))
 	while lane.waves_cleared == 0:
 		lane.tick(STEP)
 	assert_int(lane.phase).is_equal(Lane.Phase.BREAK)
@@ -65,7 +65,7 @@ func test_run_is_lost_when_crystal_breaks() -> void:
 	lane.core.hp = 1
 	_run_until_over(lane)
 	assert_int(lane.phase).is_equal(Lane.Phase.LOST)
-	assert_bool(lane.play_card(0, 0, Vector2(130, 64))).is_false()
+	assert_bool(lane.play_card(0, 0, Vector2(260, 128))).is_false()
 
 
 func test_scene_has_ten_waves() -> void:
@@ -84,18 +84,18 @@ func test_energy_regenerates_during_tick() -> void:
 func test_placement_rules() -> void:
 	var waves: Array[WaveData] = []
 	var lane := _make_lane(waves)
-	lane.hero.position = Vector2(160, 64)
-	assert_bool(lane.can_place_tower(Vector2(150, 60), lane.hero)).is_true()
-	assert_bool(lane.can_place_tower(Vector2(160, 96), lane.hero)).is_false()
-	assert_bool(lane.can_place_tower(Vector2(160, 10), lane.hero)).is_false()
-	lane.place_tower(ARROW, Vector2(150, 60))
-	assert_bool(lane.can_place_tower(Vector2(155, 60), lane.hero)).is_false()
+	lane.hero.position = Vector2(320, 128)
+	assert_bool(lane.can_place_tower(Vector2(300, 120), lane.hero)).is_true()
+	assert_bool(lane.can_place_tower(Vector2(320, 192), lane.hero)).is_false()
+	assert_bool(lane.can_place_tower(Vector2(320, 20), lane.hero)).is_false()
+	lane.place_tower(ARROW, Vector2(300, 120))
+	assert_bool(lane.can_place_tower(Vector2(310, 120), lane.hero)).is_false()
 
 
 func test_hero_moves_inside_field() -> void:
 	var waves: Array[WaveData] = []
 	var lane := _make_lane(waves)
-	lane.hero.position = Vector2(160, 100)
+	lane.hero.position = Vector2(320, 200)
 	lane.hero.move_dir = Vector2.DOWN
 	for i in 120:
 		lane.tick(STEP)

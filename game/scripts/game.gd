@@ -85,7 +85,7 @@ func _draw_targeting() -> void:
 	var places_tower := card.kind == CardData.Kind.TOWER or card.uses_script()
 	if places_tower:
 		overlay.draw_arc(
-			lane.hero.position, Lane.PLACE_RADIUS, 0.0, TAU, 48, Palette.PATH_EDGE, 1.0
+			lane.hero.position, Lane.PLACE_RADIUS, 0.0, TAU, 48, Palette.PATH_EDGE, 2.0
 		)
 	if not Lane.FIELD.has_point(at):
 		return
@@ -93,12 +93,12 @@ func _draw_targeting() -> void:
 	var color := Palette.VALID if ok else Palette.INVALID
 	for effect in card.effects:
 		if effect is PlaceTowerEffect:
-			overlay.draw_arc(at, effect.tower.attack_range, 0.0, TAU, 48, color, 1.0)
+			overlay.draw_arc(at, effect.tower.attack_range, 0.0, TAU, 48, color, 2.0)
 		elif effect is LureEffect:
-			overlay.draw_arc(at, effect.radius, 0.0, TAU, 32, color, 1.0)
+			overlay.draw_arc(at, effect.radius, 0.0, TAU, 32, color, 2.0)
 		elif effect is TeleportEffect:
 			var to := (
 				lane.hero.position + (at - lane.hero.position).limit_length(effect.max_distance)
 			)
-			overlay.draw_line(lane.hero.position, to, color, 1.0)
-	overlay.draw_rect(Rect2(at - Vector2(2, 2), Vector2(5, 5)), color, false, 1.0)
+			overlay.draw_line(lane.hero.position, to, color, 2.0)
+	overlay.draw_rect(Rect2(at - Vector2(5, 5), Vector2(10, 10)), color, false, 2.0)

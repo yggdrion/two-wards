@@ -12,13 +12,13 @@ signal run_lost
 
 enum Phase { WAVE, BREAK, WON, LOST }
 
-const PATH_WIDTH := 12.0
+const PATH_WIDTH := 24.0
 ## Playable field above the card UI. Heroes and towers stay inside it.
-const FIELD := Rect2(0, 0, 320, 112)
+const FIELD := Rect2(0, 0, 640, 224)
 ## Towers can only be placed this close to the playing player's hero.
-const PLACE_RADIUS := 48.0
+const PLACE_RADIUS := 96.0
 ## Minimum distance between two towers.
-const TOWER_SPACING := 12.0
+const TOWER_SPACING := 24.0
 ## Seconds between a cleared wave and the next one.
 const WAVE_BREAK := 5.0
 const GOLD_PER_WAVE := 10
@@ -319,8 +319,8 @@ func _draw() -> void:
 	var points := path.curve.get_baked_points()
 	for i in points.size():
 		points[i] += path.position
-	draw_polyline(points, Palette.PATH_EDGE, PATH_WIDTH + 2.0)
+	draw_polyline(points, Palette.PATH_EDGE, PATH_WIDTH + 4.0)
 	draw_polyline(points, Palette.PATH, PATH_WIDTH)
 	for lure in lures:
-		draw_arc(lure["position"], lure["radius"], 0.0, TAU, 32, Palette.LURE, 1.0)
-		draw_rect(Rect2(lure["position"] - Vector2(2, 3), Vector2(4, 6)), Palette.LURE)
+		draw_arc(lure["position"], lure["radius"], 0.0, TAU, 32, Palette.LURE, 2.0)
+		draw_rect(Rect2(lure["position"] - Vector2(4, 6), Vector2(8, 12)), Palette.LURE)

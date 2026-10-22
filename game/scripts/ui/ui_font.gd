@@ -1,15 +1,17 @@
 class_name UiFont
-## The UI pixel font: m5x7 at 1x, loaded from FONT_PATH without antialiasing.
-## Until the font file is added, Godot's fallback font stands in.
+## The UI pixel font: m5x7 drawn at 2x (integer scale) on the 640x360 base resolution, loaded
+## from FONT_PATH without antialiasing. Until the font file is added, Godot's fallback font
+## stands in.
 
 const FONT_PATH := "res://assets/fonts/m5x7.ttf"
-## m5x7 is drawn pixel-perfect at size 16 (5x7 glyphs).
-const PIXEL_SIZE := 16
-const FALLBACK_SIZE := 8
+## m5x7 is pixel-perfect at size 16 (5x7 glyphs); SCALE doubles every font pixel.
+const SCALE := 2
+const PIXEL_SIZE := 16 * SCALE
+const FALLBACK_SIZE := 8 * SCALE
 ## Vertical distance between two text lines, in pixels.
-const LINE := 8
+const LINE := 8 * SCALE
 ## Baseline offset from the top of a line.
-const BASELINE := 7
+const BASELINE := 7 * SCALE
 
 static var _font: Font
 static var _size := FALLBACK_SIZE

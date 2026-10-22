@@ -72,7 +72,7 @@ func is_alive() -> bool:
 
 
 func size() -> float:
-	return 8.0 + data.armor * 2.0 if data != null else 8.0
+	return 16.0 + data.armor * 4.0 if data != null else 16.0
 
 
 func _draw() -> void:
@@ -80,11 +80,11 @@ func _draw() -> void:
 	var half := s / 2.0
 	var body := Palette.GOBLIN_ARMORED if data != null and data.armor > 0 else Palette.GOBLIN
 	draw_rect(Rect2(-half, -half, s, s), body)
-	draw_rect(Rect2(-2, -2, 1, 1), Palette.GOBLIN_ACCENT)
-	draw_rect(Rect2(1, -2, 1, 1), Palette.GOBLIN_ACCENT)
+	draw_rect(Rect2(-4, -4, 2, 2), Palette.GOBLIN_ACCENT)
+	draw_rect(Rect2(2, -4, 2, 2), Palette.GOBLIN_ACCENT)
 	if is_slowed():
-		draw_rect(Rect2(-half, -half, s, s), Palette.FROST, false, 1.0)
+		draw_rect(Rect2(-half, -half, s, s), Palette.FROST, false, 2.0)
 	if data != null and hp < data.max_hp:
 		var ratio := float(hp) / data.max_hp
-		draw_rect(Rect2(-half, -half - 3, s, 1), Palette.HP_BACK)
-		draw_rect(Rect2(-half, -half - 3, s * ratio, 1), Palette.HP_FILL)
+		draw_rect(Rect2(-half, -half - 6, s, 2), Palette.HP_BACK)
+		draw_rect(Rect2(-half, -half - 6, s * ratio, 2), Palette.HP_FILL)

@@ -26,7 +26,7 @@ func test_every_card_is_complete() -> void:
 		assert_str(card.text).override_failure_message(path).is_not_empty()
 		assert_int(card.cost).override_failure_message(path).is_between(1, 7)
 		assert_object(card.art).override_failure_message(path).is_not_null()
-		assert_vector(card.art.get_size()).is_equal(Vector2(64, 48))
+		assert_vector(card.art.get_size()).is_equal(Vector2(128, 96))
 		assert_bool(card.effects.is_empty()).override_failure_message(path).is_false()
 
 

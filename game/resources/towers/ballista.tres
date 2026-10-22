@@ -6,7 +6,7 @@
 script = ExtResource("1_tower")
 id = &"ballista"
 display_name = "Ballista"
-attack_range = 80.0
+attack_range = 160.0
 damage = 25
 fire_interval = 2.0
 pierce = true

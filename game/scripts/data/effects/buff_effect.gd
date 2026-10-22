@@ -5,7 +5,7 @@ extends CardEffect
 @export var fire_rate: float = 1.5
 @export var duration: float = 10.0
 ## Towers within this distance of the hero are buffed.
-@export var radius: float = 48.0
+@export var radius: float = 96.0
 
 
 func can_apply(ctx: CardContext) -> bool:

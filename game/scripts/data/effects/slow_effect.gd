@@ -5,7 +5,7 @@ extends CardEffect
 ## Speed multiplier while slowed.
 @export var factor: float = 0.5
 @export var duration: float = 2.0
-@export var radius: float = 24.0
+@export var radius: float = 48.0
 
 
 func apply(ctx: CardContext) -> void:

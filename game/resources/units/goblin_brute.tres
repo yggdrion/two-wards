@@ -7,6 +7,6 @@ script = ExtResource("1_unit")
 id = &"goblin_brute"
 display_name = "Goblin Brute"
 max_hp = 90
-speed = 22.0
+speed = 44.0
 armor = 3
 core_damage = 3

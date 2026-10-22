@@ -35,9 +35,9 @@ func heal(amount: int) -> void:
 
 func _draw() -> void:
 	var diamond := PackedVector2Array(
-		[Vector2(0, -8), Vector2(6, 0), Vector2(0, 8), Vector2(-6, 0)]
+		[Vector2(0, -16), Vector2(12, 0), Vector2(0, 16), Vector2(-12, 0)]
 	)
 	draw_colored_polygon(diamond, Palette.CRYSTAL)
 	var ratio := float(hp) / max_hp if max_hp > 0 else 0.0
-	draw_rect(Rect2(-8, 11, 16, 2), Palette.HP_BACK)
-	draw_rect(Rect2(-8, 11, 16 * ratio, 2), Palette.HP_FILL)
+	draw_rect(Rect2(-16, 22, 32, 4), Palette.HP_BACK)
+	draw_rect(Rect2(-16, 22, 32 * ratio, 4), Palette.HP_FILL)

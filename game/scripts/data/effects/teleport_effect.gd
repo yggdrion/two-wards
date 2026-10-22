@@ -2,7 +2,7 @@ class_name TeleportEffect
 extends CardEffect
 ## Moves the hero towards the target, at most max_distance, and makes it briefly invulnerable.
 
-@export var max_distance: float = 64.0
+@export var max_distance: float = 128.0
 @export var invulnerable: float = 1.0
 
 

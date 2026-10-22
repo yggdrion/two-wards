@@ -6,8 +6,8 @@
 script = ExtResource("1_tower")
 id = &"storm_spire"
 display_name = "Storm Spire"
-attack_range = 56.0
+attack_range = 112.0
 damage = 12
 fire_interval = 1.2
 chain_count = 3
-chain_range = 32.0
+chain_range = 64.0

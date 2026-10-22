@@ -3,5 +3,5 @@
 	"seed": 1,
 	"deck": ["arrow_tower", "mend", "arcane_bolt"],
 	"actions": [],
-	"expect": {"result": "lost", "waves_cleared": 3, "crystal_hp": 0, "gold": 30}
+	"expect": {"result": "lost", "waves_cleared": 3, "crystal_hp": 0, "gold": 30, "hash": "47b92fb8a6387f3f"}
 }

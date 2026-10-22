@@ -6,7 +6,7 @@
 script = ExtResource("1_tower")
 id = &"frost_totem"
 display_name = "Frost Totem"
-attack_range = 32.0
+attack_range = 64.0
 damage = 0
 fire_interval = 0.5
 area = true
