@@ -97,9 +97,9 @@ func _draw_full() -> void:
 
 func _draw_cost() -> void:
 	var cost := card.cost if shown_cost < 0 else shown_cost
-	var badge := Rect2(2, 2, 18, 18)
+	var badge := Rect2(2, 2, 20, 20)
 	draw_rect(badge, Palette.PANEL)
 	draw_rect(
 		badge.grow(-BORDER / 2.0), Palette.ENERGY if affordable else Palette.INVALID, false, BORDER
 	)
-	UiFont.draw_centered(self, 11, 3, str(cost), Palette.ENERGY if affordable else Palette.INVALID)
+	UiFont.draw_centered(self, 12, 5, str(cost), Palette.ENERGY if affordable else Palette.INVALID)
