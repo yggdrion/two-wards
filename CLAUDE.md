@@ -4,9 +4,31 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## State of the repo
 
-Planning only — no code yet. Next milestone is M1 (Skeleton). `docs/PLAN.md` is the source of truth for scope, architecture, card/meta numbers, style guide, testing and milestones; read it before starting work. Its scope table is binding: anything listed as "out of scope" goes to a backlog, not into the PoC.
+M1 (Skeleton) is in progress: Godot project in `game/` with a gray-box lane, one goblin, one tower, gdUnit4 tests and CI. `docs/PLAN.md` is the source of truth for scope, architecture, card/meta numbers, style guide, testing and milestones; read it before starting work. Its scope table is binding: anything listed as "out of scope" goes to a backlog, not into the PoC.
 
-There are no build, lint or test commands yet. When M1 adds them, document them here. Planned tooling: Godot 4.7.2 (GDScript), gdUnit4, gdtoolkit lint, `bun test` for the lobby, GitHub Actions CI.
+## Commands
+
+Tooling: Godot 4.7.2 (GDScript), gdUnit4 v6.2.2, gdtoolkit 4.5.0. Planned later: `bun test` for the lobby.
+
+    # Tests (headless). Installs pinned gdUnit4 into game/addons/gdUnit4 (gitignored), imports, runs res://tests.
+    GODOT_BIN=/path/to/godot ./tools/run_tests.sh
+    # Single suite: append gdUnit4 args, e.g. -a res://tests/tower_test.gd
+    GODOT_BIN=/path/to/godot ./tools/run_tests.sh -a res://tests/tower_test.gd
+
+    # Lint and format check (pip install "gdtoolkit==4.5.0")
+    gdlint game/scripts game/tests
+    gdformat --check game/scripts game/tests
+
+    # Run the game
+    godot --path game
+
+CI (`.github/workflows/ci.yml`) runs lint and the tests on every push. Commit the `*.gd.uid` files Godot generates next to scripts.
+
+## Code conventions
+
+- Simulation advances only through explicit `step(delta)` / `Lane.tick(delta)` calls, never real time inside logic. Tests set `lane.autorun = false` and tick with a fixed delta; the network host will drive the same path.
+- Gray-box drawing uses `_draw()` with colors from `scripts/palette.gd` (Endesga 32 only) until M6 replaces it with art.
+- Test files live in `game/tests/` and are named `*_test.gd`.
 
 ## What this is
 
@@ -14,7 +36,7 @@ Two Wards: a real-time 2-player co-op tower defense roguelite with a card deck. 
 
 ## Planned layout
 
-    game/          Godot project (scenes, scripts, resources, tests)
+    game/          Godot project: scenes/, scripts/{data,lane}/, resources/, tests/
     lobby/         Lobby/signaling server (TypeScript on Bun) + tests + Dockerfile
     deploy/        Kubernetes manifests: lobby, coturn, monitoring config
     assets-src/    Aseprite sources, palette, anchors
