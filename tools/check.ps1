@@ -54,14 +54,19 @@ try {
 
     Invoke-Step 'gdUnit4 tests' { & (Join-Path $PSScriptRoot 'run_tests.ps1') }
 
-    # Compare before and after, so local uncommitted work does not count as drift.
-    function Get-Snapshot { ((git status --porcelain game/) + (git diff game/)) -join "`n" }
+    # Compare before and after, so local uncommitted work does not count as drift. Content
+    # diff plus untracked files, not git status: with core.autocrlf, Godot rewriting a CRLF
+    # checkout as LF shows up as modified in git status although the content is the same.
+    function Get-Snapshot {
+        ((git diff game/) + (git ls-files --others --exclude-standard game/)) -join "`n"
+    }
     Invoke-Step 'Generated assets up to date' {
         $Before = Get-Snapshot
         & (Join-Path $PSScriptRoot 'build_assets.ps1') | Out-Null
         if ($LASTEXITCODE) { return }
         if ((Get-Snapshot) -ne $Before) {
-            git status --porcelain game/
+            git --no-pager diff --stat game/
+            git ls-files --others --exclude-standard game/
             git --no-pager diff game/ | Select-Object -First 80
             throw 'build_assets changed files under game/: commit the regenerated .tres and .import files.'
         }

@@ -53,12 +53,15 @@ step "gdUnit4 tests"
 ./tools/run_tests.sh
 
 step "Generated assets up to date"
-# Compare before and after, so local uncommitted work does not count as drift.
-snapshot() { { git status --porcelain game/; git diff game/; } | git hash-object --stdin; }
+# Compare before and after, so local uncommitted work does not count as drift. Content
+# diff plus untracked files, not git status: with core.autocrlf, Godot rewriting a CRLF
+# checkout as LF shows up as modified in git status although the content is the same.
+snapshot() { { git diff game/; git ls-files --others --exclude-standard game/; } | git hash-object --stdin; }
 BEFORE="$(snapshot)"
 ./tools/build_assets.sh >/dev/null
 if [ "$(snapshot)" != "$BEFORE" ]; then
-	git status --porcelain game/
+	git --no-pager diff --stat game/
+	git ls-files --others --exclude-standard game/
 	git --no-pager diff game/ | head -n 80
 	echo "build_assets changed files under game/: commit the regenerated .tres and .import files." >&2
 	exit 1
