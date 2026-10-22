@@ -46,7 +46,7 @@ The PoC passes when every pillar meets its check below and two people on differe
 | --- | --- |
 | Godot | Cards, units and waves are data-driven `Resource` files; adding a simple card = one `.tres` file + art, no code change. At least 9 of the 12 cards are pure data; the rest use a `ScriptedEffect` |
 | Coding | Claude Code implements a new card or enemy from a short description, and existing tests stay green |
-| Testing | Unit tests cover cards, energy, waves, boosters, deck validation, saves; a headless host + client test verifies sync; all run in CI on every push |
+| Testing | Unit tests cover cards, energy, waves, boosters, deck validation, saves; a headless host + client test verifies sync; all run locally with `tools/check` before a push and in CI on every PR |
 | Asset generation | Assets made with the style guide + PixelLab + Aseprite pass the validation script and look consistent side by side in-game |
 | Art | No gray box or placeholder is left on any screen, and a run looks like the approved target frame from A1 |
 | Networking | Two players on different home networks join by room code and play 10 waves without desync |
@@ -291,7 +291,7 @@ The Frost wizard portrait, goblin runner, base tileset, one tower, the Heart Cry
 
 ## Testing and CI
 
-Every push runs unit tests, a headless network test and the asset validation; main branch also builds exports. Godot runs headless in CI, so no display is needed.
+Every pull request runs lint, the unit tests, the headless network test and the asset validation on Linux; main and manual runs also run the Windows checks and build both exports. The same checks run locally with `tools/check.sh` or `tools/check.ps1` (optionally as a pre-push hook), so CI is a safety net rather than the inner loop. Godot runs headless in CI, so no display is needed.
 
 | Layer | Tool | What it covers |
 | --- | --- | --- |

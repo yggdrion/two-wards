@@ -49,7 +49,15 @@ Every script in `tools/` has a PowerShell twin (`.ps1`) for Windows; keep both i
 
 After adding or changing a PNG or a manifest entry, run the validator and `build_assets`, then commit the PNG, its `.import` file and the regenerated `.tres`. Never edit `game/resources/generated/` by hand.
 
-CI (`.github/workflows/ci.yml`) runs on every push: lint, the tests (Linux and Windows), and a Linux export (`export.sh`) plus a Windows export (`export.ps1` on a Windows runner). Builds are uploaded as artifacts only from `main` or manual runs. Export presets live in `game/export_presets.cfg` (`Linux`, `Windows Desktop`). Commit the `*.gd.uid` files Godot generates next to scripts.
+Run the local check before pushing; it mirrors CI and stops at the first failure:
+
+    ./tools/check.sh                 # lint, format, asset validator, gdUnit4 tests, generated-asset drift
+    ./tools/check.sh --quick         # lint + asset validator only, no Godot
+    ./tools/check.sh --export        # also export Linux and Windows builds to build/
+    ./tools/check.sh --install-hook  # git pre-push hook that runs the check (skip once: git push --no-verify)
+    .\tools\check.ps1 [-Quick] [-Export] [-InstallHook]   # Windows; -Export builds build/windows/ for playtests
+
+CI (`.github/workflows/ci.yml`) is lean to save Actions minutes (the repo is private): it runs on pull requests and pushes to `main`, skips docs-only changes (`docs/**`, `*.md`) and cancels a PR's older run on a new push. PR runs do lint and the Linux tests; the Windows job (`check.ps1`) and the Linux export (`export.sh`) plus Windows export (`export.ps1` on a Windows runner) run only on `main` and manual runs, which upload the builds as artifacts. For a playable Windows build of a branch, use "Run workflow" on the CI workflow or `.\tools\check.ps1 -Export` locally. The header of `ci.yml` says how to switch back to full CI on every push. Export presets live in `game/export_presets.cfg` (`Linux`, `Windows Desktop`). Commit the `*.gd.uid` files Godot generates next to scripts.
 
 Some CI jobs stay off until their entry point exists:
 

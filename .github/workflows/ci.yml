@@ -6,10 +6,26 @@ name: CI
 #   5. Windows + Linux exports (uploaded as artifacts on main)
 # Jobs for parts that don't exist yet (network test, lobby, asset validator)
 # are gated on their entry point and switch on once it lands.
+#
+# Lean mode: run ./tools/check.sh (or .\tools\check.ps1) locally before pushing.
+# CI runs on PRs and main only; PR runs do Linux lint + tests, and the Windows
+# test job and exports run on main or on a manual run ("Run workflow" on any
+# branch gives a playable Windows build). For full CI on every push again, set
+# `push:` with no filters and drop the two `if: github.event_name != 'pull_request'`
+# lines on test-windows and export.
 
 on:
   push:
+    branches: [main]
+    paths-ignore: ["docs/**", "**.md"]
+  pull_request:
+    paths-ignore: ["docs/**", "**.md"]
   workflow_dispatch:
+
+# A newer push to a PR cancels its older run; main runs always finish.
+concurrency:
+  group: ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
   GDTOOLKIT_VERSION: 4.5.0
@@ -75,18 +91,24 @@ jobs:
           git status --porcelain game/
           test -z "$(git status --porcelain game/)"
 
+  # Runs the local check script, so check.ps1 and the .ps1 tools stay exercised.
   test-windows:
+    if: github.event_name != 'pull_request'
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install "gdtoolkit==${env:GDTOOLKIT_VERSION}" -r tools/requirements.txt
       - name: Cache Godot
         uses: actions/cache@v4
         with:
           path: .tools/godot
           key: godot-${{ runner.os }}-${{ hashFiles('.godot-version', 'tools/godot-*.sha512') }}
-      - name: Run gdUnit4 tests
+      - name: Run local checks (lint, assets, gdUnit4 tests, drift)
         shell: pwsh
-        run: ./tools/run_tests.ps1
+        run: ./tools/check.ps1
 
   network:
     needs: detect
@@ -120,11 +142,12 @@ jobs:
       - name: Build container
         run: docker build -t two-wards-lobby:${{ github.sha }} .
 
-  # Exports run on every push so a broken export shows up early; the builds are
-  # only uploaded from main (or manual runs). Each platform exports on its own OS
-  # so both the .sh and the .ps1 export scripts stay exercised.
+  # Exports run on main and manual runs, and the builds are uploaded. Each platform
+  # exports on its own OS so both the .sh and the .ps1 export scripts stay exercised.
+  # Locally: ./tools/export.sh windows or .\tools\check.ps1 -Export.
   export:
     name: export (${{ matrix.platform }})
+    if: github.event_name != 'pull_request'
     needs: [lint, test, test-windows]
     strategy:
       fail-fast: false
@@ -157,7 +180,6 @@ jobs:
         shell: pwsh
         run: ./tools/export.ps1 ${{ matrix.platform }}
       - name: Upload build
-        if: github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
         uses: actions/upload-artifact@v4
         with:
           name: two-wards-${{ matrix.platform }}-${{ github.sha }}
