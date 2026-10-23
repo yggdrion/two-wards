@@ -11,7 +11,7 @@ Draft, 2026-10-23. Facts are filled in from git, GitHub and the code; lines mark
 | Tests | 172 gdUnit4 tests in 23 suites, 4 co-op scenarios, 9 lobby tests |
 | CI | 71 runs, 64 green, 7 red (6 on feature branches, 1 on `main` on 2026-10-22 before the local check existed) |
 | Cards | 12, of which 2 (Time Warp, Mirror Image) need the `ScriptedEffect` escape hatch, as planned |
-| Milestones | M1–M5, M3b, M7 done; M6 (art) not started, blocked on the PixelLab upgrade |
+| Milestones | M1–M5, M3b, M7 done; M6 (art) started on the free PixelLab trial: A1 target frame in #21, awaiting approval |
 
 PR timeline (open → merge):
 
@@ -53,7 +53,8 @@ PR timeline (open → merge):
 ### 4. AI asset generation
 
 - Partly proven: validator, manifest, placeholder generator and `build_assets` run in CI; first PixelLab hero frames came back on-palette with clean alpha.
-- Not proven: no bulk generation, no animation strips, no target frame (A1). `rotate` gave no true side view.
+- A1 on the free trial (#21): goblin runner, Heart Crystal, arrow tower and a grass/path Wang tileset composed into a target frame in Godot. Pixflux with `direction: east` gave a usable side view where `rotate` had not. Tilesets cost several generations each, charged late; 14 of 40 left.
+- Not proven: no bulk generation, no animation strips, no card art.
 - **Rapha:** decide the real game's art route only after A1, or now?
 
 ### 5. Online co-op networking
