@@ -2,7 +2,7 @@
 
 Everything a new session (human or Claude) needs to pick up Two Wards without the original Claude project. It collects the decisions, routines and state that used to live only in project notes. `docs/PLAN.md` stays the source of truth for scope, architecture and milestones; this file adds the "why" and the working habits around it.
 
-Last updated: 2026-10-23, during M5 (server stack running on the gvm host).
+Last updated: 2026-10-23, after M5 (PR #18) was merged.
 
 ## Where things stand
 
@@ -17,7 +17,8 @@ Last updated: 2026-10-23, during M5 (server stack running on the gvm host).
 | Local check script | Done | #13 |
 | M3b Heroes | Done | #14 |
 | M4 Local co-op over ENet | Done, merged 2026-10-23 | #15 |
-| **M5 Lobby + WebRTC** | **In progress**: code and tests done, deploy and the two-network playtest open | |
+| M5 Lobby + WebRTC | Done, merged 2026-10-23; two-network playtest passed | #18 |
+| **M7 Full loop** | **Next** | |
 | A1 Look target (art track) | Waiting on the PixelLab paid upgrade | |
 
 Plan-only PRs: #1 (CLAUDE.md, rename), #5 (revised plan), #9 (full pixel-art route), #12 (hero redesign).
@@ -81,9 +82,9 @@ Rapha kept the Node-based sim (no pure sim core). Lockstep with the host as the 
 - **Game**: `LobbyClient` hands its `WebRTCMultiplayerPeer` to `NetSession` at once, so the existing hello/start handshake and lockstep run unchanged. The co-op screen has "Host online" / "Join code" and keeps the M4 LAN row as the fallback. The old `two_wards/network/transport` setting is gone; `two_wards/network/lobby_url` points at a different lobby.
 - **WebRTC** comes from the pinned webrtc-native GDExtension, installed by `install_godot` into `game/addons/webrtc_native/` (gitignored), so it ships in every export.
 
-## Next: finish M5
+## Next: M7
 
-The done check: two players on different networks complete 10 waves.
+Main menu, lobby screen with deck preview (both players' decks and wizards before the run), and the run → rewards → gold → booster flow, so the full loop works in co-op by two people in one session. M6 (art and juice) needs A1 first, which waits on the PixelLab upgrade. See `docs/PLAN.md` for the details.
 
 ## Reference images
 

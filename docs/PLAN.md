@@ -331,7 +331,7 @@ Eight milestones plus M3b (heroes, added after the M3 playtest); M4–M5 (networ
 
 ## Risks and open decisions
 
-The biggest risk is WebRTC on desktop; the fallback is ENet with port forwarding or a WebSocket relay so M7 is never blocked.
+The biggest risk was WebRTC on desktop; M5 retired it (webrtc-native GDExtension, two-network playtest passed). The ENet LAN path stays as the fallback.
 
 | Risk | Impact | Mitigation |
 | --- | --- | --- |
