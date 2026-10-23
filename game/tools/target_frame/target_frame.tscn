@@ -1,0 +1,6 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://tools/target_frame/target_frame.gd" id="1_frame"]
+
+[node name="TargetFrame" type="Node2D"]
+script = ExtResource("1_frame")
