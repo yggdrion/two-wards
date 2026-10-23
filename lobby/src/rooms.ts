@@ -24,7 +24,7 @@ export interface IceServer {
 }
 
 export interface Config {
-  // Must match NetSession.PROTOCOL in the game.
+  // Must match LobbyClient.PROTOCOL in the game.
   protocol: number;
   // coturn host for STUN/TURN; empty disables both (local tests).
   turnHost: string;

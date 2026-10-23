@@ -39,7 +39,8 @@ signal partner_left
 
 enum Role { NONE, HOST, CLIENT }
 
-## Bumped when messages change; a mismatching client is turned away.
+## Bumped when game messages change; the host turns a mismatching client away after hello.
+## The lobby has its own version (LobbyClient.PROTOCOL).
 const PROTOCOL := 2
 
 var role := Role.NONE
@@ -84,7 +85,7 @@ func join(address: String, port: int, hello: Dictionary) -> bool:
 func host_online(url: String = Transport.lobby_url()) -> void:
 	close()
 	role = Role.HOST
-	_start_lobby().create(url, PROTOCOL)
+	_start_lobby().create(url)
 
 
 ## Joins the lobby room with this code; sends hello once connected, as with join().
@@ -92,7 +93,7 @@ func join_online(code: String, hello: Dictionary, url: String = Transport.lobby_
 	close()
 	role = Role.CLIENT
 	_set_hello(hello)
-	_start_lobby().join(url, code, PROTOCOL)
+	_start_lobby().join(url, code)
 
 
 func close() -> void:

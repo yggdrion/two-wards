@@ -2,7 +2,7 @@
 
 Everything a new session (human or Claude) needs to pick up Two Wards without the original Claude project. It collects the decisions, routines and state that used to live only in project notes. `docs/PLAN.md` stays the source of truth for scope, architecture and milestones; this file adds the "why" and the working habits around it.
 
-Last updated: 2026-10-23, after M5 (PR #18) was merged.
+Last updated: 2026-10-23, M7 built and waiting on its playtest.
 
 ## Where things stand
 
@@ -18,7 +18,7 @@ Last updated: 2026-10-23, after M5 (PR #18) was merged.
 | M3b Heroes | Done | #14 |
 | M4 Local co-op over ENet | Done, merged 2026-10-23 | #15 |
 | M5 Lobby + WebRTC | Done, merged 2026-10-23; two-network playtest passed | #18 |
-| **M7 Full loop** | **Next** | |
+| **M7 Full loop** | **Built, waiting on the playtest** | |
 | A1 Look target (art track) | Waiting on the PixelLab paid upgrade | |
 
 Plan-only PRs: #1 (CLAUDE.md, rename), #5 (revised plan), #9 (full pixel-art route), #12 (hero redesign).
@@ -78,13 +78,19 @@ Rapha kept the Node-based sim (no pure sim core). Lockstep with the host as the 
 ### M5 online co-op
 
 - **Hosting**: no Kubernetes. Rapha's existing gvm box (`grafana.r4b2.de`, Hetzner, already runs Caddy, VictoriaMetrics, Grafana and vector) hosts the server stack, but Rapha wants it to stay in this repo and gvm untouched: `/root/two-wards` is a clone, `deploy/docker-compose.yml` builds the lobby from source and brings its own vector (remote-writes to `vm.r4b2.de`). The only gvm change is one Caddyfile block: gvm's Caddy terminates TLS for `twowards.r4b2.de` and proxies to the lobby, which joins `gvm_default` (a separate Caddy would have needed a Cloudflare token for a DNS challenge, since gvm has 80/443). Dashboard "Two Wards server" on grafana.r4b2.de. `twowards.r4b2.de` points at the host without Cloudflare proxy (TURN is UDP). The Hetzner firewall already lets 3478 and the relay range through (tested from outside). Steps in [deploy/README.md](../deploy/README.md).
-- **Lobby** (`lobby/`, Bun, no runtime deps): 4-letter room codes, relays WebRTC offer/answer/candidates verbatim, mints time-limited coturn credentials (REST scheme, `TURN_SECRET` only on the host). Rooms end once the peers report `connected` or after 10 minutes. Its `PROTOCOL` must match `NetSession.PROTOCOL`.
+- **Lobby** (`lobby/`, Bun, no runtime deps): 4-letter room codes, relays WebRTC offer/answer/candidates verbatim, mints time-limited coturn credentials (REST scheme, `TURN_SECRET` only on the host). Rooms end once the peers report `connected` or after 10 minutes. Its `PROTOCOL` must match `LobbyClient.PROTOCOL` (the signaling format); game messages have their own `NetSession.PROTOCOL`, checked by the host on hello, so a game-only change needs no lobby redeploy.
 - **Game**: `LobbyClient` hands its `WebRTCMultiplayerPeer` to `NetSession` at once, so the existing hello/start handshake and lockstep run unchanged. The co-op screen has "Host online" / "Join code" and keeps the M4 LAN row as the fallback. The old `two_wards/network/transport` setting is gone; `two_wards/network/lobby_url` points at a different lobby.
 - **WebRTC** comes from the pinned webrtc-native GDExtension, installed by `install_godot` into `game/addons/webrtc_native/` (gitignored), so it ships in every export.
 
-## Next: M7
+### M7 full loop
 
-Main menu, lobby screen with deck preview (both players' decks and wizards before the run), and the run → rewards → gold → booster flow, so the full loop works in co-op by two people in one session. M6 (art and juice) needs A1 first, which waits on the PixelLab upgrade. See `docs/PLAN.md` for the details.
+- **Own decks** (Rapha, 2026-10-23): no shared run deck. Each player draws from their own deck (`Lane.decks`, one `Deck` per player seeded `rng_seed + i`). A passed card still goes to the partner's gift slot, but returns to its owner's discard once played or cycled (`PlayerState.gift_owner`).
+- **Card reward**: after every cleared wave but the last, `RunRewards` offers each player 3 different cards from the whole catalog, rarity rolled with the booster odds from its own seeded RNG. The pick is a `reward` `NetCommand` and goes into the picker's discard pile. The break timer only runs once every offer is answered. In-run: the offer shows as full cards over the field, click or 1–3. Scenario files turn rewards on with `"rewards": true`; every runner (scenario test, lockstep test, network test, recorder) then takes the first card of each offer as soon as it opens (`Scenario.reward_pick`), because timed pick actions break as soon as client lag shifts a wave's end.
+- **Screens**: the game opens on a title screen (play, fullscreen, quit). Co-op: once connected both players go to the lobby screen (names, wizards, deck lists); the client presses Ready, the host's Start unlocks. Game `NetSession.PROTOCOL` is 2; the lobby's stays 1. After a run, the run-end screen shows the result, waves and gold, with "Open a booster" (at 50 gold) or "Camp".
+
+## Next
+
+Playtest M7 (two people, title → co-op → lobby → 10 waves with picks → run end → booster; restart and check the save), then M8 (retro). M6 (art and juice) needs A1 first, which waits on the PixelLab upgrade.
 
 ## Reference images
 

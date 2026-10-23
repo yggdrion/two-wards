@@ -17,6 +17,9 @@ signal room_created(code: String)
 signal failed(reason: String)
 
 const HOST_ID := 1
+## The lobby message format (lobby/src/server.ts PROTOCOL). Game messages have their own
+## version, NetSession.PROTOCOL.
+const PROTOCOL := 1
 const CLIENT_ID := 2
 
 var code := ""
@@ -30,12 +33,12 @@ var _done := false
 
 
 ## Opens a room. `protocol` must match the lobby's.
-func create(url: String, protocol: int) -> void:
+func create(url: String, protocol: int = PROTOCOL) -> void:
 	_open(url, {"type": "create", "protocol": protocol})
 
 
 ## Joins the room with this code.
-func join(url: String, room_code: String, protocol: int) -> void:
+func join(url: String, room_code: String, protocol: int = PROTOCOL) -> void:
 	_open(url, {"type": "join", "code": room_code.strip_edges().to_upper(), "protocol": protocol})
 
 
