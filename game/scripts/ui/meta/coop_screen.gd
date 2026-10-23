@@ -15,6 +15,8 @@ var host_button: Button
 var join_button: Button
 var cancel_button: Button
 var status_label: Label
+## The code field shows our own room while we host online; it is cleared when that ends.
+var _showing_own_code := false
 
 
 func build() -> void:
@@ -31,6 +33,7 @@ func build() -> void:
 	name_edit.text_changed.connect(_on_name_changed)
 	code_edit = _field(form, "Room code", "")
 	code_edit.max_length = 4
+	code_edit.placeholder_text = "partner's code"
 	address_edit = _field(form, "LAN address", "127.0.0.1")
 	port_edit = _field(form, "LAN port", str(Transport.DEFAULT_PORT))
 	online_host_button = button("Host online", host_online)
@@ -61,6 +64,10 @@ func refresh() -> void:
 	for item: Button in [online_host_button, online_join_button, host_button, join_button]:
 		item.disabled = busy or not ready
 	cancel_button.disabled = not busy
+	code_edit.editable = not busy
+	if not busy and _showing_own_code:
+		_showing_own_code = false
+		code_edit.text = ""
 	if not ready:
 		status_label.text = "Your active deck is not ready, fix it in Decks."
 	elif not busy and status_label.text.is_empty():
@@ -166,6 +173,8 @@ func _on_partner_joined(hello: Dictionary) -> void:
 
 
 func _on_room_ready(code: String) -> void:
+	_showing_own_code = true
+	code_edit.text = code
 	status_label.text = "Room code: %s\nTell your partner, then wait for them to join." % code
 
 
