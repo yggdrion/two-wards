@@ -133,3 +133,23 @@ func test_f11_toggles_fullscreen_on_any_screen() -> void:
 	key.pressed = true
 	app._input(key)
 	assert_bool(app.display.fullscreen).is_true()
+
+
+func test_hero_select_saves_the_wizard_and_the_run_uses_it() -> void:
+	var app := _app()
+	var camp: CampScreen = app._screen
+	assert_str(camp.hero_button.text).is_equal("Wizard: Frost")
+	app.show_screen(App.Screen.HEROES)
+	var screen: HeroSelectScreen = app._screen
+	assert_int(screen.heroes.size()).is_equal(2)
+	var ember := screen.heroes.find(HeroData.find("ember"))
+	screen.choose_buttons[ember].pressed.emit()
+	assert_str(app.profile.hero).is_equal("ember")
+	assert_bool(screen.choose_buttons[ember].disabled).is_true()
+	app.free()
+	var again := _app()
+	assert_str(again.profile.hero).is_equal("ember")
+	again.show_screen(App.Screen.RUN)
+	var lane: Lane = again._screen.get_node("Lane")
+	lane.set_physics_process(false)
+	assert_str(String(lane.players[0].hero.id)).is_equal("ember")

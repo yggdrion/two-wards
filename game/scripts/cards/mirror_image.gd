@@ -3,7 +3,7 @@ extends CardScript
 
 
 func can_apply(ctx: CardContext, _params: Dictionary) -> bool:
-	return _source(ctx) != null and ctx.lane.can_place_tower(ctx.target, ctx.hero())
+	return _source(ctx) != null and ctx.lane.can_place_tower(ctx.target)
 
 
 func apply(ctx: CardContext, params: Dictionary) -> void:

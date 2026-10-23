@@ -1,6 +1,6 @@
 class_name PlaceTowerEffect
 extends CardEffect
-## Places a tower at the target. The target must be near the player's hero and free.
+## Places a tower at the target. The target must be off the path and free.
 
 @export var tower: TowerData
 ## Seconds until the tower disappears; 0 keeps it for the rest of the run.
@@ -8,7 +8,7 @@ extends CardEffect
 
 
 func can_apply(ctx: CardContext) -> bool:
-	return ctx.lane.can_place_tower(ctx.target, ctx.hero())
+	return ctx.lane.can_place_tower(ctx.target)
 
 
 func apply(ctx: CardContext) -> void:

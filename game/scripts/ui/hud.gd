@@ -91,6 +91,7 @@ func _draw() -> void:
 		self, Vector2(8, TOP + 24), "Crystal %d/%d" % [lane.core.hp, lane.core.max_hp], Palette.TEXT
 	)
 	UiFont.draw(self, Vector2(8, TOP + 42), "Gold %d" % lane.gold, Palette.ENERGY)
+	_draw_wizard(player)
 	_draw_energy(player, Vector2(RIGHT_X, TOP + 4))
 	UiFont.draw(
 		self,
@@ -105,6 +106,19 @@ func _draw() -> void:
 		Palette.CARD_TEXT_DIM
 	)
 	_draw_banner()
+
+
+## Wizard and its battlefield buff in the field's top-left corner; brighter while empowered.
+func _draw_wizard(player: PlayerState) -> void:
+	if player.hero == null:
+		return
+	var text := "%s: %s" % [player.hero.display_name, player.hero.buff_label(player.buff_stacks())]
+	var color := Palette.TEXT
+	if player.empowered > 0.0:
+		text += " (x2, %d s)" % ceili(player.empowered)
+		color = Palette.ENERGY
+	draw_rect(Rect2(4, 4, UiFont.width(text) + 8, UiFont.LINE), Palette.PANEL)
+	UiFont.draw(self, Vector2(8, 4), text, color)
 
 
 func _draw_energy(player: PlayerState, pos: Vector2) -> void:

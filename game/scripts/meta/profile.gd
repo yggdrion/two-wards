@@ -1,14 +1,15 @@
 class_name Profile
 extends RefCounted
-## One player's persistent meta state: gold, owned cards, saved decks and the booster pity
-## counter. SaveStore writes it to JSON after every change (see the changed signal).
+## One player's persistent meta state: gold, owned cards, saved decks, the chosen wizard and
+## the booster pity counter. SaveStore writes it to JSON after every change (see the changed
+## signal).
 
 ## Emitted after every change, so the owner can save at once.
 signal changed
 
 ## A new profile owns STARTER_COPIES of each of these and gets STARTER_DECK as its first deck.
 const STARTER_CARDS: Array[String] = [
-	"arrow_tower", "frost_totem", "ballista", "arcane_bolt", "mend", "blink"
+	"arrow_tower", "frost_totem", "ballista", "arcane_bolt", "mend", "empower"
 ]
 const STARTER_COPIES := 2
 const STARTER_DECK: Array[String] = [
@@ -21,6 +22,8 @@ const STARTER_DECK: Array[String] = [
 	"arcane_bolt",
 	"mend",
 ]
+## Wizard of a new profile (and of saves from before hero select).
+const DEFAULT_HERO := "frost"
 
 var profile_name := "default"
 var gold := 0
@@ -30,6 +33,8 @@ var collection: Dictionary = {}
 var decks: Array[Dictionary] = []
 ## Index into decks of the deck taken into the next run.
 var active_deck := 0
+## Id of the wizard taken into the next run (a HeroData id).
+var hero := DEFAULT_HERO
 ## Boosters opened since the last epic (Booster.PITY).
 var boosters_since_epic := 0
 
@@ -82,6 +87,11 @@ func set_active_deck(index: int) -> void:
 	changed.emit()
 
 
+func set_hero(hero_id: String) -> void:
+	hero = hero_id
+	changed.emit()
+
+
 func is_deck_valid(index: int) -> bool:
 	return DeckRules.is_valid(deck_cards(index), collection)
 
@@ -104,6 +114,7 @@ func to_dict() -> Dictionary:
 		"collection": collection.duplicate(),
 		"decks": decks.duplicate(true),
 		"active_deck": active_deck,
+		"hero": hero,
 		"boosters_since_epic": boosters_since_epic,
 	}
 
@@ -125,5 +136,6 @@ static func from_dict(data: Dictionary) -> Profile:
 		profile.decks.append({"name": "Deck %d" % (profile.decks.size() + 1), "cards": []})
 	profile.decks.resize(DeckRules.MAX_DECKS)
 	profile.active_deck = clampi(int(data.get("active_deck", 0)), 0, DeckRules.MAX_DECKS - 1)
+	profile.hero = str(data.get("hero", DEFAULT_HERO))
 	profile.boosters_since_epic = int(data.get("boosters_since_epic", 0))
 	return profile

@@ -8,10 +8,10 @@ extends RefCounted
 ## JSON format (game/tests/scenarios/*.json):
 ##   {
 ##     "seed": 7,
+##     "wizard": "ember",                            # optional: hero id, default frost
 ##     "deck": ["arrow_tower", "arrow_tower", "mend"],
 ##     "waves": 3,                                   # optional: only the first N waves
 ##     "actions": [
-##       {"t": 0.0, "hero": [160, 64]},              # hero position update
 ##       {"t": 1.5, "play": "arrow_tower", "at": [150, 60]},
 ##       {"t": 9.0, "play": "mend"},
 ##       {"t": 12.0, "cycle": "mend"}
@@ -23,6 +23,7 @@ extends RefCounted
 const STEP := 1.0 / 60.0
 const LANE_SCENE := "res://scenes/lane.tscn"
 const CARD_PATH := "res://resources/cards/%s.tres"
+const HERO_PATH := "res://resources/heroes/%s.tres"
 ## A run that hasn't ended by then counts as "timeout".
 const MAX_SECONDS := 900.0
 ## Absorbs float drift in the accumulated lane time.
@@ -30,6 +31,7 @@ const EPSILON := 0.000001
 
 var name := ""
 var rng_seed := 1
+var wizard := "frost"
 var deck_ids := PackedStringArray()
 ## Number of waves to play; -1 plays all waves of the lane scene.
 var wave_count := -1
@@ -42,6 +44,7 @@ static func load_file(path: String) -> Scenario:
 	var scenario := Scenario.new()
 	scenario.name = path.get_file().get_basename()
 	scenario.rng_seed = int(data.get("seed", 1))
+	scenario.wizard = str(data.get("wizard", "frost"))
 	scenario.deck_ids = PackedStringArray(data.get("deck", []))
 	scenario.wave_count = int(data.get("waves", -1))
 	for action: Dictionary in data.get("actions", []):
@@ -60,6 +63,8 @@ func build_lane() -> Lane:
 	for card_id in deck_ids:
 		deck.cards.append(load(CARD_PATH % card_id))
 	lane.deck = deck
+	var heroes: Array[HeroData] = [load(HERO_PATH % wizard)]
+	lane.heroes = heroes
 	if wave_count >= 0:
 		lane.waves = lane.waves.slice(0, wave_count)
 	return lane
@@ -94,9 +99,6 @@ func run(lane: Lane) -> Dictionary:
 
 
 func _apply(lane: Lane, action: Dictionary) -> String:
-	if action.has("hero"):
-		lane.hero.position = lane.clamp_to_field(_vec(action["hero"]))
-		return ""
 	if action.has("cycle"):
 		return _cycle(lane, action["cycle"])
 	if action.has("play"):

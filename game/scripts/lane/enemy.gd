@@ -24,10 +24,11 @@ func setup(unit: UnitData, curve: Curve2D) -> void:
 	position = curve.sample_baked(0.0)
 
 
-func step(delta: float) -> void:
+## speed_mult is the battlefield-wide multiplier from wizard buffs (Lane.enemy_speed_scale).
+func step(delta: float, speed_mult: float = 1.0) -> void:
 	if not _alive:
 		return
-	var speed := data.speed * speed_scale()
+	var speed := data.speed * speed_scale() * speed_mult
 	if _slow_timer > 0.0:
 		_slow_timer -= delta
 		if _slow_timer <= 0.0:

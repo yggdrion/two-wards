@@ -12,7 +12,3 @@ func _init(on_lane: Lane, by_player: PlayerState, at: Vector2 = Vector2.ZERO) ->
 	lane = on_lane
 	player = by_player
 	target = at
-
-
-func hero() -> Hero:
-	return player.hero

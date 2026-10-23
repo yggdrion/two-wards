@@ -1,6 +1,6 @@
 class_name PlayerState
 extends RefCounted
-## One player's run state: hand of 3, energy, and the hero they control.
+## One player's run state: hand of 3, energy, and the wizard whose buff they bring.
 ##
 ## A played or cycled card is replaced in the same hand slot at once.
 
@@ -8,19 +8,40 @@ const HAND_SIZE := 3
 const CYCLE_COST := 1
 
 var deck: Deck
-var hero: Hero
+## The player's wizard; null plays without a buff (tests).
+var hero: HeroData
 var energy := Energy.new()
 ## Hand slots; a slot holds null only if the deck ran completely dry.
 var hand: Array[CardData] = []
 ## Taken off the cost of the next card played (Arcane Focus).
 var next_card_discount: int = 0
+## Seconds left in which the wizard buff counts double (Empower).
+var empowered := 0.0
 
 
-func _init(run_deck: Deck, controlled_hero: Hero) -> void:
+func _init(run_deck: Deck, wizard: HeroData = null) -> void:
 	deck = run_deck
-	hero = controlled_hero
+	hero = wizard
 	for i in HAND_SIZE:
 		hand.append(deck.draw())
+
+
+func step(delta: float) -> void:
+	energy.step(delta)
+	empowered = maxf(empowered - delta, 0.0)
+
+
+## Doubles the wizard buff for `seconds`; a new Empower restarts the timer.
+func empower(seconds: float) -> void:
+	empowered = maxf(empowered, seconds)
+
+
+## How many times this player's wizard buff counts right now: 0 without a wizard, 2 while
+## empowered, else 1.
+func buff_stacks() -> int:
+	if hero == null:
+		return 0
+	return 2 if empowered > 0.0 else 1
 
 
 func cost_of(card: CardData) -> int:

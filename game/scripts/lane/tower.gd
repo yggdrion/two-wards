@@ -31,7 +31,8 @@ func setup(tower: TowerData, seconds: float = 0.0) -> void:
 	_timed = seconds > 0.0
 
 
-func step(delta: float, enemies: Array[Enemy]) -> void:
+## damage_mult is the battlefield-wide multiplier from wizard buffs (Lane.tower_damage_scale).
+func step(delta: float, enemies: Array[Enemy], damage_mult: float = 1.0) -> void:
 	if _shot_timer > 0.0:
 		_shot_timer -= delta
 		if _shot_timer <= 0.0:
@@ -57,9 +58,10 @@ func step(delta: float, enemies: Array[Enemy]) -> void:
 		_shot_points.append(enemy.position - position)
 	_shot_timer = SHOT_FLASH
 	queue_redraw()
+	var damage := roundi(data.damage * damage_mult)
 	for enemy in hits:
-		if data.damage > 0:
-			enemy.take_damage(data.damage)
+		if damage > 0:
+			enemy.take_damage(damage)
 		if data.slow_factor < 1.0:
 			enemy.apply_slow(data.slow_factor, data.slow_duration)
 	fired.emit(target)

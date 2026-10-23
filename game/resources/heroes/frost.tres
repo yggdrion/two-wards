@@ -1,0 +1,17 @@
+[gd_resource type="Resource" script_class="HeroData" format=3]
+
+[ext_resource type="Script" path="res://scripts/data/hero_data.gd" id="1_hero"]
+[ext_resource type="Texture2D" path="res://assets/units/hero/unit_hero_idle_down.png" id="2_sprite"]
+
+[sub_resource type="AtlasTexture" id="AtlasTexture_frost"]
+atlas = ExtResource("2_sprite")
+region = Rect2(0, 0, 64, 64)
+
+[resource]
+script = ExtResource("1_hero")
+id = &"frost"
+display_name = "Frost"
+buff = 0
+amount = 0.15
+text = "Enemies move 15% slower."
+portrait = SubResource("AtlasTexture_frost")

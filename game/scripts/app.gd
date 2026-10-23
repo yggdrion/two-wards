@@ -1,9 +1,9 @@
 class_name App
 extends Node
 ## Root of the game: loads the profile, shows the meta screens and starts runs with the active
-## deck. Saves the profile after every change, so nothing is lost on quit.
+## deck and the chosen wizard. Saves the profile after every change, so nothing is lost on quit.
 
-enum Screen { CAMP, BOOSTER, COLLECTION, DECKS, RUN }
+enum Screen { CAMP, BOOSTER, COLLECTION, DECKS, HEROES, RUN }
 
 const GAME_SCENE := preload("res://scenes/game.tscn")
 const THEME := preload("res://resources/ui/theme.tres")
@@ -70,6 +70,8 @@ func show_screen(screen: Screen) -> void:
 			view = CollectionScreen.new()
 		Screen.DECKS:
 			view = DeckBuilderScreen.new()
+		Screen.HEROES:
+			view = HeroSelectScreen.new()
 		_:
 			var camp := CampScreen.new()
 			camp.display = display
@@ -84,6 +86,11 @@ func _start_run() -> void:
 	var game: RunScreen = GAME_SCENE.instantiate()
 	var lane: Lane = game.get_node("Lane")
 	lane.deck = profile.deck_data(profile.active_deck, catalog)
+	var hero := HeroData.find(profile.hero)
+	if hero == null:
+		hero = HeroData.find(Profile.DEFAULT_HERO)
+	var heroes: Array[HeroData] = [hero]
+	lane.heroes = heroes
 	lane.rng_seed = _rng.randi()
 	game.run_ended.connect(profile.add_gold)
 	game.finished.connect(show_screen.bind(Screen.CAMP))

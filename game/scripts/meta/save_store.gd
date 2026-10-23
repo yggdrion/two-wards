@@ -4,7 +4,7 @@ class_name SaveStore
 ## Loading runs every migration from the file's version up to VERSION, one step at a time, so
 ## an old save always goes through the same chain. A save from a newer game is not loaded.
 
-const VERSION := 1
+const VERSION := 2
 const DIR := "user://profiles"
 
 
@@ -67,7 +67,7 @@ static func migrate(data: Dictionary) -> Dictionary:
 
 ## Step i turns version i into version i + 1.
 static func _migrations() -> Array[Callable]:
-	return [_v0_to_v1]
+	return [_v0_to_v1, _v1_to_v2]
 
 
 ## Version 0 (pre-release) kept owned cards as a flat id list and had no decks or pity counter.
@@ -84,3 +84,20 @@ static func _v0_to_v1(data: Dictionary) -> Dictionary:
 		"active_deck": 0,
 		"boosters_since_epic": 0,
 	}
+
+
+## Version 2 (M3b) adds the chosen wizard and replaces the Blink card with Empower: owned
+## Blink copies become Empower copies, in the collection and in every deck.
+static func _v1_to_v2(data: Dictionary) -> Dictionary:
+	var result := data.duplicate(true)
+	result["hero"] = Profile.DEFAULT_HERO
+	var collection: Dictionary = result.get("collection", {})
+	if collection.has("blink"):
+		collection["empower"] = int(collection.get("empower", 0)) + int(collection["blink"])
+		collection.erase("blink")
+	for deck: Dictionary in result.get("decks", []):
+		var cards: Array = deck.get("cards", [])
+		for i in cards.size():
+			if str(cards[i]) == "blink":
+				cards[i] = "empower"
+	return result
