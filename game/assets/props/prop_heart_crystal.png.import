@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://ghd3m15jwvje"
-path="res://.godot/imported/wang_1010.png-59dc83dac79f762b40600a9e0209e7f5.ctex"
+uid="uid://blwefgiyfpf7n"
+path="res://.godot/imported/prop_heart_crystal.png-382bb3af11ce931d003f4891ecbc5daa.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://tools/target_frame/tiles/wang_1010.png"
-dest_files=["res://.godot/imported/wang_1010.png-59dc83dac79f762b40600a9e0209e7f5.ctex"]
+source_file="res://assets/props/prop_heart_crystal.png"
+dest_files=["res://.godot/imported/prop_heart_crystal.png-382bb3af11ce931d003f4891ecbc5daa.ctex"]
 
 [params]
 

@@ -29,6 +29,9 @@ UNIT_FRAME = 64
 TILE_SIZE = (32, 32)
 CARD_ART_SIZE = (128, 96)
 ICON_SIZE = (32, 32)
+# One footprint for every tower, so they line up on the field. Props (crystal, trees, rocks)
+# differ too much for one size; each manifest entry gives its own "size".
+TOWER_SIZE = (48, 72)
 
 # Prefix -> (folder under the asset root, file name pattern).
 NAME_RULES = {
@@ -36,6 +39,8 @@ NAME_RULES = {
     "tile": ("tiles/<set>", re.compile(r"^tile_([a-z0-9]+)_(\d{2})\.png$")),
     "card_art": ("cards", re.compile(r"^card_art_([a-z0-9_]+)\.png$")),
     "icon": ("icons", re.compile(r"^icon_([a-z0-9_]+)\.png$")),
+    "tower": ("towers", re.compile(r"^tower_([a-z0-9_]+)\.png$")),
+    "prop": ("props", re.compile(r"^prop_([a-z0-9_]+)\.png$")),
 }
 STATUSES = {"todo", "placeholder", "done"}
 MAX_PIXEL_REPORTS = 5
@@ -67,6 +72,10 @@ def expected_files(entry: dict) -> dict[str, tuple[int, int]]:
         return {f"cards/{asset_id}.png": CARD_ART_SIZE}
     if kind == "icon":
         return {f"icons/{asset_id}.png": ICON_SIZE}
+    if kind == "tower":
+        return {f"towers/{asset_id}.png": TOWER_SIZE}
+    if kind == "prop":
+        return {f"props/{asset_id}.png": tuple(entry["size"])}
     raise ValueError(f"unknown asset type {kind!r}")
 
 
@@ -82,7 +91,7 @@ def check_name(rel: str) -> str | None:
         if path.parent.as_posix() != want:
             return f"{rel}: must live in {want}/"
         return None
-    return f"{rel}: unknown asset prefix (expected unit_, tile_, card_art_ or icon_)"
+    return f"{rel}: unknown asset prefix (expected unit_, tile_, card_art_, icon_, tower_ or prop_)"
 
 
 def check_pixels(rel: str, image: Image.Image, palette: set[tuple[int, int, int]]) -> list[str]:

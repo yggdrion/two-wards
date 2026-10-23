@@ -20,6 +20,7 @@
 			"id": "unit_goblin_runner",
 			"type": "unit",
 			"status": "placeholder",
+			"final": ["units/goblin_runner/unit_goblin_runner_walk_side.png"],
 			"dirs": ["down", "up", "side"],
 			"anims": {
 				"idle": {"frames": 4, "fps": 8, "loop": true},
@@ -30,8 +31,19 @@
 		{
 			"id": "tile_base",
 			"type": "tileset",
-			"status": "placeholder",
-			"count": 4
+			"status": "done",
+			"count": 16
+		},
+		{
+			"id": "tower_arrow_tower",
+			"type": "tower",
+			"status": "done"
+		},
+		{
+			"id": "prop_heart_crystal",
+			"type": "prop",
+			"status": "done",
+			"size": [64, 96]
 		},
 		{
 			"id": "card_art_arrow_tower",

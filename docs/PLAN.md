@@ -250,7 +250,7 @@ The full rules (color count, placement in the frame, outline, camera, light, dir
 | Color coding | Players blue/teal; goblins green with red/orange accents (eyes, weapons); neutral gray |
 | Contrast | Terrain desaturated and low contrast; units high contrast |
 | Animation | Idle 4 frames, walk 6, attack 4–6, 8–12 fps. Frame count, fps and loop live in `game/assets/manifest.json`, not in file names |
-| Naming | `units/<name>/unit_<name>_<anim>_<dir>.png`, `tiles/<set>/tile_<set>_<nn>.png`, `cards/card_art_<id>.png`, `icons/icon_<name>.png` (all under `game/assets/`) |
+| Naming | `units/<name>/unit_<name>_<anim>_<dir>.png`, `tiles/<set>/tile_<set>_<nn>.png`, `cards/card_art_<id>.png`, `icons/icon_<name>.png`, `towers/tower_<id>.png` (48×72), `props/prop_<name>.png` (size in the manifest) (all under `game/assets/`) |
 | Font | m5x7 (free license), imported without antialiasing, drawn at 2× |
 | Cards on screen | Hand shows compact cards (96×128: art crop, cost, name); hover or select shows the full 144×208 card |
 

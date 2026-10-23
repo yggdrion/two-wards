@@ -19,7 +19,8 @@ Last updated: 2026-10-24, after the A1 v1 frame (PR #21) and tag releases (PR #2
 | M4 Local co-op over ENet | Done, merged 2026-10-23 | #15 |
 | M5 Lobby + WebRTC | Done, merged 2026-10-23; two-network playtest passed | #18 |
 | M7 Full loop | Done, merged 2026-10-23; two-person playtest passed | #20 |
-| A1 Look target (art track) | v1 frame from free-trial anchors (`art-reference/target-frame/a1_v1.png`); waiting on Rapha's approval and the PixelLab paid upgrade | #21 |
+| A1 Look target (art track) | Approved 2026-10-24 (`art-reference/target-frame/a1_v1.png`); PixelLab upgraded | #21 |
+| A2 step 1: anchors in the game | Open: lane on the tile grid, Wang ground, dusk and lights, sprites for goblin runner, arrow tower, crystal | #25 |
 | Release on `v*` tags | Done | #23 |
 | **M8 Retro** | **Draft open**, waiting on Rapha's answers (lines marked **Rapha:** in `docs/RETRO.md`) | #22 |
 
@@ -92,7 +93,7 @@ Rapha kept the Node-based sim (no pure sim core). Lockstep with the host as the 
 
 ## Next
 
-M8 (retro): the draft in PR #22 needs Rapha's answers (hands-on time, Node sim vs pure core, tooling scripts, go/no-go), then merge. M6 (art and juice): Rapha approves or redirects the A1 v1 frame, upgrades PixelLab, then A2 imports the anchors into `game/assets/` (moving the lane onto the tile grid re-pins the scenario hashes) and bulk generation starts. Card art and HUD skin are A3.
+M8 (retro): the draft in PR #22 needs Rapha's answers (hands-on time, Node sim vs pure core, tooling scripts, go/no-go), then merge. M6 (art and juice): A1 is approved and the anchors are in the game (`art-reference/a2/run_anchors.png`). Data drives the art: `UnitData.frames` and `TowerData.sprite` switch a unit or tower from gray box to sprite, so each new asset is a PNG, a manifest entry and one line in its `.tres`. The goblin runner's `walk_side` is the anchor frame with a 1 px bob; all directions use it until PixelLab animates it. Next is bulk generation (goblin walk cycles in 3 directions, brute, frost totem, ballista, storm spire, props such as trees and rocks), then particles and juice. Generation needs the PixelLab key: a cloud session with the network secret, or a local untracked env var. Card art and HUD skin are A3.
 
 ## Reference images
 

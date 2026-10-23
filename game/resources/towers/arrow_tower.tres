@@ -1,6 +1,7 @@
 [gd_resource type="Resource" script_class="TowerData" format=3]
 
 [ext_resource type="Script" path="res://scripts/data/tower_data.gd" id="1_tower"]
+[ext_resource type="Texture2D" path="res://assets/towers/tower_arrow_tower.png" id="2_sprite"]
 
 [resource]
 script = ExtResource("1_tower")
@@ -9,3 +10,4 @@ display_name = "Arrow Tower"
 attack_range = 128.0
 damage = 15
 fire_interval = 0.8
+sprite = ExtResource("2_sprite")

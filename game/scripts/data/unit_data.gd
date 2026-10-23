@@ -11,3 +11,5 @@ extends Resource
 @export var armor: int = 0
 ## Damage dealt to the Heart Crystal when the unit reaches it.
 @export var core_damage: int = 1
+## Animations from build_assets ("walk_side" is used); empty keeps the gray-box drawing.
+@export var frames: SpriteFrames

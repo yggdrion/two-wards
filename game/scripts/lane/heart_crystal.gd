@@ -12,6 +12,9 @@ var hp: int
 
 func _ready() -> void:
 	hp = max_hp
+	var light := Lane.make_light(Palette.CRYSTAL, 0.9, 0.9)
+	light.position = Vector2(0, -30)
+	add_child(light)
 
 
 func take_damage(amount: int) -> void:
@@ -33,11 +36,8 @@ func heal(amount: int) -> void:
 	queue_redraw()
 
 
+## The crystal itself is the Sprite child; only its HP bar is drawn.
 func _draw() -> void:
-	var diamond := PackedVector2Array(
-		[Vector2(0, -16), Vector2(12, 0), Vector2(0, 16), Vector2(-12, 0)]
-	)
-	draw_colored_polygon(diamond, Palette.CRYSTAL)
 	var ratio := float(hp) / max_hp if max_hp > 0 else 0.0
 	draw_rect(Rect2(-16, 22, 32, 4), Palette.HP_BACK)
 	draw_rect(Rect2(-16, 22, 32 * ratio, 4), Palette.HP_FILL)

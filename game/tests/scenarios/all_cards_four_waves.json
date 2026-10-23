@@ -11,11 +11,11 @@
 		{"at": [200, 160], "play": "decoy_effigy", "t": 19.87},
 		{"cycle": "mirror_image", "t": 36.4},
 		{"at": [320, 128], "play": "war_drums", "t": 36.92},
-		{"at": [200, 149], "play": "arcane_bolt", "t": 37.52},
+		{"at": [192, 72], "play": "arcane_bolt", "t": 37.52},
 		{"play": "empower", "t": 46.22},
 		{"cycle": "mend", "t": 48.28},
 		{"cycle": "decoy_effigy", "t": 50.35},
 		{"play": "arcane_focus", "t": 50.87}
 	],
-	"expect": {"result": "won", "waves_cleared": 4, "crystal_hp": 20, "gold": 65, "hash": "654d15f28397f633"}
+	"expect": {"result": "won", "waves_cleared": 4, "crystal_hp": 20, "gold": 65, "hash": "7ec7aba2ca01b6ed"}
 }
