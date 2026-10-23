@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Runs the same checks as CI locally, in CI order, and stops at the first failure:
 #   1. gdlint + gdformat --check     2. asset validator + its unittest suite
-#   3. gdUnit4 tests (pinned Godot)  4. generated assets are up to date
+#   3. gdUnit4 tests (pinned Godot)  4. headless network test (host + client over ENet)
+#   5. generated assets are up to date
 # Usage: ./tools/check.sh [--quick] [--export] [--install-hook]
 #   --quick         only steps 1 and 2 (no Godot), a few seconds
 #   --export        also export the Linux and Windows builds to build/<platform>/
@@ -51,6 +52,9 @@ fi
 
 step "gdUnit4 tests"
 ./tools/run_tests.sh
+
+step "Network test"
+./tools/run_network_test.sh
 
 step "Generated assets up to date"
 # Compare before and after, so local uncommitted work does not count as drift. Content

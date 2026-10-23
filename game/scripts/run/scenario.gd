@@ -1,9 +1,10 @@
 class_name Scenario
 extends RefCounted
-## A scripted solo run: seed + deck + timed actions, played to the end with a fixed step.
+## A scripted run: seed + deck(s) + timed actions, played to the end with a fixed step.
 ##
 ## Scenario tests compare the result (outcome, crystal HP, gold, state hash) with the file's
-## "expect" block; the M4 network test will replay the same files on host and client.
+## "expect" block; the network test (tools/net_test.gd) replays the same files on a host and a
+## client.
 ##
 ## JSON format (game/tests/scenarios/*.json):
 ##   {
@@ -18,7 +19,9 @@ extends RefCounted
 ##     ],
 ##     "expect": {"result": "won", "crystal_hp": 20, "gold": 55, "hash": "0123abcd..."}
 ##   }
-## A play or cycle names a card id; it uses the first hand slot holding that card.
+## A co-op scenario gives "wizards" and "decks" (one per player, host first) instead of
+## "wizard" and "deck", and its actions name a "player" (default 0); "pass" gives a card to the
+## partner. A play, cycle or pass names a card id; it uses the first hand slot holding that card.
 
 const STEP := 1.0 / 60.0
 const LANE_SCENE := "res://scenes/lane.tscn"
@@ -31,8 +34,10 @@ const EPSILON := 0.000001
 
 var name := ""
 var rng_seed := 1
-var wizard := "frost"
-var deck_ids := PackedStringArray()
+## One wizard id per player.
+var wizards := PackedStringArray(["frost"])
+## One list of card ids per player.
+var decks: Array[PackedStringArray] = []
 ## Number of waves to play; -1 plays all waves of the lane scene.
 var wave_count := -1
 var actions: Array[Dictionary] = []
@@ -44,30 +49,54 @@ static func load_file(path: String) -> Scenario:
 	var scenario := Scenario.new()
 	scenario.name = path.get_file().get_basename()
 	scenario.rng_seed = int(data.get("seed", 1))
-	scenario.wizard = str(data.get("wizard", "frost"))
-	scenario.deck_ids = PackedStringArray(data.get("deck", []))
+	if data.has("wizards"):
+		scenario.wizards = PackedStringArray(data["wizards"])
+	else:
+		scenario.wizards = PackedStringArray([str(data.get("wizard", "frost"))])
+	for ids: Array in data.get("decks", [data.get("deck", [])]):
+		scenario.decks.append(PackedStringArray(ids))
 	scenario.wave_count = int(data.get("waves", -1))
+	var order := 0
 	for action: Dictionary in data.get("actions", []):
-		scenario.actions.append(action)
-	scenario.actions.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return a["t"] < b["t"])
+		var copy := action.duplicate()
+		copy["_order"] = order
+		order += 1
+		scenario.actions.append(copy)
+	# Stable by time: actions at the same time keep their file order (sort_custom isn't stable).
+	scenario.actions.sort_custom(
+		func(a: Dictionary, b: Dictionary) -> bool:
+			return a["t"] < b["t"] or (a["t"] == b["t"] and a["_order"] < b["_order"])
+	)
 	scenario.expect = data.get("expect", {})
 	return scenario
 
 
-## A lane set up for this scenario, not yet in the tree and with autorun off.
-func build_lane() -> Lane:
+## A lane set up for this scenario (or for `run_setup`, a CoopSetup such as the network test
+## gets from its host), not yet in the tree and with autorun off.
+func build_lane(run_setup: Dictionary = {}) -> Lane:
 	var lane: Lane = load(LANE_SCENE).instantiate()
-	lane.autorun = false
-	lane.rng_seed = rng_seed
-	var deck := DeckData.new()
-	for card_id in deck_ids:
-		deck.cards.append(load(CARD_PATH % card_id))
-	lane.deck = deck
-	var heroes: Array[HeroData] = [load(HERO_PATH % wizard)]
-	lane.heroes = heroes
+	CoopSetup.configure(lane, run_setup if not run_setup.is_empty() else setup(), find_card)
 	if wave_count >= 0:
 		lane.waves = lane.waves.slice(0, wave_count)
 	return lane
+
+
+## The scenario as a co-op run setup (CoopSetup format), one entry per player.
+func setup() -> Dictionary:
+	var infos: Array[Dictionary] = []
+	for i in wizards.size():
+		var deck: PackedStringArray = decks[i] if i < decks.size() else PackedStringArray()
+		infos.append(CoopSetup.player_info("Player %d" % (i + 1), wizards[i], Array(deck)))
+	return CoopSetup.make(rng_seed, infos)
+
+
+func player_count() -> int:
+	return wizards.size()
+
+
+static func find_card(card_id: String) -> CardData:
+	var path := CARD_PATH % card_id
+	return load(path) if ResourceLoader.exists(path) else null
 
 
 ## Plays the scenario on a lane from build_lane() that is already in the tree.
@@ -75,14 +104,21 @@ func run(lane: Lane) -> Dictionary:
 	var errors := PackedStringArray()
 	var next := 0
 	while not lane.is_over() and lane.time < MAX_SECONDS:
-		while next < actions.size() and float(actions[next]["t"]) <= lane.time + EPSILON:
-			var error := _apply(lane, actions[next])
+		while next < actions.size() and is_due(actions[next], lane.time):
+			var cmd := command(lane, actions[next])
+			var error: String = cmd.get("error", "")
+			if error.is_empty():
+				error = NetCommand.apply(lane, cmd)
 			if not error.is_empty():
 				errors.append("t=%.2f: %s" % [lane.time, error])
 			next += 1
 		lane.tick(STEP)
 	if next < actions.size():
 		errors.append("%d action(s) after the run ended" % (actions.size() - next))
+	return result_of(lane, errors)
+
+
+static func result_of(lane: Lane, errors: PackedStringArray) -> Dictionary:
 	var result := "timeout"
 	if lane.phase == Lane.Phase.WON:
 		result = "won"
@@ -98,29 +134,30 @@ func run(lane: Lane) -> Dictionary:
 	}
 
 
-func _apply(lane: Lane, action: Dictionary) -> String:
-	if action.has("cycle"):
-		return _cycle(lane, action["cycle"])
-	if action.has("play"):
-		return _play(lane, action["play"], _vec(action.get("at", [0, 0])))
-	return "unknown action %s" % action
+static func is_due(action: Dictionary, time: float) -> bool:
+	return float(action["t"]) <= time + EPSILON
 
 
-func _cycle(lane: Lane, card_id: String) -> String:
-	var slot := lane.players[0].find_in_hand(card_id)
-	if slot < 0:
-		return "cannot cycle %s, hand is %s" % [card_id, _hand(lane.players[0])]
-	return "" if lane.cycle_card(0, slot) else "not enough energy to cycle"
+static func player_of(action: Dictionary) -> int:
+	return int(action.get("player", 0))
 
 
-func _play(lane: Lane, card_id: String, at: Vector2) -> String:
-	var player := lane.players[0]
-	var slot := player.find_in_hand(card_id)
-	if slot < 0:
-		return "%s not in hand %s" % [card_id, _hand(player)]
-	if not lane.play_card(0, slot, at):
-		return "could not play %s at %s (energy %d)" % [card_id, at, player.energy.points()]
-	return ""
+## The NetCommand for an action on the lane as it is now, or {"error": why} if the card isn't
+## in the player's hand.
+static func command(lane: Lane, action: Dictionary) -> Dictionary:
+	var player := player_of(action)
+	var kind := ""
+	for key in [NetCommand.PLAY, NetCommand.CYCLE, NetCommand.PASS]:
+		if action.has(key):
+			kind = key
+	if kind.is_empty():
+		return {"error": "unknown action %s" % action}
+	var card_id := str(action[kind])
+	var cmd := NetCommand.for_card(lane, player, kind, card_id, _vec(action.get("at", [0, 0])))
+	if cmd.is_empty():
+		var hand := _hand(lane.players[player]) if player < lane.players.size() else "-"
+		return {"error": "%s not in hand %s of player %d" % [card_id, hand, player]}
+	return cmd
 
 
 static func _vec(value: Array) -> Vector2:

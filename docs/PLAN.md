@@ -79,7 +79,7 @@ Players find each other through the lobby by room code, then exchange game traff
 ### Key choices
 
 - **Godot 4.7.2, GDScript.** Data in `Resource` files: `CardData`, `UnitData`, `WaveData`, `HeroData` (name, portrait, battlefield buff).
-- **Host-authoritative netcode.** Clients send card events (play, cycle, pass) with a target point; the host validates and broadcasts results. There is no continuous sync: each player's wizard is fixed at run start and has no position. The partner panel shows the partner's hand from the same broadcasts.
+- **Host-authoritative netcode (lockstep).** Both machines run the same deterministic sim. The host is the clock: every tick it applies the card events (play, cycle, pass, with a target point) it has validated since the last tick, then broadcasts that tick with those events; the client replays the ticks in order and never changes its lane by itself. Clients send card events as requests; a request against a hand that has changed is refused. There is no state sync: each player's wizard is fixed at run start and has no position, and the partner panel reads the partner's hand from the replayed lane.
 - **Transport abstraction.** One setting switches ENet (local dev, tests) and WebRTC (online).
 - **Local saves.** JSON per profile with a version field.
 - **Lobby server** in TypeScript on Bun, one stateless-ish container; rooms expire after the game starts.
@@ -113,7 +113,7 @@ Twelve cards across three rarities cover every card type once or more; the meta 
 - Hand of 3; a played card is replaced from the deck at once. Cycling a card costs 1 energy.
 - Towers can be placed anywhere on the field that is off the path and keeps the minimum spacing to other towers.
 - Wizard buffs apply to the whole battlefield for the whole run. Two players with the same wizard get its buff twice. Stacks add up (two Frost: enemies 30% slower; Empower turns one player's stack into two), enemies never drop below 10% of their speed, and boosted tower damage rounds to whole points.
-- Passing a card to the partner costs 1 energy.
+- Passing a card to the partner costs 1 energy. The passed card goes into a fourth "gift" slot of the partner's hand (one at most) and leaves it when played, cycled or passed back; your own slot refills from the deck.
 - Deck empty → discard pile is shuffled back in.
 
 ### Card list (draft)
@@ -150,7 +150,7 @@ Twelve cards across three rarities cover every card type once or more; the meta 
 ### Persistence
 
 - Local JSON save per profile: collection, gold, decks, selected wizard, pity counter, save version.
-- Save on every meta change; load with a migration step keyed on the version. Version 2 (M3b) added the selected wizard (old saves get Frost) and turned owned Blink copies into Empower.
+- Save on every meta change; load with a migration step keyed on the version. Version 2 (M3b) added the selected wizard (old saves get Frost) and turned owned Blink copies into Empower. Version 3 (M4) added the player name shown to the co-op partner.
 - Server-side profiles are out of scope; the lobby server could host them later.
 
 ## Art direction
@@ -358,7 +358,7 @@ The biggest risk is WebRTC on desktop; the fallback is ENet with port forwarding
 - [x] Card UI: compact 96×128 hand, full 144×208 card on hover; font m5x7 at 2×
 - [x] Resolution (2026-10-22, after the first hero sprite): 640×360 base with 64×64 units and 32×32 tiles, so sprites keep their on-screen size with twice the detail. Was 320×180 with 32×32 units
 - [x] Hero role (2026-10-22, after the M3 playtest): no hero on the field. Each player picks one of two wizards that buffs the whole battlefield; wizards show only in the partner panel and the hero select. Replaces "each client owns its hero position", so there is no continuous sync
-- [x] Sim structure: M1 stays Node-based; pure sim core vs Nodes decided at the start of M4
+- [x] Sim structure (2026-10-23, M4 checkpoint): keep the Node-based sim. It already advances only through `Lane.tick`, takes all randomness from the seeded deck and replays scenarios to identical hashes, which is all lockstep needs; the retro can revisit a pure core for the real game
 - [x] WebRTC: no early spike; proven in M5 with the ENet/WebSocket fallback
 - [x] Art goal (2026-10-22): full pixel-art route, the PoC must end up pretty and polished; art track A1–A4 beside the code milestones
 - [x] Look (2026-10-22): natural evening meadow lit by magic, more detailed than the mockups

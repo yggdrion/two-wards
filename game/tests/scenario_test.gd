@@ -34,7 +34,7 @@ func _check(file: String) -> void:
 
 
 func test_scenario_files_exist() -> void:
-	assert_int(DirAccess.get_files_at(SCENARIO_DIR).size()).is_greater_equal(3)
+	assert_int(DirAccess.get_files_at(SCENARIO_DIR).size()).is_greater_equal(4)
 
 
 func test_idle_run_is_lost() -> void:
@@ -47,6 +47,22 @@ func test_tower_deck_wins_full_run() -> void:
 
 func test_all_cards_four_waves() -> void:
 	_check("all_cards_four_waves.json")
+
+
+func test_coop_two_wizards_pass_cards() -> void:
+	_check("coop_two_wizards_pass_cards.json")
+
+
+func test_coop_scenario_has_two_players_on_one_deck() -> void:
+	var run := _run("coop_two_wizards_pass_cards.json")
+	var scenario: Scenario = run["scenario"]
+	assert_int(scenario.player_count()).is_equal(2)
+	var lane := scenario.build_lane()
+	add_child(lane)
+	auto_free(lane)
+	assert_int(lane.players.size()).is_equal(2)
+	assert_object(lane.players[0].deck).is_same(lane.players[1].deck)
+	assert_int(lane.deck.cards.size()).is_equal(16)
 
 
 func test_same_scenario_gives_same_hash() -> void:

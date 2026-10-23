@@ -153,3 +153,62 @@ func test_hero_select_saves_the_wizard_and_the_run_uses_it() -> void:
 	var lane: Lane = again._screen.get_node("Lane")
 	lane.set_physics_process(false)
 	assert_str(String(lane.players[0].hero.id)).is_equal("ember")
+
+
+func test_coop_screen_hosts_and_cancels() -> void:
+	var app := _app()
+	var camp: CampScreen = app._screen
+	assert_bool(camp.coop_button.disabled).is_false()
+	app.show_screen(App.Screen.COOP)
+	var screen: CoopScreen = app._screen
+	screen.port_edit.text = "17790"
+	screen.host_button.pressed.emit()
+	assert_int(app.net.role).is_equal(NetSession.Role.HOST)
+	assert_bool(screen.host_button.disabled).is_true()
+	assert_str(screen.status_label.text).contains("17790")
+	screen.cancel_button.pressed.emit()
+	assert_bool(app.net.is_active()).is_false()
+	app.show_screen(App.Screen.CAMP)
+
+
+func test_coop_screen_saves_the_player_name() -> void:
+	var app := _app()
+	app.show_screen(App.Screen.COOP)
+	var screen: CoopScreen = app._screen
+	screen.name_edit.text_changed.emit("  Rapha ")
+	assert_str(app.profile.player_name).is_equal("Rapha")
+	assert_str(screen.player_info()["name"]).is_equal("Rapha")
+	assert_int(screen.player_info()["deck"].size()).is_equal(DeckRules.SIZE)
+
+
+func test_leaving_the_coop_screen_closes_the_connection() -> void:
+	var app := _app()
+	app.show_screen(App.Screen.COOP)
+	var screen: CoopScreen = app._screen
+	screen.port_edit.text = "17791"
+	screen.host()
+	app.show_screen(App.Screen.CAMP)
+	assert_bool(app.net.is_active()).is_false()
+
+
+func test_coop_run_starts_from_the_setup() -> void:
+	var app := _app()
+	var infos: Array[Dictionary] = [
+		CoopSetup.player_info("Ann", "ember", app.profile.deck_cards(0)),
+		CoopSetup.player_info("Bo", "frost", app.profile.deck_cards(0)),
+	]
+	app.net.role = NetSession.Role.HOST
+	app.net.setup = CoopSetup.make(9, infos)
+	app.show_screen(App.Screen.RUN)
+	var game: RunScreen = app._screen
+	assert_object(game.host).is_not_null()
+	assert_int(game.lane.players.size()).is_equal(2)
+	assert_int(game.lane.deck.cards.size()).is_equal(DeckRules.SIZE * 2)
+	assert_bool(game.lane.autorun).is_false()
+	app.net.role = NetSession.Role.NONE
+	app.show_screen(App.Screen.CAMP)
+
+
+func test_profile_arg_picks_another_save() -> void:
+	assert_str(App.profile_from_args(PackedStringArray(["--profile=p2"]))).is_equal("p2")
+	assert_str(App.profile_from_args(PackedStringArray(["--other"]))).is_empty()

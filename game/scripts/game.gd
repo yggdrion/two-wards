@@ -1,16 +1,27 @@
 class_name RunScreen
 extends Node2D
-## Solo run screen: the hand picks a card, a click anywhere on the field targets it. Every
-## action goes through Lane's play_card/cycle_card, as network input will.
+## Run screen, solo or co-op: the hand picks a card, a click anywhere on the field targets it.
+## Every action becomes a NetCommand. Solo applies it to the lane at once; in co-op it goes to
+## the host's LockstepHost (the client sends it over the network), and the lane only moves
+## through the host's frames.
 
-## The run is over (won or lost) and earned this much gold.
+## The run is over (won, lost, or the partner left) and earned this much gold.
 signal run_ended(gold: int)
 ## The player left the end-of-run banner.
 signal finished
 
-const PLAYER := 0
+## How many host frames the client plays per physics frame when it has fallen behind.
+const MAX_CATCH_UP := 8
 
+## Co-op connection; null plays solo. Set before the screen enters the tree, together with
+## CoopSetup.configure on the lane.
+var session: NetSession
+## This machine's player: 0 solo and on the host, 1 on the client.
+var player := 0
 var selected := -1
+var host: LockstepHost
+var client: LockstepClient
+var _ended := false
 
 @onready var lane: Lane = $Lane
 @onready var overlay: Node2D = $Overlay
@@ -19,39 +30,74 @@ var selected := -1
 
 func _ready() -> void:
 	hud.lane = lane
+	hud.player_index = player
 	hud.card_pressed.connect(_select)
 	hud.cycle_requested.connect(_cycle)
+	hud.pass_requested.connect(func() -> void: _pass(selected))
 	overlay.draw.connect(_draw_targeting)
 	lane.run_won.connect(_on_run_over)
 	lane.run_lost.connect(_on_run_over)
+	if session != null:
+		_start_coop()
+
+
+func _start_coop() -> void:
+	hud.names = session.setup.get("names", [])
+	session.partner_left.connect(_on_partner_left)
+	if session.role == NetSession.Role.HOST:
+		host = LockstepHost.new(lane)
+		host.rejected.connect(session.reject)
+		session.command_received.connect(host.request)
+		session.ack_received.connect(host.ack)
+		session.hash_received.connect(host.hashes.report)
+	else:
+		client = LockstepClient.new(lane)
+		session.frames_received.connect(client.receive)
+		client.hashes.recorded.connect(session.send_hash)
+
+
+func _physics_process(_delta: float) -> void:
+	if _ended:
+		return
+	if host != null and host.can_step():
+		session.send_frames([host.step()])
+	elif client != null and client.advance(MAX_CATCH_UP) > 0:
+		session.send_ack(client.tick)
 
 
 func _process(_delta: float) -> void:
-	if selected >= 0 and lane.players[PLAYER].card_at(selected) == null:
+	if selected >= 0 and own().card_at(selected) == null:
 		selected = -1
 	hud.selected = selected
 	overlay.queue_redraw()
 
 
+func own() -> PlayerState:
+	return lane.players[player]
+
+
 func _unhandled_input(event: InputEvent) -> void:
-	if lane.is_over():
+	if lane.is_over() or _ended:
 		_input_after_run(event)
 		return
 	var key := event as InputEventKey
 	if key != null and key.pressed and not key.echo:
 		match key.physical_keycode:
-			KEY_1, KEY_2, KEY_3:
+			KEY_1, KEY_2, KEY_3, KEY_4:
 				_select(key.physical_keycode - KEY_1)
 			KEY_Q:
 				if selected >= 0:
 					_cycle(selected)
+			KEY_E:
+				if selected >= 0:
+					_pass(selected)
 			KEY_ESCAPE:
 				selected = -1
 	var click := event as InputEventMouseButton
 	if click != null and click.pressed:
 		if click.button_index == MOUSE_BUTTON_LEFT and selected >= 0:
 			var at := lane.get_local_mouse_position()
-			if Lane.FIELD.has_point(at) and lane.play_card(PLAYER, selected, at):
+			if Lane.FIELD.has_point(at) and _play(selected, at):
 				selected = -1
 		elif click.button_index == MOUSE_BUTTON_RIGHT:
 			selected = -1
@@ -69,34 +115,74 @@ func _input_after_run(event: InputEvent) -> void:
 
 func _on_run_over() -> void:
 	selected = -1
+	if not _ended:
+		_ended = true
+		run_ended.emit(lane.gold)
+
+
+func _on_partner_left() -> void:
+	if lane.is_over() or _ended:
+		return
+	selected = -1
+	hud.notice = "Your partner left. +%d gold" % lane.gold
+	_ended = true
 	run_ended.emit(lane.gold)
 
 
 func _select(slot: int) -> void:
-	var card := lane.players[PLAYER].card_at(slot)
+	var card := own().card_at(slot)
 	if card == null:
 		return
 	if card.target == CardData.Target.NONE:
-		lane.play_card(PLAYER, slot)
+		_play(slot, Vector2.ZERO)
 		selected = -1
 	else:
 		selected = -1 if selected == slot else slot
 
 
+func _play(slot: int, at: Vector2) -> bool:
+	var card := own().card_at(slot)
+	if card == null or not lane.can_play_card(player, slot, at):
+		return false
+	return _submit(NetCommand.play(player, slot, card.id, at))
+
+
 func _cycle(slot: int) -> void:
-	if lane.cycle_card(PLAYER, slot) and selected == slot:
+	var card := own().card_at(slot)
+	if card != null and _submit(NetCommand.cycle(player, slot, card.id)) and selected == slot:
 		selected = -1
+
+
+func _pass(slot: int) -> void:
+	var card := own().card_at(slot)
+	if card == null or lane.players.size() != 2:
+		return
+	if not own().can_pass(slot, lane.players[1 - player]):
+		return
+	if _submit(NetCommand.pass_card(player, slot, card.id)) and selected == slot:
+		selected = -1
+
+
+## Solo applies the command now; co-op hands it to the host. True if it was applied or sent.
+func _submit(cmd: Dictionary) -> bool:
+	if host != null:
+		host.request(cmd)
+		return true
+	if client != null:
+		session.send_command(cmd)
+		return true
+	return NetCommand.apply(lane, cmd).is_empty()
 
 
 ## Shows where the selected card would land and whether it can be played there.
 func _draw_targeting() -> void:
-	var card := lane.players[PLAYER].card_at(selected) if selected >= 0 else null
+	var card := own().card_at(selected) if selected >= 0 else null
 	if card == null:
 		return
 	var at := lane.get_local_mouse_position()
 	if not Lane.FIELD.has_point(at):
 		return
-	var ok := lane.can_play_card(PLAYER, selected, at)
+	var ok := lane.can_play_card(player, selected, at)
 	var color := Palette.VALID if ok else Palette.INVALID
 	for effect in card.effects:
 		if effect is PlaceTowerEffect:

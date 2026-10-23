@@ -70,6 +70,14 @@ func test_v1_save_gets_a_wizard_and_empower_for_blink() -> void:
 	assert_int(profile.boosters_since_epic).is_equal(3)
 
 
+func test_v2_save_gets_an_empty_player_name() -> void:
+	_write({"version": 2, "name": "m3b", "gold": 5, "hero": "ember"})
+	var profile := SaveStore.load_profile(PATH)
+	assert_str(profile.player_name).is_equal("")
+	assert_str(profile.hero).is_equal("ember")
+	assert_str(profile.display_name()).is_not_empty()
+
+
 func test_migrate_sets_current_version() -> void:
 	var migrated := SaveStore.migrate({"cards": []})
 	assert_int(int(migrated["version"])).is_equal(SaveStore.VERSION)

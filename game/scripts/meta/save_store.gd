@@ -4,7 +4,7 @@ class_name SaveStore
 ## Loading runs every migration from the file's version up to VERSION, one step at a time, so
 ## an old save always goes through the same chain. A save from a newer game is not loaded.
 
-const VERSION := 2
+const VERSION := 3
 const DIR := "user://profiles"
 
 
@@ -67,7 +67,7 @@ static func migrate(data: Dictionary) -> Dictionary:
 
 ## Step i turns version i into version i + 1.
 static func _migrations() -> Array[Callable]:
-	return [_v0_to_v1, _v1_to_v2]
+	return [_v0_to_v1, _v1_to_v2, _v2_to_v3]
 
 
 ## Version 0 (pre-release) kept owned cards as a flat id list and had no decks or pity counter.
@@ -100,4 +100,11 @@ static func _v1_to_v2(data: Dictionary) -> Dictionary:
 		for i in cards.size():
 			if str(cards[i]) == "blink":
 				cards[i] = "empower"
+	return result
+
+
+## Version 3 (M4) adds the player name shown to the co-op partner; empty means "not set yet".
+static func _v2_to_v3(data: Dictionary) -> Dictionary:
+	var result := data.duplicate(true)
+	result["player_name"] = ""
 	return result

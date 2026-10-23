@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## State of the repo
 
-M1, M2 and M3 (meta system: save file, boosters, collection, deck builder) are done; M3b (heroes) removes the field hero and adds two wizards (`HeroData` in `resources/heroes/`) with battlefield-wide buffs, picked in a hero select screen. The main scene is `scenes/main.tscn` (`App`: meta screens, then runs `scenes/game.tscn` with the active deck). Meta screens build their controls in code on `resources/ui/theme.tres`, so the art pass only swaps styleboxes. `docs/PLAN.md` is the source of truth for scope, architecture, card/meta numbers, style guide, testing and milestones; read it before starting work. Its scope table is binding: anything listed as "out of scope" goes to a backlog, not into the PoC.
+M1, M2 and M3 (meta system: save file, boosters, collection, deck builder) are done; M3b (heroes) removes the field hero and adds two wizards (`HeroData` in `resources/heroes/`) with battlefield-wide buffs, picked in a hero select screen. M4 adds local co-op over ENet (`scripts/net/`: lockstep host/client, card commands, desync hashes; co-op screen in the camp; partner panel). The main scene is `scenes/main.tscn` (`App`: meta screens, then runs `scenes/game.tscn` with the active deck). Meta screens build their controls in code on `resources/ui/theme.tres`, so the art pass only swaps styleboxes. `docs/PLAN.md` is the source of truth for scope, architecture, card/meta numbers, style guide, testing and milestones; read it before starting work. Its scope table is binding: anything listed as "out of scope" goes to a backlog, not into the PoC.
 
 ## Always run the local check
 
@@ -68,15 +68,16 @@ Run the local check before pushing; it mirrors CI and stops at the first failure
 
 CI (`.github/workflows/ci.yml`) runs on every push to any branch (and by hand with "Run workflow"): lint and asset validation, gdUnit4 tests on Linux and Windows, then Linux and Windows exports that are uploaded as artifacts on every run. The repo is meant to be public, so Actions minutes are free. Export presets live in `game/export_presets.cfg` (`Linux`, `Windows Desktop`). Commit the `*.gd.uid` files Godot generates next to scripts.
 
+The headless network test (`tools/run_network_test.sh`, `.ps1` on Windows) starts a host and a client Godot (`game/tools/net_test.gd`) over ENet on localhost for every scenario in `game/tests/scenarios/` and fails on any per-wave hash mismatch; the local check and CI run it. New co-op scenarios can be recorded with a bot: `godot --headless --path game --script res://tools/record_scenario.gd -- --in=<draft.json> --out=<file.json>`.
+
 Some CI jobs stay off until their entry point exists:
 
-- `tools/run_network_test.sh`: headless host + client over ENet, exit non-zero on a per-wave hash mismatch (M4)
 - `lobby/package.json` (+ `bun.lock`, `Dockerfile`): `bun test` and the container build (M5)
 - `tools/validate_assets.py`: asset validation and its unittest suite in the lint job (active since the asset pipeline landed); the Linux test job also fails if `build_assets` changes anything under `game/`
 
 ## Code conventions
 
-- Simulation advances only through explicit `step(delta)` / `Lane.tick(delta)` calls, never real time inside logic. Tests set `lane.autorun = false` and tick with a fixed delta; the network host will drive the same path.
+- Simulation advances only through explicit `step(delta)` / `Lane.tick(delta)` calls, never real time inside logic. Tests set `lane.autorun = false` and tick with a fixed delta; the co-op host (`LockstepHost`) drives the same path, and every card action goes through `NetCommand.apply`.
 - Gray-box drawing uses `_draw()` with colors from `scripts/palette.gd` (Endesga 32 only) until M6 replaces it with art.
 - Test files live in `game/tests/` and are named `*_test.gd`.
 
