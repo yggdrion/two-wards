@@ -2,7 +2,7 @@
 
 Everything a new session (human or Claude) needs to pick up Two Wards without the original Claude project. It collects the decisions, routines and state that used to live only in project notes. `docs/PLAN.md` stays the source of truth for scope, architecture and milestones; this file adds the "why" and the working habits around it.
 
-Last updated: 2026-10-23, M7 built and waiting on its playtest.
+Last updated: 2026-10-23, after M7 (PR #20) was merged.
 
 ## Where things stand
 
@@ -18,7 +18,8 @@ Last updated: 2026-10-23, M7 built and waiting on its playtest.
 | M3b Heroes | Done | #14 |
 | M4 Local co-op over ENet | Done, merged 2026-10-23 | #15 |
 | M5 Lobby + WebRTC | Done, merged 2026-10-23; two-network playtest passed | #18 |
-| **M7 Full loop** | **Built, waiting on the playtest** | |
+| M7 Full loop | Done, merged 2026-10-23; two-person playtest passed | #20 |
+| **M8 Retro** | **Next** | |
 | A1 Look target (art track) | Waiting on the PixelLab paid upgrade | |
 
 Plan-only PRs: #1 (CLAUDE.md, rename), #5 (revised plan), #9 (full pixel-art route), #12 (hero redesign).
@@ -90,7 +91,7 @@ Rapha kept the Node-based sim (no pure sim core). Lockstep with the host as the 
 
 ## Next
 
-Playtest M7 (two people, title → co-op → lobby → 10 waves with picks → run end → booster; restart and check the save), then M8 (retro). M6 (art and juice) needs A1 first, which waits on the PixelLab upgrade.
+M8 (retro): notes per pillar, time spent, decisions for the real game (see `docs/PLAN.md`). M6 (art and juice) needs A1 first, which waits on the PixelLab upgrade.
 
 ## Reference images
 
