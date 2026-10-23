@@ -2,7 +2,7 @@
 
 Everything a new session (human or Claude) needs to pick up Two Wards without the original Claude project. It collects the decisions, routines and state that used to live only in project notes. `docs/PLAN.md` stays the source of truth for scope, architecture and milestones; this file adds the "why" and the working habits around it.
 
-Last updated: 2026-10-23, during M5 (server stack running on the gvm host except Caddy, which waits for the Cloudflare token).
+Last updated: 2026-10-23, during M5 (server stack running on the gvm host).
 
 ## Where things stand
 
@@ -76,14 +76,14 @@ Rapha kept the Node-based sim (no pure sim core). Lockstep with the host as the 
 
 ### M5 online co-op
 
-- **Hosting**: no Kubernetes. Rapha's existing gvm box (`grafana.r4b2.de`, Hetzner, already runs Caddy, VictoriaMetrics, Grafana and vector) hosts the server stack, but Rapha wants it to stay in this repo and gvm untouched: `/root/two-wards` is a clone, `deploy/docker-compose.yml` builds the lobby from source and brings its own Caddy (port 8443, certificate via a Cloudflare DNS challenge, since gvm's Caddy has 80/443) and its own vector (remote-writes to `vm.r4b2.de`). Dashboard "Two Wards server" on grafana.r4b2.de. `twowards.r4b2.de` points at the host without Cloudflare proxy (TURN is UDP). The Hetzner firewall already lets 3478, 8443 and the relay range through (tested from outside). Steps in [deploy/README.md](../deploy/README.md).
+- **Hosting**: no Kubernetes. Rapha's existing gvm box (`grafana.r4b2.de`, Hetzner, already runs Caddy, VictoriaMetrics, Grafana and vector) hosts the server stack, but Rapha wants it to stay in this repo and gvm untouched: `/root/two-wards` is a clone, `deploy/docker-compose.yml` builds the lobby from source and brings its own vector (remote-writes to `vm.r4b2.de`). The only gvm change is one Caddyfile block: gvm's Caddy terminates TLS for `twowards.r4b2.de` and proxies to the lobby, which joins `gvm_default` (a separate Caddy would have needed a Cloudflare token for a DNS challenge, since gvm has 80/443). Dashboard "Two Wards server" on grafana.r4b2.de. `twowards.r4b2.de` points at the host without Cloudflare proxy (TURN is UDP). The Hetzner firewall already lets 3478 and the relay range through (tested from outside). Steps in [deploy/README.md](../deploy/README.md).
 - **Lobby** (`lobby/`, Bun, no runtime deps): 4-letter room codes, relays WebRTC offer/answer/candidates verbatim, mints time-limited coturn credentials (REST scheme, `TURN_SECRET` only on the host). Rooms end once the peers report `connected` or after 10 minutes. Its `PROTOCOL` must match `NetSession.PROTOCOL`.
 - **Game**: `LobbyClient` hands its `WebRTCMultiplayerPeer` to `NetSession` at once, so the existing hello/start handshake and lockstep run unchanged. The co-op screen has "Host online" / "Join code" and keeps the M4 LAN row as the fallback. The old `two_wards/network/transport` setting is gone; `two_wards/network/lobby_url` points at a different lobby.
 - **WebRTC** comes from the pinned webrtc-native GDExtension, installed by `install_godot` into `game/addons/webrtc_native/` (gitignored), so it ships in every export.
 
 ## Next: finish M5
 
-Caddy needs `CF_API_TOKEN` in `/root/two-wards/deploy/.env` (lobby, coturn, vector and the dashboard are already running). Then the done check: two players on different networks complete 10 waves.
+The done check: two players on different networks complete 10 waves.
 
 ## Reference images
 

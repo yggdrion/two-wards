@@ -95,7 +95,7 @@ Two Wards: a real-time 2-player co-op tower defense roguelite with a card deck. 
 
     game/          Godot project: scenes/, scripts/{data,lane}/, resources/, tests/
     lobby/         Lobby/signaling server (TypeScript on Bun) + tests + Dockerfile
-    deploy/        server stack (lobby, coturn, Caddy :8443, vector) run from a clone on the gvm host
+    deploy/        server stack (lobby, coturn, vector) run from a clone on the gvm host
     assets-src/    Aseprite sources, palette, anchors
     tools/         Asset validation, import scripts, prompt templates
     docs/          Style guide, design notes, plan

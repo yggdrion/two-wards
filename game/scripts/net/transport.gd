@@ -5,7 +5,7 @@ class_name Transport
 
 ## The lobby's WebSocket URL; override in project settings for a local lobby.
 const LOBBY_SETTING := "two_wards/network/lobby_url"
-const DEFAULT_LOBBY_URL := "wss://twowards.r4b2.de:8443/ws"
+const DEFAULT_LOBBY_URL := "wss://twowards.r4b2.de/ws"
 const DEFAULT_PORT := 7777
 ## Co-op is two players: the host and one client.
 const MAX_CLIENTS := 1
