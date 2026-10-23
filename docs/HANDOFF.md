@@ -2,7 +2,7 @@
 
 Everything a new session (human or Claude) needs to pick up Two Wards without the original Claude project. It collects the decisions, routines and state that used to live only in project notes. `docs/PLAN.md` stays the source of truth for scope, architecture and milestones; this file adds the "why" and the working habits around it.
 
-Last updated: 2026-10-23, after M7 (PR #20) was merged.
+Last updated: 2026-10-24, after the A1 v1 frame (PR #21) and tag releases (PR #23) were merged.
 
 ## Where things stand
 
@@ -19,8 +19,9 @@ Last updated: 2026-10-23, after M7 (PR #20) was merged.
 | M4 Local co-op over ENet | Done, merged 2026-10-23 | #15 |
 | M5 Lobby + WebRTC | Done, merged 2026-10-23; two-network playtest passed | #18 |
 | M7 Full loop | Done, merged 2026-10-23; two-person playtest passed | #20 |
-| **M8 Retro** | **Next** | |
-| A1 Look target (art track) | Waiting on the PixelLab paid upgrade | |
+| A1 Look target (art track) | v1 frame from free-trial anchors (`art-reference/target-frame/a1_v1.png`); waiting on Rapha's approval and the PixelLab paid upgrade | #21 |
+| Release on `v*` tags | Done | #23 |
+| **M8 Retro** | **Draft open**, waiting on Rapha's answers (lines marked **Rapha:** in `docs/RETRO.md`) | #22 |
 
 Plan-only PRs: #1 (CLAUDE.md, rename), #5 (revised plan), #9 (full pixel-art route), #12 (hero redesign).
 
@@ -74,7 +75,7 @@ Rapha kept the Node-based sim (no pure sim core). Lockstep with the host as the 
 - Flow: PixelLab generates, Aseprite cleans up, `tools/validate_assets.py` enforces, `build_assets` writes the Godot resources. Full write-up in [ASSET_PIPELINE.md](ASSET_PIPELINE.md), style rules in [STYLE_GUIDE.md](STYLE_GUIDE.md).
 - Rapha has a PixelLab account; Claude drives the API. The key is **never** in the repo or in chat. In Claude Code cloud sessions it is a cloud-environment network secret (Bearer header, allowed host exactly `api.pixellab.ai`) that the proxy injects, so calls go out without any key. Anywhere else, set it up the same way or keep it in a local, untracked env var.
 - Working settings for the hero anchor: `POST /v2/create-image-pixflux`, 64×64, `no_background`, `color_image` = an Endesga 32 swatch for the unit, outline "single color black outline", shading "medium", view "high top-down", seed 1337. Output came back on-palette with 0/255 alpha. `POST /v2/rotate` gave a good north view but no true side profile, and it ignores `color_image` (snap the output to Endesga). The trial allows one job at a time (429 otherwise); use long timeouts (`curl -m 300`); a call that ended in a proxy 502 still cost a generation. Raw outputs are in `assets-src/units/hero/pixellab/`.
-- Budget: trial, about 30 of 40 generations left as of 2026-10-22. Rapha upgrades to a paid plan when A1 starts, so cost isn't a hard limit on quality, but ask before spending generations.
+- Budget: trial, 14 of 40 generations left after #21 (2026-10-23). Rapha upgrades to a paid plan when A1 starts, so cost isn't a hard limit on quality, but ask before spending generations.
 
 ### M5 online co-op
 
@@ -91,7 +92,7 @@ Rapha kept the Node-based sim (no pure sim core). Lockstep with the host as the 
 
 ## Next
 
-M8 (retro): notes per pillar, time spent, decisions for the real game (see `docs/PLAN.md`). M6 (art and juice) needs A1 first, which waits on the PixelLab upgrade.
+M8 (retro): the draft in PR #22 needs Rapha's answers (hands-on time, Node sim vs pure core, tooling scripts, go/no-go), then merge. M6 (art and juice): Rapha approves or redirects the A1 v1 frame, upgrades PixelLab, then A2 imports the anchors into `game/assets/` (moving the lane onto the tile grid re-pins the scenario hashes) and bulk generation starts. Card art and HUD skin are A3.
 
 ## Reference images
 
