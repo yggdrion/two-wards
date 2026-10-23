@@ -24,6 +24,8 @@ if ($PSVersionTable.PSEdition -ne 'Core' -or $IsWindows) {
 }
 
 $BinPath = Join-Path $Dest $Bin
+# The WebRTC GDExtension belongs to the pinned engine setup (see install_webrtc.ps1).
+& (Join-Path $PSScriptRoot 'install_webrtc.ps1') | Out-Null
 if (Test-Path $BinPath) {
     return $BinPath
 }

@@ -50,7 +50,7 @@ The PoC passes when every pillar meets its check below and two people on differe
 | Asset generation | Assets made with the style guide + PixelLab + Aseprite pass the validation script and look consistent side by side in-game |
 | Art | No gray box or placeholder is left on any screen, and a run looks like the approved target frame from A1 |
 | Networking | Two players on different home networks join by room code and play 10 waves without desync |
-| Build / deploy | CI produces Windows + Linux builds; lobby server and coturn run as containers in the cluster with metrics in Grafana |
+| Build / deploy | CI produces Windows + Linux builds; lobby server and coturn run as containers on the self-hosted server with metrics in Grafana |
 | Full loop | Menu → deck builder → lobby → run → gold → booster → deck builder works in one session, and the save survives a restart |
 
 ## Architecture
@@ -58,7 +58,7 @@ The PoC passes when every pillar meets its check below and two people on differe
 The host player's game is the authority; the self-hosted lobby only introduces players and never sees gameplay. This keeps server cost and complexity near zero.
 
 ```
-┌──────────────────────────── Kubernetes cluster ────────────────────────────┐
+┌──────────────────── Self-hosted server (docker compose) ───────────────────┐
 │  ┌──────────────────────┐  ┌──────────────────────────┐  ┌───────────────┐ │
 │  │ coturn               │  │ Lobby / signaling server │─▶│ Monitoring    │ │
 │  │ STUN: NAT traversal  │  │ Room codes, player list  │  │ Grafana, VM,  │ │
@@ -80,7 +80,7 @@ Players find each other through the lobby by room code, then exchange game traff
 
 - **Godot 4.7.2, GDScript.** Data in `Resource` files: `CardData`, `UnitData`, `WaveData`, `HeroData` (name, portrait, battlefield buff).
 - **Host-authoritative netcode (lockstep).** Both machines run the same deterministic sim. The host is the clock: every tick it applies the card events (play, cycle, pass, with a target point) it has validated since the last tick, then broadcasts that tick with those events; the client replays the ticks in order and never changes its lane by itself. Clients send card events as requests; a request against a hand that has changed is refused. There is no state sync: each player's wizard is fixed at run start and has no position, and the partner panel reads the partner's hand from the replayed lane.
-- **Transport abstraction.** One setting switches ENet (local dev, tests) and WebRTC (online).
+- **Transport abstraction.** The same session runs over ENet (LAN, tests) or WebRTC through the lobby (online); gameplay only sees a `MultiplayerPeer`.
 - **Local saves.** JSON per profile with a version field.
 - **Lobby server** in TypeScript on Bun, one stateless-ish container; rooms expire after the game starts.
 
@@ -89,7 +89,7 @@ Players find each other through the lobby by room code, then exchange game traff
 ```
 game/          Godot project (scenes, scripts, resources, tests)
 lobby/         Lobby/signaling server + tests + Dockerfile
-deploy/        Kubernetes manifests: lobby, coturn, monitoring config
+deploy/        docker-compose for lobby + coturn, deploy notes
 assets-src/    Aseprite source files, palette, anchors
 tools/         Asset validation, import scripts, prompt templates
 docs/          Style guide, design notes, this plan
@@ -324,7 +324,7 @@ Eight milestones plus M3b (heroes, added after the M3 playtest); M4–M5 (networ
 | M3 | Meta system | Save file, collection, gold, boosters + pack opening, deck builder, pity | Booster distribution test passes; save survives restart |
 | M3b | Heroes | Remove the field hero and its movement; `HeroData` with the two wizards and their battlefield buffs; hero select screen; selected wizard in the save (version bump + migration); Empower replaces Blink; War Drums targets a point; placement anywhere off the path | Buffs and Empower covered by unit tests; scenarios re-pinned; a solo run plays with either wizard |
 | M4 | Local networking | Checkpoint first: decide pure sim core vs Node-based sim. Then ENet host/join, card events via RPC, deck merge, card passing, partner panel (name, wizard, hand) | Headless network test (replaying scenarios) passes with zero hash mismatches |
-| M5 | Lobby + WebRTC | Lobby/signaling server, room codes, WebRTC transport, coturn, deployed to cluster | Two players on different networks complete 10 waves |
+| M5 | Lobby + WebRTC | Lobby/signaling server, room codes, WebRTC transport, coturn, deployed to the gvm host | Two players on different networks complete 10 waves |
 | M6 | Art and juice | A1–A3 of the art track finished: all units, towers, tiles, props, cards and UI in final art; lighting, shaders, VFX and juice | All assets pass validation; side-by-side review looks consistent; a run matches the A1 target frame |
 | M7 | Full loop | Main menu, lobby screen with deck preview, run → rewards → gold → booster flow | Full loop completed in co-op by two people in one session |
 | M8 | Retro | Notes per pillar: what worked, what hurt, time spent, decisions for the real game | Go/no-go and approach for the full game decided |

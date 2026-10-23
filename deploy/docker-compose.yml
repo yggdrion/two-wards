@@ -1,0 +1,49 @@
+# Two Wards server stack: lobby, coturn, and a vector that ships metrics to VictoriaMetrics.
+# Runs from a clone of this repo on the gvm host (grafana.r4b2.de). gvm's Caddy terminates TLS
+# for twowards.r4b2.de and reaches the lobby over gvm's network. Setup: deploy/README.md.
+name: two-wards
+
+services:
+  lobby:
+    build: ../lobby
+    environment:
+      TURN_HOST: twowards.r4b2.de
+      TURN_SECRET: ${TURN_SECRET:?set TURN_SECRET in .env}
+    restart: unless-stopped
+    networks:
+      default:
+      # gvm's Caddy proxies wss://twowards.r4b2.de/ws to two-wards-lobby:8080.
+      gvm:
+        aliases: [two-wards-lobby]
+
+  coturn:
+    image: coturn/coturn:4.18.0
+    command:
+      - -c
+      - /etc/coturn/turnserver.conf
+      - --static-auth-secret=${TURN_SECRET:?set TURN_SECRET in .env}
+    volumes:
+      - ./turnserver.conf:/etc/coturn/turnserver.conf:ro
+    ports:
+      - "3478:3478/udp"
+      - "3478:3478/tcp"
+      # Relay range; must match min-port/max-port in turnserver.conf.
+      - "49160-49200:49160-49200/udp"
+    restart: unless-stopped
+
+  vector:
+    image: timberio/vector:0.57.0-alpine
+    environment:
+      # vector.yaml reads the login from these; vector only expands env vars with this switch.
+      VECTOR_DANGEROUSLY_ALLOW_ENV_VAR_INTERPOLATION: "true"
+      VM_USER: ${VM_USER:?set VM_USER in .env}
+      VM_PASSWORD: ${VM_PASSWORD:?set VM_PASSWORD in .env}
+    volumes:
+      - ./vector.yaml:/etc/vector/vector.yaml:ro
+    command: ["--config", "/etc/vector/vector.yaml"]
+    restart: unless-stopped
+
+networks:
+  gvm:
+    name: gvm_default
+    external: true

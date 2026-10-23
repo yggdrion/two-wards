@@ -171,6 +171,35 @@ func test_coop_screen_hosts_and_cancels() -> void:
 	app.show_screen(App.Screen.CAMP)
 
 
+func test_coop_screen_needs_a_room_code_to_join_online() -> void:
+	var app := _app()
+	app.show_screen(App.Screen.COOP)
+	var screen: CoopScreen = app._screen
+	screen.code_edit.text = "AB"
+	screen.online_join_button.pressed.emit()
+	assert_bool(app.net.is_active()).is_false()
+	assert_str(screen.status_label.text).contains("4-letter")
+	app.show_screen(App.Screen.CAMP)
+
+
+func test_coop_screen_shows_the_hosted_room_code_read_only() -> void:
+	var app := _app()
+	app.show_screen(App.Screen.COOP)
+	var screen: CoopScreen = app._screen
+	assert_str(screen.code_edit.placeholder_text).is_equal("partner's code")
+	# Never open a room on the live lobby from a test.
+	ProjectSettings.set_setting(Transport.LOBBY_SETTING, "ws://127.0.0.1:1/ws")
+	screen.online_host_button.pressed.emit()
+	ProjectSettings.set_setting(Transport.LOBBY_SETTING, null)
+	app.net.room_ready.emit("KMVV")
+	assert_str(screen.code_edit.text).is_equal("KMVV")
+	assert_bool(screen.code_edit.editable).is_false()
+	screen.cancel_button.pressed.emit()
+	assert_str(screen.code_edit.text).is_empty()
+	assert_bool(screen.code_edit.editable).is_true()
+	app.show_screen(App.Screen.CAMP)
+
+
 func test_coop_screen_saves_the_player_name() -> void:
 	var app := _app()
 	app.show_screen(App.Screen.COOP)

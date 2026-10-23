@@ -83,6 +83,10 @@ jobs:
       - name: Run gdUnit4 tests
         shell: pwsh
         run: ./tools/run_tests.ps1
+      # The network test's WebRTC pass runs a local lobby.
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.2
       - name: Run host + client network test
         shell: pwsh
         run: ./tools/run_network_test.ps1
@@ -99,8 +103,12 @@ jobs:
         with:
           path: .tools/godot
           key: godot-${{ runner.os }}-${{ hashFiles('.godot-version', 'tools/godot-*.sha512') }}
-      # Starts a headless host and client over ENet on localhost, plays scripted
-      # card events and exits non-zero on any per-wave state hash mismatch.
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.2
+      # Starts a headless host and client over ENet on localhost, then over WebRTC through a
+      # local lobby, plays scripted card events and exits non-zero on any per-wave state hash
+      # mismatch.
       - name: Run host + client network test
         run: ./tools/run_network_test.sh
 
@@ -114,6 +122,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.4.2
       - run: bun install --frozen-lockfile
       - run: bun test
       - name: Build container

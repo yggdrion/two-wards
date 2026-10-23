@@ -1,0 +1,26 @@
+# Scrapes the lobby and coturn inside this stack and writes to the VictoriaMetrics that
+# Grafana reads (vm.r4b2.de, same as gvm's vector). Credentials come from .env.
+data_dir: /var/lib/vector
+
+api:
+  enabled: false
+
+sources:
+  two_wards:
+    type: prometheus_scrape
+    endpoints:
+      - "http://lobby:8080/metrics"
+      - "http://coturn:9641/metrics"
+    scrape_interval: 30s
+
+sinks:
+  victoria:
+    type: prometheus_remote_write
+    inputs: [two_wards]
+    endpoint: "https://vm.r4b2.de/api/v1/write"
+    auth:
+      strategy: basic
+      user: "${VM_USER}"
+      password: "${VM_PASSWORD}"
+    healthcheck:
+      enabled: false

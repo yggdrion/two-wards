@@ -1,0 +1,256 @@
+{
+  "uid": "two-wards",
+  "title": "Two Wards server",
+  "tags": [
+    "two-wards"
+  ],
+  "timezone": "browser",
+  "refresh": "1m",
+  "schemaVersion": 39,
+  "time": {
+    "from": "now-24h",
+    "to": "now"
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "Open rooms",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "fexoyjjl43474e"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 8,
+        "h": 7
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "fexoyjjl43474e"
+          },
+          "expr": "sum(lobby_rooms)",
+          "legendFormat": "Open rooms"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "decimals": 0
+        },
+        "overrides": []
+      },
+      "options": {}
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "Lobby connections",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "fexoyjjl43474e"
+      },
+      "gridPos": {
+        "x": 8,
+        "y": 0,
+        "w": 8,
+        "h": 7
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "fexoyjjl43474e"
+          },
+          "expr": "sum(lobby_connections)",
+          "legendFormat": "Lobby connections"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "decimals": 0
+        },
+        "overrides": []
+      },
+      "options": {}
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "TURN allocations",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "fexoyjjl43474e"
+      },
+      "gridPos": {
+        "x": 16,
+        "y": 0,
+        "w": 8,
+        "h": 7
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "fexoyjjl43474e"
+          },
+          "expr": "sum(turn_total_allocations)",
+          "legendFormat": "TURN allocations"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "decimals": 0
+        },
+        "overrides": []
+      },
+      "options": {}
+    },
+    {
+      "id": 4,
+      "type": "timeseries",
+      "title": "Rooms created / joined per hour",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "fexoyjjl43474e"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 7,
+        "w": 12,
+        "h": 7
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "fexoyjjl43474e"
+          },
+          "expr": "sum(increase(lobby_rooms_created_total[1h]))",
+          "legendFormat": "created"
+        },
+        {
+          "refId": "B",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "fexoyjjl43474e"
+          },
+          "expr": "sum(increase(lobby_joins_total[1h]))",
+          "legendFormat": "joined"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "decimals": 0
+        },
+        "overrides": []
+      },
+      "options": {}
+    },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "STUN binding requests per minute",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "fexoyjjl43474e"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 7,
+        "w": 12,
+        "h": 7
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "fexoyjjl43474e"
+          },
+          "expr": "sum(rate(stun_binding_request[5m])) * 60",
+          "legendFormat": "requests"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "decimals": 0
+        },
+        "overrides": []
+      },
+      "options": {}
+    },
+    {
+      "id": 6,
+      "type": "timeseries",
+      "title": "Signaling messages per minute",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "fexoyjjl43474e"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 14,
+        "w": 12,
+        "h": 7
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "fexoyjjl43474e"
+          },
+          "expr": "sum(rate(lobby_messages_total[5m])) * 60",
+          "legendFormat": "messages"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "decimals": 0
+        },
+        "overrides": []
+      },
+      "options": {}
+    },
+    {
+      "id": 7,
+      "type": "timeseries",
+      "title": "TURN packets processed per second",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "fexoyjjl43474e"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 14,
+        "w": 12,
+        "h": 7
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "fexoyjjl43474e"
+          },
+          "expr": "sum(rate(turn_packet_processed[5m]))",
+          "legendFormat": "packets"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "decimals": 0
+        },
+        "overrides": []
+      },
+      "options": {}
+    }
+  ]
+}

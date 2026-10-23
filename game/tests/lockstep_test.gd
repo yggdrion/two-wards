@@ -138,8 +138,8 @@ func test_host_waits_for_a_slow_client_when_lead_is_capped() -> void:
 	assert_bool(host.can_step()).is_true()
 
 
-func test_transport_setting_defaults_to_enet() -> void:
-	assert_int(Transport.configured()).is_equal(Transport.Kind.ENET)
+func test_lobby_url_defaults_to_the_public_lobby() -> void:
+	assert_str(Transport.lobby_url()).is_equal(Transport.DEFAULT_LOBBY_URL)
 
 
 func test_setup_merges_decks_in_player_order() -> void:
