@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## State of the repo
 
-M1, M2 and M3 (meta system: save file, boosters, collection, deck builder) are done; M3b (heroes) removes the field hero and adds two wizards (`HeroData` in `resources/heroes/`) with battlefield-wide buffs, picked in a hero select screen. M4 adds local co-op over ENet (`scripts/net/`: lockstep host/client, card commands, desync hashes; co-op screen in the camp; partner panel). The main scene is `scenes/main.tscn` (`App`: meta screens, then runs `scenes/game.tscn` with the active deck). Meta screens build their controls in code on `resources/ui/theme.tres`, so the art pass only swaps styleboxes. `docs/PLAN.md` is the source of truth for scope, architecture, card/meta numbers, style guide, testing and milestones; read it before starting work, together with `docs/HANDOFF.md` (current state, decisions and their reasons, working routine, PixelLab setup; reference mockups in `docs/art-reference/`). The plan's scope table is binding: anything listed as "out of scope" goes to a backlog, not into the PoC.
+M1–M4 are done; M5 (lobby + WebRTC) is next. M3 is the meta system (save file, boosters, collection, deck builder); M3b (heroes) removes the field hero and adds two wizards (`HeroData` in `resources/heroes/`) with battlefield-wide buffs, picked in a hero select screen. M4 adds local co-op over ENet (`scripts/net/`: lockstep host/client, card commands, desync hashes; co-op screen in the camp; partner panel). The main scene is `scenes/main.tscn` (`App`: meta screens, then runs `scenes/game.tscn` with the active deck). Meta screens build their controls in code on `resources/ui/theme.tres`, so the art pass only swaps styleboxes. `docs/PLAN.md` is the source of truth for scope, architecture, card/meta numbers, style guide, testing and milestones; read it before starting work, together with `docs/HANDOFF.md` (current state, decisions and their reasons, working routine, PixelLab setup; reference mockups in `docs/art-reference/`). The plan's scope table is binding: anything listed as "out of scope" goes to a backlog, not into the PoC.
 
 ## Always run the local check
 
@@ -18,6 +18,8 @@ This applies to every session, human or Claude: GitHub CI runs on every push, an
 ## Commands
 
 Tooling: Godot 4.7.2 (GDScript), gdUnit4 v6.2.2, gdtoolkit 4.5.0. Planned later: `bun test` for the lobby.
+
+First-time setup on a new machine (needs Python 3 and git; safe to re-run): `./tools/setup.sh` (Windows: `.\tools\setup.ps1`). It pip-installs `tools/requirements.txt` (gdtoolkit, pillow, pre-commit), the pinned Godot and gdUnit4, the pre-commit and pre-push hooks, and runs the quick check.
 
 The Godot version is pinned in `.godot-version`. `tools/install_godot.sh` downloads it to `.tools/godot/<version>/` (gitignored), checks it against `tools/godot-<version>.sha512` and prints the binary path. To bump Godot, change `.godot-version` and add the matching `.sha512` file with the lines from the release's `SHA512-SUMS.txt`.
 
@@ -45,16 +47,15 @@ Every script in `tools/` has a PowerShell twin (`.ps1`) for Windows; keep both i
     .\tools\run_tests.ps1 -a res://tests/tower_test.gd
     .\tools\export.ps1 windows
 
-    # Lint and format check (pip install "gdtoolkit==4.5.0")
+    # Lint and format check (if gdlint is not on PATH: python -m gdtoolkit.linter / .formatter)
     gdlint game/scripts game/tests game/tools
     gdformat --check game/scripts game/tests game/tools
 
-    # Assets (pip install -r tools/requirements.txt). Python scripts work the same on Windows (use `py`).
+    # Assets. Python scripts work the same on Windows (use `py`).
     python tools/validate_assets.py                          # size, palette, transparency, naming, manifest
     python -m unittest discover -s tools -p "test_*.py"      # validator tests
     python tools/make_placeholders.py                        # redraw PNGs for manifest entries with status "placeholder"
     ./tools/build_assets.sh                                  # rebuild game/resources/generated/*.tres (.ps1 on Windows)
-    pre-commit install                                       # run the validator on every commit
 
 After adding or changing a PNG or a manifest entry, run the validator and `build_assets`, then commit the PNG, its `.import` file and the regenerated `.tres`. Never edit `game/resources/generated/` by hand.
 

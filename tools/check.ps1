@@ -7,7 +7,7 @@
 #   -Quick        only steps 1 and 2 (no Godot), a few seconds
 #   -Export       also export the Windows build to build/windows/ (for playtests)
 #   -InstallHook  install a git pre-push hook that runs this script, then exit
-# Needs: pip install "gdtoolkit==4.5.0" -r tools/requirements.txt
+# Needs: .\tools\setup.ps1 once (Python packages, Godot, gdUnit4, hooks)
 param([switch]$Quick, [switch]$Export, [switch]$InstallHook)
 $ErrorActionPreference = 'Stop'
 
@@ -36,13 +36,13 @@ try {
     # can pick a different version. The WindowsApps python is only a Store installer stub.
     $OnPath = Get-Command python -ErrorAction SilentlyContinue
     $Python = if ($OnPath -and $OnPath.Source -notlike '*\WindowsApps\*') { 'python' } else { 'py' }
-    if (-not (Get-Command gdlint -ErrorAction SilentlyContinue)) {
-        throw 'gdlint not found: pip install "gdtoolkit==4.5.0"'
-    }
+    # Through python -m, so a user-site pip install works without its Scripts dir on PATH.
+    & { $ErrorActionPreference = 'Continue'; & $Python -c 'import gdtoolkit' 2>$null }
+    if ($LASTEXITCODE) { throw 'gdtoolkit not installed: run .\tools\setup.ps1' }
 
     Invoke-Step 'Lint and format' {
-        Invoke-Native gdlint game/scripts game/tests game/tools
-        Invoke-Native gdformat --check game/scripts game/tests game/tools
+        Invoke-Native $Python -m gdtoolkit.linter game/scripts game/tests game/tools
+        Invoke-Native $Python -m gdtoolkit.formatter --check game/scripts game/tests game/tools
     }
     Invoke-Step 'Asset validator' {
         Invoke-Native $Python -m unittest discover -s tools -p 'test_*.py'

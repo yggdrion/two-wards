@@ -13,7 +13,7 @@ if (-not $Godot) { $Godot = & (Join-Path $PSScriptRoot 'install_godot.ps1') }
 Push-Location (Join-Path $Root 'game')
 try {
     # Import once so class_name scripts and resources are registered.
-    & $Godot --headless --import 2>&1 | Out-Null
+    & { $ErrorActionPreference = 'Continue'; & $Godot --headless --import 2>&1 | Out-Null }
 
     $Scenarios = @($args)
     if ($Scenarios.Count -eq 0) {
@@ -35,6 +35,8 @@ try {
         $ClientProc = Start-Process -FilePath $Godot -ArgumentList ($Common + '--role=client') `
             -RedirectStandardOutput $ClientLog -RedirectStandardError "$ClientLog.err" `
             -NoNewWindow -PassThru
+        # PS 5.1 leaves ExitCode empty unless the handle was read while the process ran.
+        $null = $HostProc.Handle, $ClientProc.Handle
         $ClientProc.WaitForExit()
         $HostProc.WaitForExit()
         $Lines = @(Get-Content $HostLog, $ClientLog | Where-Object {

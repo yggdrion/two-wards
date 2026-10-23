@@ -10,7 +10,7 @@ if (-not $Godot) { $Godot = & (Join-Path $PSScriptRoot 'install_godot.ps1') }
 Push-Location (Join-Path $Root 'game')
 try {
     # Import first so new or changed PNGs are loadable.
-    & $Godot --headless --import 2>&1 | Out-Null
+    & { $ErrorActionPreference = 'Continue'; & $Godot --headless --import 2>&1 | Out-Null }
     & $Godot --headless --script res://tools/build_assets.gd
     $ExitCode = $LASTEXITCODE
 } finally {
