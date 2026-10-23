@@ -16,7 +16,6 @@ func before_test() -> void:
 	lane = LANE_SCENE.instantiate()
 	lane.autorun = false
 	lane.waves = []
-	lane.deck = null
 	add_child(lane)
 	auto_free(lane)
 	player = lane.players[0]

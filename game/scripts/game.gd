@@ -22,6 +22,7 @@ var selected := -1
 var host: LockstepHost
 var client: LockstepClient
 var _ended := false
+var _partner_left := false
 
 @onready var lane: Lane = $Lane
 @onready var overlay: Node2D = $Overlay
@@ -34,6 +35,7 @@ func _ready() -> void:
 	hud.card_pressed.connect(_select)
 	hud.cycle_requested.connect(_cycle)
 	hud.pass_requested.connect(func() -> void: _pass(selected))
+	hud.reward_picked.connect(_pick_reward)
 	overlay.draw.connect(_draw_targeting)
 	lane.run_won.connect(_on_run_over)
 	lane.run_lost.connect(_on_run_over)
@@ -82,6 +84,11 @@ func _unhandled_input(event: InputEvent) -> void:
 		return
 	var key := event as InputEventKey
 	if key != null and key.pressed and not key.echo:
+		var choice := key.physical_keycode - KEY_1
+		var offer: Array = lane.rewards.offers[player]
+		if not offer.is_empty() and choice >= 0 and choice < offer.size():
+			_pick_reward(String(offer[choice].id))
+			return
 		match key.physical_keycode:
 			KEY_1, KEY_2, KEY_3, KEY_4:
 				_select(key.physical_keycode - KEY_1)
@@ -126,7 +133,26 @@ func _on_partner_left() -> void:
 	selected = -1
 	hud.notice = "Your partner left. +%d gold" % lane.gold
 	_ended = true
+	_partner_left = true
 	run_ended.emit(lane.gold)
+
+
+## How the run went, for the run-end screen: result ("won", "lost", "partner_left" or
+## "running"), waves cleared, waves in the run and gold earned.
+func summary() -> Dictionary:
+	var result := "running"
+	if lane.phase == Lane.Phase.WON:
+		result = "won"
+	elif lane.phase == Lane.Phase.LOST:
+		result = "lost"
+	elif _partner_left:
+		result = "partner_left"
+	return {
+		"result": result,
+		"waves_cleared": lane.waves_cleared,
+		"waves": lane.waves.size(),
+		"gold": lane.gold,
+	}
 
 
 func _select(slot: int) -> void:
@@ -161,6 +187,10 @@ func _pass(slot: int) -> void:
 		return
 	if _submit(NetCommand.pass_card(player, slot, card.id)) and selected == slot:
 		selected = -1
+
+
+func _pick_reward(card_id: String) -> void:
+	_submit(NetCommand.reward(player, card_id))
 
 
 ## Solo applies the command now; co-op hands it to the host. True if it was applied or sent.

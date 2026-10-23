@@ -53,7 +53,7 @@ func test_coop_two_wizards_pass_cards() -> void:
 	_check("coop_two_wizards_pass_cards.json")
 
 
-func test_coop_scenario_has_two_players_on_one_deck() -> void:
+func test_coop_scenario_gives_each_player_a_deck() -> void:
 	var run := _run("coop_two_wizards_pass_cards.json")
 	var scenario: Scenario = run["scenario"]
 	assert_int(scenario.player_count()).is_equal(2)
@@ -61,8 +61,9 @@ func test_coop_scenario_has_two_players_on_one_deck() -> void:
 	add_child(lane)
 	auto_free(lane)
 	assert_int(lane.players.size()).is_equal(2)
-	assert_object(lane.players[0].deck).is_same(lane.players[1].deck)
-	assert_int(lane.deck.cards.size()).is_equal(16)
+	assert_object(lane.players[0].deck).is_not_same(lane.players[1].deck)
+	assert_int(lane.decks[0].cards.size()).is_equal(8)
+	assert_int(lane.decks[1].cards.size()).is_equal(8)
 
 
 func test_same_scenario_gives_same_hash() -> void:

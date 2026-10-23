@@ -12,12 +12,12 @@ Small does not mean ugly: the PoC has to end as a pretty, polished pixel-art gam
 
 ## Game concept
 
-A real-time co-op tower defense roguelite in a **dark-fantasy** setting, where towers, spells and hero abilities come from a shared card deck. Title: **Two Wards** — two wizards defend a Heart Crystal against waves of monsters.
+A real-time co-op tower defense roguelite in a **dark-fantasy** setting, where towers, spells and hero abilities come from each player's card deck. Title: **Two Wards** — two wizards defend a Heart Crystal against waves of monsters.
 
 - **In a run:** each player gains energy over time and plays cards from a hand of 3 by clicking anywhere on the field. There is no avatar on the field.
 - **Heroes:** before a run each player picks one of two wizards. A wizard never appears on the field; it gives a passive buff to the whole battlefield, and the two buffs add up in co-op. In the run, each player sees their partner's name, wizard portrait and hand of cards in a partner panel.
-- **Co-op:** both players bring their own 8-card deck; the decks merge into one shared run deck. Cards can be passed to the partner.
-- **Between waves:** a short break and a card reward added to the run deck.
+- **Co-op:** both players bring their own 8-card deck and each draws only from their own deck (decided 2026-10-23; before M7 the decks merged into one shared deck). Cards can be passed to the partner; a passed card goes back to its owner's deck once it is used.
+- **Between waves:** each player picks 1 of 3 offered cards into their own run deck (each card rolls its rarity like a booster slot); the 5 s break starts once both have picked.
 - **Meta:** runs earn gold, gold buys boosters, boosters grow the collection, the collection feeds the deck builder.
 
 ## Scope
@@ -31,7 +31,7 @@ The PoC is one map, two players, twelve cards and one full meta loop. Anything n
 | Units | 2 goblin types (fast runner, armored brute) with walk, attack, hit, death | Bosses, elites |
 | Heroes | 2 wizards, each with one battlefield buff; hero select in the main menu; portraits only, never on the field | More heroes, hero classes (hero-specific card pools), hero leveling |
 | Terrain | 1 tileset (ground, path, walls) with autotiling, about 12 props for one biome | More biomes |
-| Cards | 12 cards, 3 rarities, energy, hand of 3, shared deck, card passing | Combo cards, card upgrades, keywords |
+| Cards | 12 cards, 3 rarities, energy, hand of 3, own deck per player, card passing | Combo cards, card upgrades, keywords |
 | Run | 10 waves, card reward after each wave | Events, shops, elites, branching paths |
 | Meta | Gold, boosters, collection, deck builder, local save | Idle camp, server-side profiles, crafting |
 | Networking | Lobby server with room codes, WebRTC P2P, STUN/TURN | Matchmaking, reconnect, Steam transport |
@@ -145,7 +145,7 @@ Twelve cards across three rarities cover every card type once or more; the meta 
 
 - Deck size exactly 8; max 2 copies per card; only owned copies count.
 - Up to 3 saved decks per profile; one is marked active for the lobby.
-- Lobby shows each player's deck and wizard; at run start both decks merge into a 16-card shared deck.
+- Lobby shows each player's name, wizard and deck; the client readies up, then the host starts the run. Each player keeps their own deck in the run.
 
 ### Persistence
 
@@ -298,7 +298,7 @@ Every pull request runs lint, the unit tests, the headless network test and the 
 | Unit | gdUnit4 | Energy regen, hand/draw/cycle, card effects, wave spawning, deck validation, save load + migration |
 | Scenario | gdUnit4, headless | Scripted runs: seed + deck + timed card plays, run N waves, assert crystal HP, gold earned and final state hash. Catches balance and behaviour regressions |
 | Statistical | gdUnit4 | 10,000 simulated boosters match drop rates within tolerance; pity triggers at 10 |
-| Network | 2 headless Godot instances (ENet, localhost) | Host + client connect, merge decks, replay the scenario scripts, compare state hashes per wave |
+| Network | 2 headless Godot instances (ENet, localhost) | Host + client connect, exchange decks, replay the scenario scripts (reward picks included), compare state hashes per wave |
 | Lobby server | bun test | Room create/join, signaling relay, room cleanup |
 | Assets | Validation script | Size, palette, transparency, naming for every PNG |
 | Manual | Two real machines on different networks | WebRTC through NAT, TURN fallback, full loop playtest |
@@ -326,7 +326,7 @@ Eight milestones plus M3b (heroes, added after the M3 playtest); M4–M5 (networ
 | M4 | Local networking | Checkpoint first: decide pure sim core vs Node-based sim. Then ENet host/join, card events via RPC, deck merge, card passing, partner panel (name, wizard, hand) | Headless network test (replaying scenarios) passes with zero hash mismatches |
 | M5 | Lobby + WebRTC | Lobby/signaling server, room codes, WebRTC transport, coturn, deployed to the gvm host | Two players on different networks complete 10 waves |
 | M6 | Art and juice | A1–A3 of the art track finished: all units, towers, tiles, props, cards and UI in final art; lighting, shaders, VFX and juice | All assets pass validation; side-by-side review looks consistent; a run matches the A1 target frame |
-| M7 | Full loop | Main menu, lobby screen with deck preview, run → rewards → gold → booster flow | Full loop completed in co-op by two people in one session |
+| M7 | Full loop | Title screen, lobby screen with deck preview, card reward after each wave, run-end screen, run → rewards → gold → booster flow | Full loop completed in co-op by two people in one session |
 | M8 | Retro | Notes per pillar: what worked, what hurt, time spent, decisions for the real game | Go/no-go and approach for the full game decided |
 
 ## Risks and open decisions

@@ -45,12 +45,19 @@ func _play(scenario: Scenario) -> Dictionary:
 	var host_next := 0
 	var client_next := 0
 	var actions := scenario.actions
+	var answered := {}
 	while not (host.lane.is_over() and client.lane.is_over()) and host.tick < 60 * 900:
 		for message: Variant in to_host.receive(host.tick):
 			if message is Dictionary:
 				host.request(message)
 			else:
 				host.hashes.report(message[0], message[1])
+		var pick := Scenario.reward_pick(host.lane, 0, answered)
+		if not pick.is_empty():
+			host.request(pick)
+		pick = Scenario.reward_pick(client.lane, 1, answered)
+		if not pick.is_empty():
+			to_host.send(host.tick, pick)
 		while host_next < actions.size() and Scenario.is_due(actions[host_next], host.lane.time):
 			var action: Dictionary = actions[host_next]
 			if Scenario.player_of(action) == 0:
@@ -142,7 +149,7 @@ func test_lobby_url_defaults_to_the_public_lobby() -> void:
 	assert_str(Transport.lobby_url()).is_equal(Transport.DEFAULT_LOBBY_URL)
 
 
-func test_setup_merges_decks_in_player_order() -> void:
+func test_setup_gives_each_player_their_deck() -> void:
 	var infos: Array[Dictionary] = [
 		CoopSetup.player_info("Ann", "frost", ["mend", "mend"]),
 		CoopSetup.player_info("Bo", "ember", ["ballista"]),
@@ -152,7 +159,10 @@ func test_setup_merges_decks_in_player_order() -> void:
 	var lane: Lane = load(Scenario.LANE_SCENE).instantiate()
 	auto_free(lane)
 	CoopSetup.configure(lane, setup, Scenario.find_card)
-	var ids := lane.deck.cards.map(func(card: CardData) -> StringName: return card.id)
-	assert_array(ids).is_equal([&"mend", &"mend", &"ballista"])
+	var ids := lane.decks.map(
+		func(deck: DeckData) -> Array:
+			return deck.cards.map(func(c: CardData) -> String: return c.id)
+	)
+	assert_array(ids).is_equal([["mend", "mend"], ["ballista"]])
 	assert_int(lane.heroes.size()).is_equal(2)
 	assert_bool(lane.autorun).is_false()

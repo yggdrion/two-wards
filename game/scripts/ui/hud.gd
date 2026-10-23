@@ -3,12 +3,15 @@ extends Control
 ## Slim bottom bar of the run screen: run status, the hand of 3 as mini cards and energy. The
 ## full card shows above the hand while the mouse is on a card, never while aiming one. In
 ## co-op a card passed by the partner shows as a fourth card, and the partner panel shows the
-## partner's name, wizard and hand.
+## partner's name, wizard and hand. After a cleared wave the reward offer shows as full cards
+## over the field until the player picks one.
 
 signal card_pressed(slot: int)
 signal cycle_requested(slot: int)
 ## The partner panel was clicked: pass the selected card.
 signal pass_requested
+## A card of the reward offer was clicked.
+signal reward_picked(card_id: String)
 
 ## Screen size in base pixels; everything below is laid out from it and Lane.FIELD.
 const SCREEN := Vector2(640, 360)
@@ -19,6 +22,8 @@ const RIGHT_X := 520.0
 ## Card spacing while the hand holds a gift card: four cards overlap to fit before RIGHT_X.
 const CROWDED_GAP := (RIGHT_X - 8.0 - CARD_X - CardView.MINI_SIZE.x) / PlayerState.HAND_SIZE
 const CONTINUE_HINT := "Click to continue"
+const REWARD_GAP := 16.0
+const REWARD_Y := 40.0
 
 var lane: Lane
 ## The player this screen belongs to (co-op: 0 on the host, 1 on the client).
@@ -31,6 +36,8 @@ var partner_panel: PartnerPanel
 ## Slot of the card waiting for a target, or -1.
 var selected := -1
 var cards: Array[CardView] = []
+## The reward offer, one full card per choice.
+var rewards: Array[CardView] = []
 var _preview: CardView
 var _hovered := -1
 
@@ -52,6 +59,17 @@ func _ready() -> void:
 	_preview.mouse_filter = MOUSE_FILTER_IGNORE
 	_preview.visible = false
 	add_child(_preview)
+	var row := RunRewards.CHOICES * (CardView.FULL_SIZE.x + REWARD_GAP) - REWARD_GAP
+	for i in RunRewards.CHOICES:
+		var view := CardView.new()
+		view.full = true
+		view.visible = false
+		view.position = Vector2(
+			(SCREEN.x - row) / 2.0 + i * (CardView.FULL_SIZE.x + REWARD_GAP), REWARD_Y
+		)
+		view.pressed.connect(func(v: CardView) -> void: reward_picked.emit(String(v.card.id)))
+		add_child(view)
+		rewards.append(view)
 	partner_panel = PartnerPanel.new()
 	partner_panel.visible = false
 	partner_panel.pressed.connect(pass_requested.emit)
@@ -91,6 +109,11 @@ func refresh() -> void:
 		_preview.affordable = cards[shown].affordable
 		var x := clampf(cards[shown].position.x - 24, 0, SCREEN.x - CardView.FULL_SIZE.x)
 		_preview.position = Vector2(x, TOP - CardView.FULL_SIZE.y - 4)
+	var offer: Array = lane.rewards.offers[player_index]
+	for i in rewards.size():
+		rewards[i].visible = i < offer.size()
+		if rewards[i].visible:
+			rewards[i].card = offer[i]
 	_refresh_partner()
 	queue_redraw()
 
@@ -178,6 +201,13 @@ func _draw_banner() -> void:
 		match lane.phase:
 			Lane.Phase.BREAK:
 				text = "Wave %d cleared" % (lane.wave_index + 1)
+				if not lane.rewards.offers[player_index].is_empty():
+					hint = (
+						"Pick a card for your deck (1-%d)"
+						% lane.rewards.offers[player_index].size()
+					)
+				elif lane.rewards.is_open():
+					hint = "Waiting for your partner to pick"
 			Lane.Phase.WON:
 				text = "Victory! +%d gold" % lane.gold
 				hint = CONTINUE_HINT

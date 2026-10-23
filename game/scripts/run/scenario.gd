@@ -22,6 +22,8 @@ extends RefCounted
 ## A co-op scenario gives "wizards" and "decks" (one per player, host first) instead of
 ## "wizard" and "deck", and its actions name a "player" (default 0); "pass" gives a card to the
 ## partner. A play, cycle or pass names a card id; it uses the first hand slot holding that card.
+## With "rewards": true every card can be offered after a wave, and every runner picks the first
+## card of each player's offer as soon as it opens (reward_pick), so picks need no timed actions.
 
 const STEP := 1.0 / 60.0
 const LANE_SCENE := "res://scenes/lane.tscn"
@@ -41,6 +43,7 @@ var decks: Array[PackedStringArray] = []
 ## Number of waves to play; -1 plays all waves of the lane scene.
 var wave_count := -1
 var actions: Array[Dictionary] = []
+var rewards := false
 var expect: Dictionary = {}
 
 
@@ -56,6 +59,7 @@ static func load_file(path: String) -> Scenario:
 	for ids: Array in data.get("decks", [data.get("deck", [])]):
 		scenario.decks.append(PackedStringArray(ids))
 	scenario.wave_count = int(data.get("waves", -1))
+	scenario.rewards = bool(data.get("rewards", false))
 	var order := 0
 	for action: Dictionary in data.get("actions", []):
 		var copy := action.duplicate()
@@ -78,6 +82,8 @@ func build_lane(run_setup: Dictionary = {}) -> Lane:
 	CoopSetup.configure(lane, run_setup if not run_setup.is_empty() else setup(), find_card)
 	if wave_count >= 0:
 		lane.waves = lane.waves.slice(0, wave_count)
+	if rewards:
+		lane.reward_pool = CardCatalog.load_dir().all()
 	return lane
 
 
@@ -103,7 +109,12 @@ static func find_card(card_id: String) -> CardData:
 func run(lane: Lane) -> Dictionary:
 	var errors := PackedStringArray()
 	var next := 0
+	var answered := {}
 	while not lane.is_over() and lane.time < MAX_SECONDS:
+		for p in lane.players.size():
+			var pick := reward_pick(lane, p, answered)
+			if not pick.is_empty():
+				NetCommand.apply(lane, pick)
 		while next < actions.size() and is_due(actions[next], lane.time):
 			var cmd := command(lane, actions[next])
 			var error: String = cmd.get("error", "")
@@ -132,6 +143,16 @@ static func result_of(lane: Lane, errors: PackedStringArray) -> Dictionary:
 		"hash": lane.state_hash(),
 		"errors": errors,
 	}
+
+
+## The pick of the first offered card if `player` has an open offer that wasn't answered yet;
+## `answered` keeps the wave of each player's last pick. Empty otherwise.
+static func reward_pick(lane: Lane, player: int, answered: Dictionary) -> Dictionary:
+	var offer: Array = lane.rewards.offers[player]
+	if offer.is_empty() or answered.get(player, -1) == lane.wave_index:
+		return {}
+	answered[player] = lane.wave_index
+	return NetCommand.reward(player, String(offer[0].id))
 
 
 static func is_due(action: Dictionary, time: float) -> bool:

@@ -27,13 +27,14 @@ const DAMAGE_MEMORY := 30.0
 const MIN_ENEMY_SPEED := 0.1
 
 @export var waves: Array[WaveData] = []
-## The run deck. In co-op both players' decks are merged into it (DeckData.merged) and both
-## draw from it.
-@export var deck: DeckData
+## One deck per player, in player order; each player draws only from their own.
+@export var decks: Array[DeckData] = []
 ## One wizard per player, in player order (the host is player 0); its buff covers the whole
 ## battlefield. The lane has one player per entry, and one player without a buff if empty.
 @export var heroes: Array[HeroData] = []
-## Seeds the deck shuffle; same seed and inputs give the same run.
+## Cards a reward can offer (RunRewards); empty turns rewards off (most tests).
+@export var reward_pool: Array[CardData] = []
+## Seeds the deck shuffles and reward offers; same seed and inputs give the same run.
 @export var rng_seed: int = 1
 ## When false, nothing advances on its own; call tick() manually.
 @export var autorun := true
@@ -48,6 +49,8 @@ var enemies: Array[Enemy] = []
 var players: Array[PlayerState] = []
 ## Active lures: {position: Vector2, radius: float, remaining: float}.
 var lures: Array[Dictionary] = []
+## Reward offers after cleared waves; set up in _ready.
+var rewards: RunRewards
 var _spawner: WaveSpawner
 var _break_timer := 0.0
 ## Crystal hits: {time: float, amount: int}.
@@ -63,13 +66,13 @@ func _ready() -> void:
 	var curve := path.curve
 	core.position = path.position + curve.get_point_position(curve.point_count - 1)
 	core.destroyed.connect(_on_core_destroyed)
-	var cards: Array[CardData] = []
-	if deck != null:
-		cards = deck.cards
-	var run_deck := Deck.new(cards, rng_seed)
 	for i in maxi(heroes.size(), 1):
 		var hero: HeroData = heroes[i] if i < heroes.size() else null
-		players.append(PlayerState.new(run_deck, hero))
+		var cards: Array[CardData] = []
+		if i < decks.size() and decks[i] != null:
+			cards = decks[i].cards
+		players.append(PlayerState.new(Deck.new(cards, rng_seed + i), hero))
+	rewards = RunRewards.new(reward_pool, players.size(), rng_seed)
 	if not waves.is_empty():
 		_start_wave(0)
 	set_physics_process(autorun)
@@ -85,7 +88,7 @@ func tick(delta: float) -> void:
 	time += delta
 	for player in players:
 		player.step(delta)
-	if phase == Phase.BREAK:
+	if phase == Phase.BREAK and not rewards.is_open():
 		_break_timer -= delta
 		if _break_timer <= 0.0:
 			_start_wave(wave_index + 1)
@@ -252,6 +255,10 @@ func core_damage_since(seconds: float) -> int:
 ## scenario tests pin it to catch behaviour changes.
 func state_hash() -> String:
 	var parts := PackedStringArray(["%d %d %d %d %.3f" % [phase, wave_index, gold, core.hp, time]])
+	for i in rewards.offers.size():
+		if not rewards.offers[i].is_empty():
+			var ids := rewards.offers[i].map(func(card: CardData) -> String: return String(card.id))
+			parts.append("o %d %s" % [i, ",".join(ids)])
 	for player in players:
 		var hand_ids := PackedStringArray()
 		for card in player.hand:
@@ -306,6 +313,7 @@ func _clear_wave() -> void:
 	else:
 		phase = Phase.BREAK
 		_break_timer = WAVE_BREAK
+		rewards.open()
 
 
 func _step_lures(delta: float) -> void:

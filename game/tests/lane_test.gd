@@ -8,10 +8,11 @@ const STEP := 1.0 / 60.0
 const MAX_SECONDS := 120.0
 
 
-func _make_lane(waves: Array[WaveData]) -> Lane:
+func _make_lane(waves: Array[WaveData], pool: Array[CardData] = []) -> Lane:
 	var lane: Lane = LANE_SCENE.instantiate()
 	lane.autorun = false
 	lane.waves = waves
+	lane.reward_pool = pool
 	add_child(lane)
 	auto_free(lane)
 	return lane
@@ -99,3 +100,69 @@ func test_lane_scene_runs_with_autorun() -> void:
 	await await_millis(200)
 	assert_bool(lane.is_physics_processing()).is_true()
 	assert_float(lane.time).is_greater(0.0)
+
+
+func _cleared_first_wave_with_rewards(rng_seed: int = 1) -> Lane:
+	var waves: Array[WaveData] = [WAVE_01, WAVE_01]
+	var lane: Lane = LANE_SCENE.instantiate()
+	lane.autorun = false
+	lane.waves = waves
+	lane.reward_pool = CardCatalog.load_dir().all()
+	lane.rng_seed = rng_seed
+	add_child(lane)
+	auto_free(lane)
+	lane.place_tower(ARROW, Vector2(260, 128))
+	while lane.waves_cleared == 0:
+		lane.tick(STEP)
+	return lane
+
+
+func test_cleared_wave_offers_three_different_cards() -> void:
+	var lane := _cleared_first_wave_with_rewards()
+	var offer: Array = lane.rewards.offers[0]
+	assert_int(offer.size()).is_equal(RunRewards.CHOICES)
+	for card: CardData in offer:
+		assert_int(offer.count(card)).is_equal(1)
+
+
+func test_break_waits_for_the_pick() -> void:
+	var lane := _cleared_first_wave_with_rewards()
+	for i in roundi((Lane.WAVE_BREAK + 1.0) / STEP):
+		lane.tick(STEP)
+	assert_int(lane.phase).is_equal(Lane.Phase.BREAK)
+	var card: CardData = lane.rewards.offers[0][1]
+	assert_bool(lane.rewards.pick(0, String(card.id), lane.players[0].deck)).is_true()
+	assert_bool(lane.rewards.is_open()).is_false()
+	assert_bool(card in lane.players[0].deck.discard_pile).is_true()
+	for i in roundi((Lane.WAVE_BREAK + 0.1) / STEP):
+		lane.tick(STEP)
+	assert_int(lane.phase).is_equal(Lane.Phase.WAVE)
+
+
+func test_reward_must_be_from_the_offer() -> void:
+	var lane := _cleared_first_wave_with_rewards()
+	var offered: Array = lane.rewards.offers[0].map(func(card: CardData) -> String: return card.id)
+	var other := ""
+	for card in lane.reward_pool:
+		if not String(card.id) in offered:
+			other = String(card.id)
+	var refused := NetCommand.apply(lane, NetCommand.reward(0, other))
+	assert_str(refused).is_not_empty()
+	assert_str(NetCommand.apply(lane, NetCommand.reward(0, offered[0]))).is_empty()
+	assert_str(NetCommand.apply(lane, NetCommand.reward(0, offered[1]))).is_not_empty()
+
+
+func test_same_seed_gives_same_offer() -> void:
+	var a := _cleared_first_wave_with_rewards(4)
+	var b := _cleared_first_wave_with_rewards(4)
+	assert_array(a.rewards.offers[0]).is_equal(b.rewards.offers[0])
+	assert_str(a.state_hash()).is_equal(b.state_hash())
+
+
+func test_last_wave_offers_nothing() -> void:
+	var waves: Array[WaveData] = [WAVE_01]
+	var lane := _make_lane(waves, CardCatalog.load_dir().all())
+	lane.place_tower(ARROW, Vector2(260, 128))
+	_run_until_over(lane)
+	assert_int(lane.phase).is_equal(Lane.Phase.WON)
+	assert_bool(lane.rewards.is_open()).is_false()

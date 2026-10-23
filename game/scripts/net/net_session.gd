@@ -9,11 +9,15 @@ extends Node
 ## The node must sit at the same path on both machines (the App keeps it as its "Net" child),
 ## because Godot routes RPCs by node path.
 ##
-## Handshake: the client connects and sends hello (name, wizard, deck); the host answers with
-## the run setup (seed, both names, wizards and decks, host first) and both start the run.
+## Handshake: the client connects and sends hello (name, wizard, deck); the host shows the
+## lobby and sends its own info back (share_lobby), so both see both decks. The client says
+## ready, the host answers with the run setup (seed, both names, wizards and decks, host first)
+## and both start the run.
 
-## Client connected and said hello (host only).
-signal partner_joined(hello: Dictionary)
+## The partner's info arrived: the client's hello on the host, the host's info on the client.
+signal partner_joined(info: Dictionary)
+## The client is ready to start (host only).
+signal partner_ready
 ## The run starts with this setup; the local player is local_player().
 signal run_started(setup: Dictionary)
 ## Host frames for the client's LockstepClient (client only).
@@ -35,12 +39,17 @@ signal partner_left
 
 enum Role { NONE, HOST, CLIENT }
 
-## Bumped when messages change; a mismatching client is turned away.
-const PROTOCOL := 1
+## Bumped when game messages change; the host turns a mismatching client away after hello.
+## The lobby has its own version (LobbyClient.PROTOCOL).
+const PROTOCOL := 2
 
 var role := Role.NONE
 ## The setup of the running game, empty before run_started.
 var setup: Dictionary = {}
+## The partner's name, wizard and deck (CoopSetup.player_info), empty until partner_joined.
+var partner_info: Dictionary = {}
+## Host: the client said it is ready.
+var partner_is_ready := false
 ## Why the last connection failed or what the host refused, shown on the co-op screen.
 var last_error := ""
 var _hello_info: Dictionary = {}
@@ -76,7 +85,7 @@ func join(address: String, port: int, hello: Dictionary) -> bool:
 func host_online(url: String = Transport.lobby_url()) -> void:
 	close()
 	role = Role.HOST
-	_start_lobby().create(url, PROTOCOL)
+	_start_lobby().create(url)
 
 
 ## Joins the lobby room with this code; sends hello once connected, as with join().
@@ -84,7 +93,7 @@ func join_online(code: String, hello: Dictionary, url: String = Transport.lobby_
 	close()
 	role = Role.CLIENT
 	_set_hello(hello)
-	_start_lobby().join(url, code, PROTOCOL)
+	_start_lobby().join(url, code)
 
 
 func close() -> void:
@@ -103,6 +112,8 @@ func close() -> void:
 	_connections.clear()
 	role = Role.NONE
 	setup = {}
+	partner_info = {}
+	partner_is_ready = false
 
 
 func is_active() -> bool:
@@ -119,6 +130,16 @@ func start_run(run_setup: Dictionary) -> void:
 	setup = run_setup
 	_start.rpc(run_setup)
 	run_started.emit(run_setup)
+
+
+## Host: sends our own info to the client for its lobby.
+func share_lobby(info: Dictionary) -> void:
+	_lobby_info.rpc(info)
+
+
+## Client: tells the host we are ready to start.
+func send_ready() -> void:
+	_ready_to_start.rpc_id(1)
 
 
 func send_frames(frames: Array) -> void:
@@ -197,7 +218,21 @@ func _hello(info: Dictionary) -> void:
 		last_error = "Partner runs another game version"
 		multiplayer.multiplayer_peer.disconnect_peer(multiplayer.get_remote_sender_id())
 		return
+	partner_info = info
 	partner_joined.emit(info)
+
+
+@rpc("authority", "call_remote", "reliable")
+func _lobby_info(info: Dictionary) -> void:
+	partner_info = info
+	partner_joined.emit(info)
+
+
+@rpc("any_peer", "call_remote", "reliable")
+func _ready_to_start() -> void:
+	if role == Role.HOST and not partner_info.is_empty():
+		partner_is_ready = true
+		partner_ready.emit()
 
 
 @rpc("authority", "call_remote", "reliable")

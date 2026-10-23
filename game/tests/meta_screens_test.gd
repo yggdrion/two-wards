@@ -21,8 +21,11 @@ func _app() -> App:
 	return app
 
 
-func test_starts_on_camp_with_new_profile() -> void:
+func test_starts_on_title_and_plays_into_camp_with_new_profile() -> void:
 	var app := _app()
+	assert_int(app.current).is_equal(App.Screen.TITLE)
+	var title: TitleScreen = app._screen
+	title.play_button.pressed.emit()
 	assert_int(app.current).is_equal(App.Screen.CAMP)
 	var camp: CampScreen = app._screen
 	assert_bool(camp.start_button.disabled).is_false()
@@ -42,6 +45,7 @@ func test_save_survives_restart() -> void:
 func test_camp_blocks_run_with_invalid_deck() -> void:
 	var app := _app()
 	app.profile.set_deck_cards(0, ["mend"])
+	app.show_screen(App.Screen.CAMP)
 	var camp: CampScreen = app._screen
 	assert_bool(camp.start_button.disabled).is_true()
 
@@ -106,21 +110,29 @@ func test_run_uses_active_deck_and_pays_gold() -> void:
 	var lane: Lane = game.get_node("Lane")
 	lane.autorun = false
 	lane.set_physics_process(false)
-	assert_int(lane.deck.cards.size()).is_equal(DeckRules.SIZE)
+	assert_int(lane.decks[0].cards.size()).is_equal(DeckRules.SIZE)
+	assert_bool(lane.reward_pool.is_empty()).is_false()
 	lane.gold = 30
+	lane.phase = Lane.Phase.LOST
 	lane.run_lost.emit()
 	assert_int(app.profile.gold).is_equal(30)
 	game.finished.emit()
+	assert_int(app.current).is_equal(App.Screen.RUN_END)
+	var end: RunEndScreen = app._screen
+	assert_str(end.summary["result"]).is_equal("lost")
+	assert_int(end.summary["gold"]).is_equal(30)
+	assert_bool(end.booster_button.disabled).is_true()
+	end.camp_button.pressed.emit()
 	assert_int(app.current).is_equal(App.Screen.CAMP)
 
 
-func test_camp_toggles_fullscreen_and_remembers_it() -> void:
+func test_title_toggles_fullscreen_and_remembers_it() -> void:
 	var app := _app()
-	var camp: CampScreen = app._screen
-	assert_str(camp.fullscreen_button.text).contains("off")
-	camp.fullscreen_button.pressed.emit()
+	var title: TitleScreen = app._screen
+	assert_str(title.fullscreen_button.text).contains("off")
+	title.fullscreen_button.pressed.emit()
 	assert_bool(app.display.fullscreen).is_true()
-	assert_str(camp.fullscreen_button.text).contains("on")
+	assert_str(title.fullscreen_button.text).contains("on")
 	app.free()
 	assert_bool(_app().display.fullscreen).is_true()
 
@@ -137,6 +149,7 @@ func test_f11_toggles_fullscreen_on_any_screen() -> void:
 
 func test_hero_select_saves_the_wizard_and_the_run_uses_it() -> void:
 	var app := _app()
+	app.show_screen(App.Screen.CAMP)
 	var camp: CampScreen = app._screen
 	assert_str(camp.hero_button.text).is_equal("Wizard: Frost")
 	app.show_screen(App.Screen.HEROES)
@@ -157,6 +170,7 @@ func test_hero_select_saves_the_wizard_and_the_run_uses_it() -> void:
 
 func test_coop_screen_hosts_and_cancels() -> void:
 	var app := _app()
+	app.show_screen(App.Screen.CAMP)
 	var camp: CampScreen = app._screen
 	assert_bool(camp.coop_button.disabled).is_false()
 	app.show_screen(App.Screen.COOP)
@@ -232,7 +246,8 @@ func test_coop_run_starts_from_the_setup() -> void:
 	var game: RunScreen = app._screen
 	assert_object(game.host).is_not_null()
 	assert_int(game.lane.players.size()).is_equal(2)
-	assert_int(game.lane.deck.cards.size()).is_equal(DeckRules.SIZE * 2)
+	assert_int(game.lane.decks.size()).is_equal(2)
+	assert_object(game.lane.players[0].deck).is_not_same(game.lane.players[1].deck)
 	assert_bool(game.lane.autorun).is_false()
 	app.net.role = NetSession.Role.NONE
 	app.show_screen(App.Screen.CAMP)

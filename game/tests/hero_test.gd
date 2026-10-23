@@ -13,7 +13,6 @@ func _lane(heroes: Array[HeroData]) -> Lane:
 	var lane: Lane = LANE_SCENE.instantiate()
 	lane.autorun = false
 	lane.waves = []
-	lane.deck = null
 	lane.heroes = heroes
 	add_child(lane)
 	auto_free(lane)
