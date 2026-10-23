@@ -38,6 +38,8 @@ Keep the tool choice from `docs/PLAN.md`: **PixelLab generates, Aseprite cleans 
         tiles/<set>/tile_<set>_<nn>.png
         cards/card_art_<id>.png
         icons/icon_<name>.png
+        towers/tower_<id>.png       # 48×72, base at the tower's position
+        props/prop_<name>.png       # size from the manifest entry
         fonts/
       resources/generated/          # SpriteFrames + TileSet .tres written by the import script
       tools/build_assets.gd         # import script, runs headless (must live inside res://)

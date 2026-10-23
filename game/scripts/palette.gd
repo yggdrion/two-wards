@@ -1,7 +1,6 @@
 class_name Palette
 ## Endesga 32 colors used by gray-box drawing. Only colors from this palette are allowed.
 
-const GROUND := Color("262b44")
 const PATH := Color("3a4466")
 const PATH_EDGE := Color("5a6988")
 const GOBLIN := Color("63c74d")

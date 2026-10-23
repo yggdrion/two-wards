@@ -1,6 +1,7 @@
 [gd_resource type="Resource" script_class="UnitData" format=3]
 
 [ext_resource type="Script" path="res://scripts/data/unit_data.gd" id="1_unit"]
+[ext_resource type="SpriteFrames" path="res://resources/generated/unit_goblin_runner_frames.tres" id="2_frames"]
 
 [resource]
 script = ExtResource("1_unit")
@@ -10,3 +11,4 @@ max_hp = 30
 speed = 80.0
 armor = 0
 core_damage = 1
+frames = ExtResource("2_frames")

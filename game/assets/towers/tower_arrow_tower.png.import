@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://chjolca5rc07l"
-path="res://.godot/imported/wang_0101.png-128f1f3b2321a7571a0d84c5d82618ef.ctex"
+uid="uid://8msp7hrekyjd"
+path="res://.godot/imported/tower_arrow_tower.png-cf064cf5b90ab396e1edca30df5c3670.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://tools/target_frame/tiles/wang_0101.png"
-dest_files=["res://.godot/imported/wang_0101.png-128f1f3b2321a7571a0d84c5d82618ef.ctex"]
+source_file="res://assets/towers/tower_arrow_tower.png"
+dest_files=["res://.godot/imported/tower_arrow_tower.png-cf064cf5b90ab396e1edca30df5c3670.ctex"]
 
 [params]
 

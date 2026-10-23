@@ -2,16 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://byjv6xkora1jb"
-path="res://.godot/imported/wang_0001.png-f185ccb9a2e60f255585a7fa726146f6.ctex"
+uid="uid://cir0t15pkeqif"
+path="res://.godot/imported/tile_base_07.png-b98fe4ca29150b069bdf013504af019b.ctex"
 metadata={
 "vram_texture": false
 }
 
 [deps]
 
-source_file="res://tools/target_frame/tiles/wang_0001.png"
-dest_files=["res://.godot/imported/wang_0001.png-f185ccb9a2e60f255585a7fa726146f6.ctex"]
+source_file="res://assets/tiles/base/tile_base_07.png"
+dest_files=["res://.godot/imported/tile_base_07.png-b98fe4ca29150b069bdf013504af019b.ctex"]
 
 [params]
 

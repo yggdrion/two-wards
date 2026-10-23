@@ -10,6 +10,8 @@ extends Resource
 @export var damage: int = 5
 ## Seconds between shots.
 @export var fire_interval: float = 1.0
+## 48x72 sprite, base at the tower's position; empty keeps the gray-box drawing.
+@export var sprite: Texture2D
 
 @export_group("Hit pattern")
 ## Hit every enemy in range instead of one target.

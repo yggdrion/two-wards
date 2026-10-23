@@ -26,6 +26,8 @@ MANIFEST = {
         },
         {"id": "tile_base", "type": "tileset", "status": "done", "count": 1},
         {"id": "card_art_fireball", "type": "card_art", "status": "todo"},
+        {"id": "tower_arrow", "type": "tower", "status": "done"},
+        {"id": "prop_crystal", "type": "prop", "status": "done", "size": [64, 96]},
     ],
 }
 
@@ -38,6 +40,8 @@ class ValidateAssetsTest(unittest.TestCase):
         self.write_manifest(MANIFEST)
         self.save("units/goblin_runner/unit_goblin_runner_walk_down.png", (128, 64))
         self.save("tiles/base/tile_base_00.png", (32, 32), fill=OUTLINE)
+        self.save("towers/tower_arrow.png", (48, 72))
+        self.save("props/prop_crystal.png", (64, 96))
 
     def tearDown(self) -> None:
         self._tmp.cleanup()
@@ -62,6 +66,10 @@ class ValidateAssetsTest(unittest.TestCase):
 
     def test_todo_entries_may_be_missing(self) -> None:
         self.assertFalse(any("card_art_fireball" in e for e in self.errors()))
+
+    def test_prop_size_comes_from_the_manifest(self) -> None:
+        self.save("props/prop_crystal.png", (64, 64))
+        self.assertEqual(self.errors(), ["props/prop_crystal.png: size 64x64, expected 64x96"])
 
     def test_missing_done_file_is_reported(self) -> None:
         (self.root / "tiles/base/tile_base_00.png").unlink()

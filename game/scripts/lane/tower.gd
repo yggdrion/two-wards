@@ -10,6 +10,8 @@ const SIZE := 20.0
 const SHOT_FLASH := 0.08
 ## Half-width of a piercing shot's line.
 const PIERCE_WIDTH := 12.0
+## The 48x72 sprite's base sits on the tower's position.
+const SPRITE_OFFSET := Vector2(-24, -66)
 
 @export var data: TowerData
 
@@ -23,12 +25,25 @@ var _buff_rate := 1.0
 var _buff_timer := 0.0
 var _shot_points := PackedVector2Array()
 var _shot_timer := 0.0
+var _sprite: Sprite2D
 
 
 func setup(tower: TowerData, seconds: float = 0.0) -> void:
 	data = tower
 	lifetime = seconds
 	_timed = seconds > 0.0
+	if tower.sprite != null:
+		_sprite = Sprite2D.new()
+		_sprite.texture = tower.sprite
+		_sprite.centered = false
+		_sprite.offset = SPRITE_OFFSET
+		add_child(_sprite)
+	var top := Lane.make_light(Palette.FROST, 0.5, 0.35)
+	top.position = Vector2(0, -60)
+	add_child(top)
+	var base := Lane.make_light(Palette.LURE, 0.3, 0.3)
+	base.position = Vector2(0, -28)
+	add_child(base)
 
 
 ## damage_mult is the battlefield-wide multiplier from wizard buffs (Lane.tower_damage_scale).
@@ -141,12 +156,13 @@ func _draw() -> void:
 	if data == null:
 		return
 	draw_arc(Vector2.ZERO, data.attack_range, 0.0, TAU, 48, Palette.PLAYER_DARK, 2.0)
-	var half := SIZE / 2.0
-	var body := Palette.FROST if data.slow_factor < 1.0 else Palette.PLAYER
-	if is_copy:
-		body = Palette.COPY
-	draw_rect(Rect2(-half, -half, SIZE, SIZE), body)
-	draw_rect(Rect2(-4, -4, 8, 8), Palette.SHOT if is_buffed() else Palette.PLAYER_DARK)
+	if _sprite != null:
+		# Copies and buffed towers are tinted; the tint follows every redraw.
+		_sprite.modulate = Palette.COPY if is_copy else Color.WHITE
+		if is_buffed():
+			_sprite.modulate = Palette.SHOT
+	else:
+		_draw_gray_box()
 	if _shot_timer > 0.0 and _shot_points.size() > 1:
 		if data.area:
 			draw_arc(Vector2.ZERO, data.attack_range, 0.0, TAU, 48, Palette.SHOT, 2.0)
@@ -155,3 +171,12 @@ func _draw() -> void:
 		else:
 			for i in range(1, _shot_points.size()):
 				draw_line(Vector2.ZERO, _shot_points[i], Palette.SHOT, 2.0)
+
+
+func _draw_gray_box() -> void:
+	var half := SIZE / 2.0
+	var body := Palette.FROST if data.slow_factor < 1.0 else Palette.PLAYER
+	if is_copy:
+		body = Palette.COPY
+	draw_rect(Rect2(-half, -half, SIZE, SIZE), body)
+	draw_rect(Rect2(-4, -4, 8, 8), Palette.SHOT if is_buffed() else Palette.PLAYER_DARK)

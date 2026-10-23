@@ -7,6 +7,8 @@
 [ext_resource type="Script" path="res://scripts/data/deck_data.gd" id="7_deck_script"]
 [ext_resource type="Resource" path="res://resources/heroes/frost.tres" id="6_frost"]
 [ext_resource type="Resource" path="res://resources/decks/dev_all_cards.tres" id="5_deck"]
+[ext_resource type="TileSet" path="res://resources/generated/tile_base.tres" id="8_tiles"]
+[ext_resource type="Texture2D" path="res://assets/props/prop_heart_crystal.png" id="9_crystal"]
 [ext_resource type="Resource" path="res://resources/waves/wave_01.tres" id="w01"]
 [ext_resource type="Resource" path="res://resources/waves/wave_02.tres" id="w02"]
 [ext_resource type="Resource" path="res://resources/waves/wave_03.tres" id="w03"]
@@ -20,22 +22,37 @@
 
 [sub_resource type="Curve2D" id="Curve2D_lane"]
 _data = {
-"points": PackedVector2Array(0, 0, 0, 0, -16, 60, 0, 0, 0, 0, 200, 60, 0, 0, 0, 0, 200, 240, 0, 0, 0, 0, 440, 240, 0, 0, 0, 0, 440, 100, 0, 0, 0, 0, 580, 100)
+"points": PackedVector2Array(0, 0, 0, 0, -16, 64, 0, 0, 0, 0, 192, 64, 0, 0, 0, 0, 192, 224, 0, 0, 0, 0, 448, 224, 0, 0, 0, 0, 448, 96, 0, 0, 0, 0, 576, 96)
 }
 point_count = 6
 
 [node name="Lane" type="Node2D"]
+y_sort_enabled = true
 script = ExtResource("1_lane")
 waves = Array[ExtResource("2_wave_script")]([ExtResource("w01"), ExtResource("w02"), ExtResource("w03"), ExtResource("w04"), ExtResource("w05"), ExtResource("w06"), ExtResource("w07"), ExtResource("w08"), ExtResource("w09"), ExtResource("w10")])
 decks = Array[ExtResource("7_deck_script")]([ExtResource("5_deck"), ExtResource("5_deck")])
 heroes = Array[ExtResource("4_hero_script")]([ExtResource("6_frost")])
 
+[node name="Ground" type="TileMapLayer" parent="."]
+z_index = -1
+tile_set = ExtResource("8_tiles")
+
+[node name="Dusk" type="CanvasModulate" parent="."]
+color = Color(0.38, 0.38, 0.58, 1)
+
 [node name="Path" type="Path2D" parent="."]
 curve = SubResource("Curve2D_lane")
 
 [node name="Towers" type="Node2D" parent="."]
+y_sort_enabled = true
 
 [node name="Enemies" type="Node2D" parent="."]
+y_sort_enabled = true
 
 [node name="HeartCrystal" type="Node2D" parent="."]
 script = ExtResource("3_core")
+
+[node name="Sprite" type="Sprite2D" parent="HeartCrystal"]
+texture = ExtResource("9_crystal")
+centered = false
+offset = Vector2(-32, -70)

@@ -12,7 +12,9 @@ signal run_lost
 
 enum Phase { WAVE, BREAK, WON, LOST }
 
-const PATH_WIDTH := 24.0
+## The path runs along tile corners, so the ground tiles draw it one tile wide.
+const PATH_WIDTH := 32.0
+const TILE := 32
 ## Playable field above the card UI. Towers stay inside it.
 const FIELD := Rect2(0, 0, 640, 288)
 ## Minimum distance between two towers.
@@ -25,6 +27,8 @@ const GOLD_FOR_WIN := 25
 const DAMAGE_MEMORY := 30.0
 ## Stacked slows never take enemies below this share of their speed.
 const MIN_ENEMY_SPEED := 0.1
+
+static var _light_texture: GradientTexture2D
 
 @export var waves: Array[WaveData] = []
 ## One deck per player, in player order; each player draws only from their own.
@@ -60,12 +64,14 @@ var _damage_log: Array[Dictionary] = []
 @onready var core: HeartCrystal = $HeartCrystal
 @onready var enemies_root: Node2D = $Enemies
 @onready var towers_root: Node2D = $Towers
+@onready var ground: TileMapLayer = $Ground
 
 
 func _ready() -> void:
 	var curve := path.curve
 	core.position = path.position + curve.get_point_position(curve.point_count - 1)
 	core.destroyed.connect(_on_core_destroyed)
+	_build_ground()
 	for i in maxi(heroes.size(), 1):
 		var hero: HeroData = heroes[i] if i < heroes.size() else null
 		var cards: Array[CardData] = []
@@ -292,7 +298,45 @@ func state_hash() -> String:
 	return "\n".join(parts).sha256_text().substr(0, 16)
 
 
+## A point light with hard-edged rings, so the light itself looks pixelated (PLAN: lighting).
+static func make_light(color: Color, energy: float, size: float) -> PointLight2D:
+	if _light_texture == null:
+		var gradient := Gradient.new()
+		gradient.interpolation_mode = Gradient.GRADIENT_INTERPOLATE_CONSTANT
+		gradient.offsets = PackedFloat32Array([0.0, 0.4, 0.75])
+		gradient.colors = PackedColorArray(
+			[Color(0.8, 0.8, 0.8), Color(0.35, 0.35, 0.35), Color(0, 0, 0)]
+		)
+		_light_texture = GradientTexture2D.new()
+		_light_texture.gradient = gradient
+		_light_texture.fill = GradientTexture2D.FILL_RADIAL
+		_light_texture.fill_from = Vector2(0.5, 0.5)
+		_light_texture.fill_to = Vector2(1.0, 0.5)
+		_light_texture.width = 160
+		_light_texture.height = 160
+	var light := PointLight2D.new()
+	light.texture = _light_texture
+	light.texture_scale = size
+	light.color = color
+	light.energy = energy
+	return light
+
+
 # --- Internals ---
+
+
+## Wang tiles by corner: a tile corner on the path is dirt. The source id is the corner bits
+## NW NE SW SE read as a binary number (0 = all grass, 15 = all dirt).
+func _build_ground() -> void:
+	var cells := Vector2i(FIELD.size) / TILE
+	for y in cells.y:
+		for x in cells.x:
+			var id := 0
+			for corner: Vector2i in [
+				Vector2i(x, y), Vector2i(x + 1, y), Vector2i(x, y + 1), Vector2i(x + 1, y + 1)
+			]:
+				id = id * 2 + int(distance_to_path(Vector2(corner * TILE)) < 1.0)
+			ground.set_cell(Vector2i(x, y), id, Vector2i.ZERO)
 
 
 func _start_wave(index: int) -> void:
@@ -357,12 +401,6 @@ func _on_core_destroyed() -> void:
 
 
 func _draw() -> void:
-	draw_rect(FIELD, Palette.GROUND)
-	var points := path.curve.get_baked_points()
-	for i in points.size():
-		points[i] += path.position
-	draw_polyline(points, Palette.PATH_EDGE, PATH_WIDTH + 4.0)
-	draw_polyline(points, Palette.PATH, PATH_WIDTH)
 	for lure in lures:
 		draw_arc(lure["position"], lure["radius"], 0.0, TAU, 32, Palette.LURE, 2.0)
 		draw_rect(Rect2(lure["position"] - Vector2(4, 6), Vector2(8, 12)), Palette.LURE)
