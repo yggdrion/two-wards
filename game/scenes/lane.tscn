@@ -4,6 +4,7 @@
 [ext_resource type="Script" path="res://scripts/data/wave_data.gd" id="2_wave_script"]
 [ext_resource type="Script" path="res://scripts/lane/heart_crystal.gd" id="3_core"]
 [ext_resource type="Script" path="res://scripts/data/hero_data.gd" id="4_hero_script"]
+[ext_resource type="Script" path="res://scripts/data/deck_data.gd" id="7_deck_script"]
 [ext_resource type="Resource" path="res://resources/heroes/frost.tres" id="6_frost"]
 [ext_resource type="Resource" path="res://resources/decks/dev_all_cards.tres" id="5_deck"]
 [ext_resource type="Resource" path="res://resources/waves/wave_01.tres" id="w01"]
@@ -26,7 +27,7 @@ point_count = 6
 [node name="Lane" type="Node2D"]
 script = ExtResource("1_lane")
 waves = Array[ExtResource("2_wave_script")]([ExtResource("w01"), ExtResource("w02"), ExtResource("w03"), ExtResource("w04"), ExtResource("w05"), ExtResource("w06"), ExtResource("w07"), ExtResource("w08"), ExtResource("w09"), ExtResource("w10")])
-deck = ExtResource("5_deck")
+decks = Array[ExtResource("7_deck_script")]([ExtResource("5_deck"), ExtResource("5_deck")])
 heroes = Array[ExtResource("4_hero_script")]([ExtResource("6_frost")])
 
 [node name="Path" type="Path2D" parent="."]

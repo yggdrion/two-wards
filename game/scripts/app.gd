@@ -110,6 +110,7 @@ func _start_run() -> void:
 	var lane: Lane = game.get_node("Lane")
 	if net.is_active() and not net.setup.is_empty():
 		CoopSetup.configure(lane, net.setup, _find_card)
+		lane.reward_pool = catalog.all()
 		game.session = net
 		game.player = net.local_player()
 		game.run_ended.connect(profile.add_gold)
@@ -117,7 +118,9 @@ func _start_run() -> void:
 		add_child(game)
 		_screen = game
 		return
-	lane.deck = profile.deck_data(profile.active_deck, catalog)
+	var decks: Array[DeckData] = [profile.deck_data(profile.active_deck, catalog)]
+	lane.decks = decks
+	lane.reward_pool = catalog.all()
 	var hero := HeroData.find(profile.hero)
 	if hero == null:
 		hero = HeroData.find(Profile.DEFAULT_HERO)

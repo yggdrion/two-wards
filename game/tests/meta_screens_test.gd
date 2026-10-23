@@ -106,7 +106,8 @@ func test_run_uses_active_deck_and_pays_gold() -> void:
 	var lane: Lane = game.get_node("Lane")
 	lane.autorun = false
 	lane.set_physics_process(false)
-	assert_int(lane.deck.cards.size()).is_equal(DeckRules.SIZE)
+	assert_int(lane.decks[0].cards.size()).is_equal(DeckRules.SIZE)
+	assert_bool(lane.reward_pool.is_empty()).is_false()
 	lane.gold = 30
 	lane.run_lost.emit()
 	assert_int(app.profile.gold).is_equal(30)
@@ -232,7 +233,8 @@ func test_coop_run_starts_from_the_setup() -> void:
 	var game: RunScreen = app._screen
 	assert_object(game.host).is_not_null()
 	assert_int(game.lane.players.size()).is_equal(2)
-	assert_int(game.lane.deck.cards.size()).is_equal(DeckRules.SIZE * 2)
+	assert_int(game.lane.decks.size()).is_equal(2)
+	assert_object(game.lane.players[0].deck).is_not_same(game.lane.players[1].deck)
 	assert_bool(game.lane.autorun).is_false()
 	app.net.role = NetSession.Role.NONE
 	app.show_screen(App.Screen.CAMP)

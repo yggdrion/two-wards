@@ -32,6 +32,7 @@ var _host: LockstepHost
 var _client: LockstepClient
 var _lane: Lane
 var _next_action := 0
+var _answered := {}
 var _refused := 0
 var _attempts := 0
 var _retry_at := 0
@@ -177,8 +178,12 @@ func _step_client() -> void:
 	# The client stops when the host is done and hangs up (see _on_partner_left).
 
 
-## Sends this side's scenario actions that are due at the lane's current time.
+## Sends this side's reward pick and the scenario actions due at the lane's current time.
 func _queue_actions(player: int, send: Callable) -> void:
+	if player < _lane.players.size():
+		var pick := Scenario.reward_pick(_lane, player, _answered)
+		if not pick.is_empty():
+			send.call(pick)
 	var actions := _scenario.actions
 	while _next_action < actions.size() and Scenario.is_due(actions[_next_action], _lane.time):
 		var action: Dictionary = actions[_next_action]

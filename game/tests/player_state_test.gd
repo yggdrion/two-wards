@@ -117,3 +117,28 @@ func test_pass_needs_energy() -> void:
 	me.energy.value = 0.0
 	assert_bool(me.pass_to(0, mate)).is_false()
 	assert_int(mate.hand.size()).is_equal(PlayerState.HAND_SIZE)
+
+
+func test_used_gift_goes_back_to_the_givers_deck() -> void:
+	var mine := Deck.new(_five_cards(), 1)
+	var theirs := Deck.new(_five_cards(), 2)
+	var me := PlayerState.new(mine, null)
+	var mate := PlayerState.new(theirs, null)
+	assert_bool(me.pass_to(0, mate)).is_true()
+	var gift := mate.card_at(PlayerState.GIFT_SLOT)
+	assert_bool(mate.cycle(PlayerState.GIFT_SLOT)).is_true()
+	assert_bool(gift in mine.discard_pile).is_true()
+	assert_bool(gift in theirs.discard_pile).is_false()
+
+
+func test_gift_passed_back_stays_the_givers_card() -> void:
+	var mine := Deck.new(_five_cards(), 1)
+	var theirs := Deck.new(_five_cards(), 2)
+	var me := PlayerState.new(mine, null)
+	var mate := PlayerState.new(theirs, null)
+	assert_bool(me.pass_to(0, mate)).is_true()
+	assert_bool(mate.pass_to(PlayerState.GIFT_SLOT, me)).is_true()
+	assert_object(me.gift_owner).is_same(me)
+	assert_bool(me.cycle(PlayerState.GIFT_SLOT)).is_true()
+	assert_int(mine.discard_pile.size()).is_equal(1)
+	assert_int(theirs.discard_pile.size()).is_equal(0)

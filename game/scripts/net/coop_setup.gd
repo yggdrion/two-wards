@@ -23,7 +23,7 @@ static func make(rng_seed: int, infos: Array[Dictionary]) -> Dictionary:
 	return setup
 
 
-## Sets up a lane (before it enters the tree) for the run: seed, wizards and the merged deck.
+## Sets up a lane (before it enters the tree) for the run: seed, wizards and one deck each.
 ## `find_card` maps a card id to its CardData; unknown ids are left out.
 static func configure(lane: Lane, setup: Dictionary, find_card: Callable) -> void:
 	lane.autorun = false
@@ -40,4 +40,4 @@ static func configure(lane: Lane, setup: Dictionary, find_card: Callable) -> voi
 			if card != null:
 				deck.cards.append(card)
 		decks.append(deck)
-	lane.deck = DeckData.merged(decks)
+	lane.decks = decks

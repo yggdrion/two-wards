@@ -2,12 +2,13 @@ extends SceneTree
 ## Records a scenario file by letting a simple bot play every player's hand, so co-op scenarios
 ## don't have to be written by hand. The bot plays the first affordable card every half second:
 ## towers on the next free spot of SPOTS, spells on the enemy furthest along the path, and it
-## passes one card to the partner now and then. Pin the printed "expect" afterwards with the
-## scenario test.
+## passes one card to the partner now and then. With "rewards" on it takes the first card of
+## every offer, like every scenario runner (Scenario.reward_pick). Pin the printed "expect"
+## afterwards with the scenario test.
 ##
 ## Usage: godot --headless --path game --script res://tools/record_scenario.gd -- \
 ##   --in=res://tests/scenarios/<draft>.json --out=<file.json>
-## The draft gives seed, wizards, decks and optional waves; its actions are replaced.
+## The draft gives seed, wizards, decks and optional waves and rewards; its actions are replaced.
 
 const SPOTS := [
 	Vector2(300, 120),
@@ -50,7 +51,12 @@ func _record() -> void:
 	var actions: Array = []
 	var next_think := 0.0
 	var next_pass := PASS_EVERY
+	var answered := {}
 	while not lane.is_over() and lane.time < Scenario.MAX_SECONDS:
+		for p in lane.players.size():
+			var pick := Scenario.reward_pick(lane, p, answered)
+			if not pick.is_empty():
+				NetCommand.apply(lane, pick)
 		if lane.time + Scenario.EPSILON >= next_think:
 			next_think += THINK
 			var t := snappedf(lane.time, 0.001)

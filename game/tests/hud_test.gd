@@ -109,3 +109,19 @@ func test_passed_card_shows_as_a_fourth_card_and_hand_squeezes() -> void:
 	var gift := other.hud.cards[PlayerState.GIFT_SLOT]
 	assert_bool(gift.visible).is_true()
 	assert_float(gift.position.x + gift.size.x).is_less_equal(Hud.RIGHT_X)
+
+
+func test_reward_offer_shows_and_a_click_picks() -> void:
+	var game: RunScreen = _game()
+	var lane := game.lane
+	var offer: Array = [ARROW_TOWER, ARROW_TOWER, ARROW_TOWER]
+	offer[1] = load("res://resources/cards/mend.tres")
+	lane.rewards.offers[0] = offer
+	lane.phase = Lane.Phase.BREAK
+	game.hud.refresh()
+	assert_bool(game.hud.rewards[1].visible).is_true()
+	game.hud.rewards[1].pressed.emit(game.hud.rewards[1])
+	assert_bool(lane.rewards.is_open()).is_false()
+	assert_bool(offer[1] in lane.players[0].deck.discard_pile).is_true()
+	game.hud.refresh()
+	assert_bool(game.hud.rewards[1].visible).is_false()

@@ -1,10 +1,7 @@
 class_name Deck
 extends RefCounted
-## The run deck: a seeded draw pile, plus a discard pile that is shuffled back in when the
-## draw pile runs out.
-##
-## Shared by both players in co-op (M4). Every shuffle uses the deck's own RNG, so runs replay
-## exactly.
+## One player's run deck: a seeded draw pile, plus a discard pile that is shuffled back in when
+## the draw pile runs out. Every shuffle uses the deck's own RNG, so runs replay exactly.
 
 var draw_pile: Array[CardData] = []
 var discard_pile: Array[CardData] = []

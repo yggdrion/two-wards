@@ -4,7 +4,7 @@ extends RefCounted
 ##
 ## A played or cycled card is replaced in the same hand slot at once. A card passed by the
 ## partner sits in a fourth slot (GIFT_SLOT) until it is played, cycled or passed back; that
-## slot is never refilled.
+## slot is never refilled. A gift stays its owner's card: once used it goes to their discard.
 
 const HAND_SIZE := 3
 ## Slot index of a card received from the partner; a hand holds at most one.
@@ -22,6 +22,8 @@ var hand: Array[CardData] = []
 var next_card_discount: int = 0
 ## Seconds left in which the wizard buff counts double (Empower).
 var empowered := 0.0
+## Whose deck the card in the gift slot goes back to.
+var gift_owner: PlayerState
 
 
 func _init(run_deck: Deck, wizard: HeroData = null) -> void:
@@ -92,8 +94,10 @@ func pass_to(index: int, partner: PlayerState) -> bool:
 		return false
 	energy.spend(PASS_COST)
 	var card := hand[index]
+	var owner := _owner_of(index)
 	_refill(index)
 	partner.hand.append(card)
+	partner.gift_owner = owner
 	return true
 
 
@@ -116,13 +120,18 @@ func find_in_hand(card_id: StringName) -> int:
 
 
 func _replace(index: int) -> void:
-	deck.discard(hand[index])
+	_owner_of(index).deck.discard(hand[index])
 	_refill(index)
+
+
+func _owner_of(index: int) -> PlayerState:
+	return gift_owner if index >= GIFT_SLOT and gift_owner != null else self
 
 
 ## Draws into a hand slot; the gift slot goes away instead.
 func _refill(index: int) -> void:
 	if index >= GIFT_SLOT:
 		hand.remove_at(index)
+		gift_owner = null
 	else:
 		hand[index] = deck.draw()
