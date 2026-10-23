@@ -2,7 +2,7 @@
 
 Everything a new session (human or Claude) needs to pick up Two Wards without the original Claude project. It collects the decisions, routines and state that used to live only in project notes. `docs/PLAN.md` stays the source of truth for scope, architecture and milestones; this file adds the "why" and the working habits around it.
 
-Last updated: 2026-10-23, after M4 (PR #15) was merged.
+Last updated: 2026-10-23, during M5 (lobby, WebRTC transport and deploy files written; not deployed yet).
 
 ## Where things stand
 
@@ -17,7 +17,7 @@ Last updated: 2026-10-23, after M4 (PR #15) was merged.
 | Local check script | Done | #13 |
 | M3b Heroes | Done | #14 |
 | M4 Local co-op over ENet | Done, merged 2026-10-23 | #15 |
-| **M5 Lobby + WebRTC** | **Next** | |
+| **M5 Lobby + WebRTC** | **In progress**: code and tests done, deploy and the two-network playtest open | |
 | A1 Look target (art track) | Waiting on the PixelLab paid upgrade | |
 
 Plan-only PRs: #1 (CLAUDE.md, rename), #5 (revised plan), #9 (full pixel-art route), #12 (hero redesign).
@@ -65,7 +65,7 @@ The `art-reference/hero/` images are the first PixelLab hero frames from before 
 
 ### M4 netcode (PR #15)
 
-Rapha kept the Node-based sim (no pure sim core). Lockstep with the host as the clock: `LockstepHost.step()` applies queued `NetCommand`s and ticks, frames go to the client, `LockstepClient` replays. Hashes after each wave and at the end; the headless network test fails on mismatch. Card passing costs 1 energy and lands in the partner's 4th gift slot (max one); the partner panel is bottom-left (click it or press E). Save v3 adds `player_name`; `--profile=<name>` runs two copies on one PC. Transport setting `two_wards/network/transport` (ENet now, `webrtc` for M5).
+Rapha kept the Node-based sim (no pure sim core). Lockstep with the host as the clock: `LockstepHost.step()` applies queued `NetCommand`s and ticks, frames go to the client, `LockstepClient` replays. Hashes after each wave and at the end; the headless network test fails on mismatch. Card passing costs 1 energy and lands in the partner's 4th gift slot (max one); the partner panel is bottom-left (click it or press E). Save v3 adds `player_name`; `--profile=<name>` runs two copies on one PC. ENet by address and port; M5 added the online path next to it.
 
 ## Asset pipeline and PixelLab
 
@@ -74,9 +74,16 @@ Rapha kept the Node-based sim (no pure sim core). Lockstep with the host as the 
 - Working settings for the hero anchor: `POST /v2/create-image-pixflux`, 64×64, `no_background`, `color_image` = an Endesga 32 swatch for the unit, outline "single color black outline", shading "medium", view "high top-down", seed 1337. Output came back on-palette with 0/255 alpha. `POST /v2/rotate` gave a good north view but no true side profile, and it ignores `color_image` (snap the output to Endesga). The trial allows one job at a time (429 otherwise); use long timeouts (`curl -m 300`); a call that ended in a proxy 502 still cost a generation. Raw outputs are in `assets-src/units/hero/pixellab/`.
 - Budget: trial, about 30 of 40 generations left as of 2026-10-22. Rapha upgrades to a paid plan when A1 starts, so cost isn't a hard limit on quality, but ask before spending generations.
 
-## Next: M5
+### M5 online co-op
 
-Lobby/signaling server (TypeScript on Bun, in `lobby/` with `bun test` and a Dockerfile), room codes, WebRTC transport behind the existing transport setting, coturn for STUN/TURN, deployed to the cluster (`deploy/`). The CI lobby job switches on once `lobby/package.json` exists. Done when two players on different networks complete 10 waves. See `docs/PLAN.md` for the details.
+- **Hosting**: no Kubernetes. Rapha's existing gvm box (`grafana.r4b2.de`, Hetzner, already runs Caddy, VictoriaMetrics, Grafana and vector) hosts the lobby and coturn as a second compose project on gvm's network; `twowards.r4b2.de` points at it without Cloudflare proxy (TURN is UDP). Steps in [deploy/README.md](../deploy/README.md).
+- **Lobby** (`lobby/`, Bun, no runtime deps): 4-letter room codes, relays WebRTC offer/answer/candidates verbatim, mints time-limited coturn credentials (REST scheme, `TURN_SECRET` only on the host). Rooms end once the peers report `connected` or after 10 minutes. Its `PROTOCOL` must match `NetSession.PROTOCOL`.
+- **Game**: `LobbyClient` hands its `WebRTCMultiplayerPeer` to `NetSession` at once, so the existing hello/start handshake and lockstep run unchanged. The co-op screen has "Host online" / "Join code" and keeps the M4 LAN row as the fallback. The old `two_wards/network/transport` setting is gone; `two_wards/network/lobby_url` points at a different lobby.
+- **WebRTC** comes from the pinned webrtc-native GDExtension, installed by `install_godot` into `game/addons/webrtc_native/` (gitignored), so it ships in every export.
+
+## Next: finish M5
+
+Deploy (`deploy/README.md`: compose on the host, firewall ports, the gvm Caddy/vector snippets, Grafana dashboard), then the done check: two players on different networks complete 10 waves.
 
 ## Reference images
 

@@ -23,6 +23,9 @@ try {
     & (Join-Path $PSScriptRoot 'install_godot.ps1') | Out-Null
     Write-Host "`n== gdUnit4"
     & (Join-Path $PSScriptRoot 'install_gdunit4.ps1')
+    Write-Host "`n== Bun (lobby and the WebRTC network test)"
+    if (Get-Command bun -ErrorAction SilentlyContinue) { bun --version }
+    else { Write-Host 'bun not found: install it from https://bun.sh, or the WebRTC network test is skipped' }
     Write-Host "`n== Git hooks"
     Invoke-Native $Python -m pre_commit install
     & (Join-Path $PSScriptRoot 'check.ps1') -InstallHook

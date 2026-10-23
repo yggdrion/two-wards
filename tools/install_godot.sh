@@ -20,6 +20,9 @@ case "$(uname -s)-$(uname -m)" in
 	*) echo "Unsupported platform: $(uname -s) $(uname -m)" >&2; exit 1 ;;
 esac
 
+# The WebRTC GDExtension belongs to the pinned engine setup (see install_webrtc.sh).
+"$ROOT/tools/install_webrtc.sh" >&2
+
 if [ -x "$DEST/$BIN" ]; then
 	echo "$DEST/$BIN"
 	exit 0

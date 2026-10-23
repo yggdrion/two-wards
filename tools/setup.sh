@@ -16,6 +16,8 @@ printf '\n== Godot\n'
 ./tools/install_godot.sh >/dev/null
 printf '\n== gdUnit4\n'
 ./tools/install_gdunit4.sh
+printf '\n== Bun (lobby and the WebRTC network test)\n'
+command -v bun >/dev/null && bun --version || echo "bun not found: install it from https://bun.sh, or the WebRTC network test is skipped"
 printf '\n== Git hooks\n'
 "$PYTHON" -m pre_commit install
 ./tools/check.sh --install-hook

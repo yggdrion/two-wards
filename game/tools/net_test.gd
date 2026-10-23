@@ -1,6 +1,7 @@
 extends SceneTree
 ## One side of the headless network test: a host or a client that plays a scenario over ENet
-## on localhost, the same way the game does (NetSession, LockstepHost, LockstepClient).
+## on localhost, or over WebRTC through a lobby, the same way the game does (NetSession,
+## LockstepHost, LockstepClient).
 ## tools/run_network_test.sh starts both sides for every scenario.
 ##
 ## The host plays the scenario's player 0 actions, the client those of player 1 (a solo
@@ -10,6 +11,8 @@ extends SceneTree
 ##
 ## Usage: godot --headless --path game --script res://tools/net_test.gd -- \
 ##   --role=host|client --scenario=res://tests/scenarios/<name>.json [--port=17777]
+## WebRTC: add --lobby=ws://127.0.0.1:<port>/ws; the host logs "room <code>", and the client
+## needs --code=<code>.
 
 ## Ticks the host runs per frame, so a 10-wave run takes seconds instead of minutes.
 const TICKS_PER_FRAME := 30
@@ -21,6 +24,8 @@ const RETRY_MS := 250
 
 var _role := ""
 var _port := 17777
+var _lobby := ""
+var _code := ""
 var _scenario: Scenario
 var _session: NetSession
 var _host: LockstepHost
@@ -45,6 +50,10 @@ func _initialize() -> void:
 				_role = value
 			"port":
 				_port = value.to_int()
+			"lobby":
+				_lobby = value
+			"code":
+				_code = value
 			"scenario":
 				_scenario = Scenario.load_file(value)
 	if _scenario == null or not _role in ["host", "client"]:
@@ -61,11 +70,16 @@ func _start() -> void:
 	_started = true
 	_session.run_started.connect(_on_run_started)
 	_session.partner_joined.connect(_on_partner_joined)
-	_session.connection_failed.connect(func() -> void: _retry_at = Time.get_ticks_msec() + RETRY_MS)
+	_session.connection_failed.connect(_on_connection_failed)
 	_session.partner_left.connect(_on_partner_left)
-	if _role == "host":
+	_session.room_ready.connect(func(code: String) -> void: _log("room %s" % code))
+	if _role == "host" and _lobby != "":
+		_session.host_online(_lobby)
+	elif _role == "host":
 		if not _session.host(_port):
 			_exit = 2
+	elif _lobby != "":
+		_session.join_online(_code, _player_info(1), _lobby)
 	else:
 		_retry_at = Time.get_ticks_msec()
 
@@ -88,6 +102,14 @@ func _process(_delta: float) -> bool:
 	elif _client != null:
 		_step_client()
 	return false
+
+
+func _on_connection_failed() -> void:
+	if _lobby != "":
+		_log("connection failed: %s" % _session.last_error)
+		_exit = 2
+	else:
+		_retry_at = Time.get_ticks_msec() + RETRY_MS
 
 
 func _connect() -> void:

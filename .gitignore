@@ -1,6 +1,7 @@
 # Godot
 game/.godot/
 game/addons/gdUnit4/
+game/addons/webrtc_native/
 *.translation
 export_presets.cfg.local
 
@@ -17,3 +18,6 @@ __pycache__/
 
 # Exports (tools/export.sh)
 build/
+
+# Deploy secrets (deploy/.env.example is the template)
+deploy/.env

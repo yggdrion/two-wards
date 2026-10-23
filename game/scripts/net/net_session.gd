@@ -1,6 +1,8 @@
 class_name NetSession
 extends Node
-## One co-op connection: hosting or joining, the start handshake and the run messages. It only
+## One co-op connection: hosting or joining, the start handshake and the run messages. Online
+## play goes through the lobby (host_online/join_online, WebRTC via LobbyClient); host/join
+## connect directly over ENet (LAN, tests). Everything after the connection is the same. It only
 ## moves plain Dictionaries and Arrays between the two machines; LockstepHost and
 ## LockstepClient decide what they mean.
 ##
@@ -24,7 +26,9 @@ signal command_rejected(cmd: Dictionary, reason: String)
 signal ack_received(tick: int)
 ## The client's lane hash at a desync check point (host only).
 signal hash_received(key: String, hash: String)
-## Connecting to a host failed (client only).
+## Hosting online: the lobby opened a room under this code for the partner to join.
+signal room_ready(code: String)
+## Connecting failed (client, or an online host whose room closed); see last_error.
 signal connection_failed
 ## The other machine left or the connection dropped.
 signal partner_left
@@ -37,9 +41,10 @@ const PROTOCOL := 1
 var role := Role.NONE
 ## The setup of the running game, empty before run_started.
 var setup: Dictionary = {}
-## What the host refused to start with, shown on the co-op screen.
+## Why the last connection failed or what the host refused, shown on the co-op screen.
 var last_error := ""
 var _hello_info: Dictionary = {}
+var _lobby: LobbyClient
 ## Multiplayer signals this session listens to, so close() can let go of them.
 var _connections: Array[Dictionary] = []
 
@@ -63,9 +68,23 @@ func join(address: String, port: int, hello: Dictionary) -> bool:
 		return false
 	_use_peer(peer)
 	role = Role.CLIENT
-	_hello_info = hello.duplicate()
-	_hello_info["protocol"] = PROTOCOL
+	_set_hello(hello)
 	return true
+
+
+## Opens a room on the lobby; room_ready gives its code, partner_joined follows as with host().
+func host_online(url: String = Transport.lobby_url()) -> void:
+	close()
+	role = Role.HOST
+	_start_lobby().create(url, PROTOCOL)
+
+
+## Joins the lobby room with this code; sends hello once connected, as with join().
+func join_online(code: String, hello: Dictionary, url: String = Transport.lobby_url()) -> void:
+	close()
+	role = Role.CLIENT
+	_set_hello(hello)
+	_start_lobby().join(url, code, PROTOCOL)
 
 
 func close() -> void:
@@ -75,6 +94,9 @@ func close() -> void:
 	):
 		multiplayer.multiplayer_peer.close()
 	multiplayer.multiplayer_peer = OfflineMultiplayerPeer.new()
+	if _lobby != null:
+		_lobby.queue_free()
+		_lobby = null
 	for connection in _connections:
 		if connection["signal"].is_connected(connection["callable"]):
 			connection["signal"].disconnect(connection["callable"])
@@ -119,6 +141,27 @@ func reject(cmd: Dictionary, reason: String) -> void:
 	_rejected.rpc(cmd, reason)
 
 
+func _set_hello(hello: Dictionary) -> void:
+	_hello_info = hello.duplicate()
+	_hello_info["protocol"] = PROTOCOL
+
+
+func _start_lobby() -> LobbyClient:
+	_lobby = LobbyClient.new()
+	_lobby.name = "Lobby"
+	add_child(_lobby)
+	_lobby.peer_created.connect(_use_peer)
+	_lobby.room_created.connect(room_ready.emit)
+	_lobby.failed.connect(_on_lobby_failed)
+	return _lobby
+
+
+func _on_lobby_failed(reason: String) -> void:
+	last_error = reason
+	close()
+	connection_failed.emit()
+
+
 func _use_peer(peer: MultiplayerPeer) -> void:
 	multiplayer.multiplayer_peer = peer
 	_listen(multiplayer.peer_disconnected, _on_peer_disconnected)
@@ -137,6 +180,7 @@ func _on_connected() -> void:
 
 
 func _on_connection_failed() -> void:
+	last_error = "No host answered"
 	close()
 	connection_failed.emit()
 

@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## State of the repo
 
-M1–M4 are done; M5 (lobby + WebRTC) is next. M3 is the meta system (save file, boosters, collection, deck builder); M3b (heroes) removes the field hero and adds two wizards (`HeroData` in `resources/heroes/`) with battlefield-wide buffs, picked in a hero select screen. M4 adds local co-op over ENet (`scripts/net/`: lockstep host/client, card commands, desync hashes; co-op screen in the camp; partner panel). The main scene is `scenes/main.tscn` (`App`: meta screens, then runs `scenes/game.tscn` with the active deck). Meta screens build their controls in code on `resources/ui/theme.tres`, so the art pass only swaps styleboxes. `docs/PLAN.md` is the source of truth for scope, architecture, card/meta numbers, style guide, testing and milestones; read it before starting work, together with `docs/HANDOFF.md` (current state, decisions and their reasons, working routine, PixelLab setup; reference mockups in `docs/art-reference/`). The plan's scope table is binding: anything listed as "out of scope" goes to a backlog, not into the PoC.
+M1–M4 are done; M5 (lobby + WebRTC) is in progress. M3 is the meta system (save file, boosters, collection, deck builder); M3b (heroes) removes the field hero and adds two wizards (`HeroData` in `resources/heroes/`) with battlefield-wide buffs, picked in a hero select screen. M4 adds local co-op over ENet (`scripts/net/`: lockstep host/client, card commands, desync hashes; co-op screen in the camp; partner panel). M5 adds online play: the Bun lobby in `lobby/` (room codes, WebRTC signaling, coturn credentials), `LobbyClient` + `NetSession.host_online/join_online` over the pinned webrtc-native GDExtension, and `deploy/` (compose files for the gvm host, see `deploy/README.md`). The main scene is `scenes/main.tscn` (`App`: meta screens, then runs `scenes/game.tscn` with the active deck). Meta screens build their controls in code on `resources/ui/theme.tres`, so the art pass only swaps styleboxes. `docs/PLAN.md` is the source of truth for scope, architecture, card/meta numbers, style guide, testing and milestones; read it before starting work, together with `docs/HANDOFF.md` (current state, decisions and their reasons, working routine, PixelLab setup; reference mockups in `docs/art-reference/`). The plan's scope table is binding: anything listed as "out of scope" goes to a backlog, not into the PoC.
 
 ## Always run the local check
 
@@ -17,11 +17,16 @@ This applies to every session, human or Claude: GitHub CI runs on every push, an
 
 ## Commands
 
-Tooling: Godot 4.7.2 (GDScript), gdUnit4 v6.2.2, gdtoolkit 4.5.0. Planned later: `bun test` for the lobby.
+Tooling: Godot 4.7.2 (GDScript), gdUnit4 v6.2.2, gdtoolkit 4.5.0, webrtc-native 1.2.2, Bun 1.4 (lobby).
+
+    # Lobby (TypeScript on Bun, no runtime deps)
+    cd lobby && bun install && bun test
+    PORT=8080 bun lobby/src/server.ts      # local lobby; point the game at it with the
+                                           # project setting two_wards/network/lobby_url
 
 First-time setup on a new machine (needs Python 3 and git; safe to re-run): `./tools/setup.sh` (Windows: `.\tools\setup.ps1`). It pip-installs `tools/requirements.txt` (gdtoolkit, pillow, pre-commit), the pinned Godot and gdUnit4, the pre-commit and pre-push hooks, and runs the quick check.
 
-The Godot version is pinned in `.godot-version`. `tools/install_godot.sh` downloads it to `.tools/godot/<version>/` (gitignored), checks it against `tools/godot-<version>.sha512` and prints the binary path. To bump Godot, change `.godot-version` and add the matching `.sha512` file with the lines from the release's `SHA512-SUMS.txt`.
+The Godot version is pinned in `.godot-version`. `tools/install_godot.sh` downloads it to `.tools/godot/<version>/` (gitignored), checks it against `tools/godot-<version>.sha512` and prints the binary path. It also runs `tools/install_webrtc.sh`, which puts the pinned webrtc-native GDExtension into `game/addons/webrtc_native/` (gitignored, sha256 in the script), so every Godot script, test and export has WebRTC. To bump Godot, change `.godot-version` and add the matching `.sha512` file with the lines from the release's `SHA512-SUMS.txt`.
 
     # Run the editor/game with the pinned Godot (installs on first use)
     ./tools/godot.sh --path game -e
@@ -69,11 +74,11 @@ Run the local check before pushing; it mirrors CI and stops at the first failure
 
 CI (`.github/workflows/ci.yml`) runs on every push to any branch (and by hand with "Run workflow"): lint and asset validation, gdUnit4 tests on Linux and Windows, then Linux and Windows exports that are uploaded as artifacts on every run. The repo is meant to be public, so Actions minutes are free. Export presets live in `game/export_presets.cfg` (`Linux`, `Windows Desktop`). Commit the `*.gd.uid` files Godot generates next to scripts.
 
-The headless network test (`tools/run_network_test.sh`, `.ps1` on Windows) starts a host and a client Godot (`game/tools/net_test.gd`) over ENet on localhost for every scenario in `game/tests/scenarios/` and fails on any per-wave hash mismatch; the local check and CI run it. New co-op scenarios can be recorded with a bot: `godot --headless --path game --script res://tools/record_scenario.gd -- --in=<draft.json> --out=<file.json>`.
+The headless network test (`tools/run_network_test.sh`, `.ps1` on Windows) starts a host and a client Godot (`game/tools/net_test.gd`) over ENet on localhost for every scenario in `game/tests/scenarios/`, then one co-op scenario over WebRTC through a local lobby (needs `bun`; skipped locally without it, required in CI), and fails on any per-wave hash mismatch; the local check and CI run it. New co-op scenarios can be recorded with a bot: `godot --headless --path game --script res://tools/record_scenario.gd -- --in=<draft.json> --out=<file.json>`.
 
 Some CI jobs stay off until their entry point exists:
 
-- `lobby/package.json` (+ `bun.lock`, `Dockerfile`): `bun test` and the container build (M5)
+- `lobby/package.json` (+ `bun.lock`, `Dockerfile`): `bun test` and the container build (active since M5); on `main` the image is pushed to `ghcr.io/yggdrion/two-wards-lobby`
 - `tools/validate_assets.py`: asset validation and its unittest suite in the lint job (active since the asset pipeline landed); the Linux test job also fails if `build_assets` changes anything under `game/`
 
 ## Code conventions
@@ -90,7 +95,7 @@ Two Wards: a real-time 2-player co-op tower defense roguelite with a card deck. 
 
     game/          Godot project: scenes/, scripts/{data,lane}/, resources/, tests/
     lobby/         Lobby/signaling server (TypeScript on Bun) + tests + Dockerfile
-    deploy/        Kubernetes manifests: lobby, coturn, monitoring config
+    deploy/        docker-compose for lobby + coturn on the gvm host, deploy notes
     assets-src/    Aseprite sources, palette, anchors
     tools/         Asset validation, import scripts, prompt templates
     docs/          Style guide, design notes, plan
@@ -99,7 +104,7 @@ Two Wards: a real-time 2-player co-op tower defense roguelite with a card deck. 
 
 - **Data-driven content.** Cards, units, waves and heroes are `Resource` files (`CardData`, `UnitData`, `WaveData`, `HeroData`). A simple new card must be one `.tres` + art, no code change. Card behaviour is a list of effect resources on `CardData`; `ScriptedEffect` is the escape hatch for odd cards (Time Warp, Mirror Image).
 - **Host-authoritative netcode.** Host simulates enemies/towers and validates plays; clients send inputs and card events only. There is no continuous sync: heroes (wizards) are not on the field and only give battlefield buffs, so card events with a target point are the only player input.
-- **Transport abstraction.** One setting switches ENet (local dev, tests) and WebRTC (online). Keep gameplay code transport-agnostic.
+- **Transport abstraction.** `NetSession` connects over ENet (`host`/`join`: LAN, tests) or WebRTC through the lobby (`host_online`/`join_online`); after that everything is the same `MultiplayerPeer`. Keep gameplay code transport-agnostic.
 - **Lobby never sees gameplay.** It only does room codes and WebRTC signaling; rooms expire once the game starts. coturn provides STUN/TURN.
 - **Desync detection.** Host and client hash game state at the end of each wave; the headless network test fails on mismatch.
 - **Saves.** Local JSON per profile with a version field; load runs a migration keyed on that version.

@@ -1,26 +1,22 @@
 class_name Transport
 ## Creates the MultiplayerPeer under the game's high-level multiplayer API. Gameplay code only
-## sees Godot's multiplayer signals and RPCs, so switching transport is this one setting:
-## ProjectSettings "two_wards/network/transport" ("enet" now, "webrtc" in M5).
+## sees Godot's multiplayer signals and RPCs, so it doesn't care which transport carries them:
+## ENet by address and port (LAN, tests) or WebRTC through the lobby (LobbyClient, online).
 
-enum Kind { ENET, WEBRTC }
-
-const SETTING := "two_wards/network/transport"
+## The lobby's WebSocket URL; override in project settings for a local lobby.
+const LOBBY_SETTING := "two_wards/network/lobby_url"
+const DEFAULT_LOBBY_URL := "wss://twowards.r4b2.de/ws"
 const DEFAULT_PORT := 7777
 ## Co-op is two players: the host and one client.
 const MAX_CLIENTS := 1
 
 
-static func configured() -> Kind:
-	var name := str(ProjectSettings.get_setting(SETTING, "enet")).to_lower()
-	return Kind.WEBRTC if name == "webrtc" else Kind.ENET
+static func lobby_url() -> String:
+	return str(ProjectSettings.get_setting(LOBBY_SETTING, DEFAULT_LOBBY_URL))
 
 
-## A listening host peer, or null (the error is logged).
-static func create_host(port: int, kind: Kind = configured()) -> MultiplayerPeer:
-	if kind != Kind.ENET:
-		push_error("Transport %s is not available yet (M5)" % Kind.keys()[kind])
-		return null
+## A listening ENet host peer, or null (the error is logged).
+static func create_host(port: int) -> MultiplayerPeer:
 	var peer := ENetMultiplayerPeer.new()
 	var err := peer.create_server(port, MAX_CLIENTS)
 	if err != OK:
@@ -29,11 +25,8 @@ static func create_host(port: int, kind: Kind = configured()) -> MultiplayerPeer
 	return peer
 
 
-## A client peer connecting to address:port, or null (the error is logged).
-static func create_client(address: String, port: int, kind: Kind = configured()) -> MultiplayerPeer:
-	if kind != Kind.ENET:
-		push_error("Transport %s is not available yet (M5)" % Kind.keys()[kind])
-		return null
+## An ENet client peer connecting to address:port, or null (the error is logged).
+static func create_client(address: String, port: int) -> MultiplayerPeer:
 	var peer := ENetMultiplayerPeer.new()
 	var err := peer.create_client(address, port)
 	if err != OK:

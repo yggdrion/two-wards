@@ -171,6 +171,17 @@ func test_coop_screen_hosts_and_cancels() -> void:
 	app.show_screen(App.Screen.CAMP)
 
 
+func test_coop_screen_needs_a_room_code_to_join_online() -> void:
+	var app := _app()
+	app.show_screen(App.Screen.COOP)
+	var screen: CoopScreen = app._screen
+	screen.code_edit.text = "AB"
+	screen.online_join_button.pressed.emit()
+	assert_bool(app.net.is_active()).is_false()
+	assert_str(screen.status_label.text).contains("4-letter")
+	app.show_screen(App.Screen.CAMP)
+
+
 func test_coop_screen_saves_the_player_name() -> void:
 	var app := _app()
 	app.show_screen(App.Screen.COOP)

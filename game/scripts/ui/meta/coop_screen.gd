@@ -1,13 +1,16 @@
 class_name CoopScreen
 extends MetaScreen
-## Local co-op (M4, before the lobby): host on a port, or join a host by address. The run
-## starts on both machines as soon as the client has joined. Online play with room codes
-## replaces the address field in M5.
+## Co-op: online through the lobby (one player hosts and reads out the room code, the other
+## joins with it), or directly on a LAN by address and port. The run starts on both machines
+## as soon as the client has joined.
 
 var session: NetSession
 var name_edit: LineEdit
+var code_edit: LineEdit
 var address_edit: LineEdit
 var port_edit: LineEdit
+var online_host_button: Button
+var online_join_button: Button
 var host_button: Button
 var join_button: Button
 var cancel_button: Button
@@ -20,32 +23,31 @@ func build() -> void:
 	form.columns = 2
 	form.add_theme_constant_override("h_separation", 12)
 	form.add_theme_constant_override("v_separation", 8)
-	form.position = Vector2(160, 56)
+	form.position = Vector2(160, 48)
 	form.size = Vector2(320, 0)
 	add_child(form)
 	name_edit = _field(form, "Your name", "")
 	name_edit.max_length = Profile.MAX_NAME_LENGTH
 	name_edit.text_changed.connect(_on_name_changed)
-	address_edit = _field(form, "Host address", "127.0.0.1")
-	port_edit = _field(form, "Port", str(Transport.DEFAULT_PORT))
-	var buttons := HBoxContainer.new()
-	buttons.add_theme_constant_override("separation", 8)
-	buttons.position = Vector2(160, 176)
-	buttons.size = Vector2(320, 28)
-	add_child(buttons)
-	host_button = button("Host", host)
-	join_button = button("Join", join)
+	code_edit = _field(form, "Room code", "")
+	code_edit.max_length = 4
+	address_edit = _field(form, "LAN address", "127.0.0.1")
+	port_edit = _field(form, "LAN port", str(Transport.DEFAULT_PORT))
+	online_host_button = button("Host online", host_online)
+	online_join_button = button("Join code", join_online)
 	cancel_button = button("Cancel", cancel)
-	for item: Button in [host_button, join_button, cancel_button]:
-		item.size_flags_horizontal = SIZE_EXPAND_FILL
-		buttons.add_child(item)
+	_button_row(168, [online_host_button, online_join_button, cancel_button])
+	host_button = button("Host LAN", host)
+	join_button = button("Join LAN", join)
+	_button_row(204, [host_button, join_button])
 	status_label = label("", &"DimLabel")
 	status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	status_label.autowrap_mode = TextServer.AUTOWRAP_WORD
-	status_label.position = Vector2(40, 220)
-	status_label.size = Vector2(SCREEN.x - 80, 96)
+	status_label.position = Vector2(40, 244)
+	status_label.size = Vector2(SCREEN.x - 80, 80)
 	add_child(status_label)
 	if session != null:
+		session.room_ready.connect(_on_room_ready)
 		session.partner_joined.connect(_on_partner_joined)
 		session.connection_failed.connect(_on_connection_failed)
 		session.partner_left.connect(_on_partner_left)
@@ -56,13 +58,13 @@ func refresh() -> void:
 		name_edit.text = profile.display_name()
 	var busy := session != null and session.is_active()
 	var ready := profile.is_deck_valid(profile.active_deck)
-	host_button.disabled = busy or not ready
-	join_button.disabled = busy or not ready
+	for item: Button in [online_host_button, online_join_button, host_button, join_button]:
+		item.disabled = busy or not ready
 	cancel_button.disabled = not busy
 	if not ready:
 		status_label.text = "Your active deck is not ready, fix it in Decks."
 	elif not busy and status_label.text.is_empty():
-		status_label.text = "One player hosts, the other joins with the host's address."
+		status_label.text = "One player hosts online, the other joins with the room code."
 
 
 ## What this player brings: name, wizard and active deck (CoopSetup.player_info).
@@ -70,6 +72,22 @@ func player_info() -> Dictionary:
 	return CoopSetup.player_info(
 		profile.display_name(), profile.hero, profile.deck_cards(profile.active_deck)
 	)
+
+
+func host_online() -> void:
+	session.host_online()
+	status_label.text = "Opening a room ..."
+	refresh()
+
+
+func join_online() -> void:
+	var code := code_edit.text.strip_edges().to_upper()
+	if code.length() != 4:
+		status_label.text = "Enter the 4-letter room code from your partner."
+		return
+	session.join_online(code, player_info())
+	status_label.text = "Joining room %s ..." % code
+	refresh()
 
 
 func host() -> void:
@@ -95,6 +113,17 @@ func cancel() -> void:
 	session.close()
 	status_label.text = ""
 	refresh()
+
+
+func _button_row(y: float, buttons: Array) -> void:
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 8)
+	row.position = Vector2(160, y)
+	row.size = Vector2(320, 28)
+	add_child(row)
+	for item: Button in buttons:
+		item.size_flags_horizontal = SIZE_EXPAND_FILL
+		row.add_child(item)
 
 
 func _field(form: GridContainer, title: String, text: String) -> LineEdit:
@@ -136,8 +165,12 @@ func _on_partner_joined(hello: Dictionary) -> void:
 	session.start_run(CoopSetup.make(rng.randi(), infos))
 
 
+func _on_room_ready(code: String) -> void:
+	status_label.text = "Room code: %s\nTell your partner, then wait for them to join." % code
+
+
 func _on_connection_failed() -> void:
-	status_label.text = "No host answered at %s:%d." % [address_edit.text, _port()]
+	status_label.text = "%s." % session.last_error
 	refresh()
 
 
