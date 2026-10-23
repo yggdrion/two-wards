@@ -1,9 +1,10 @@
 class_name App
 extends Node
-## Root of the game: loads the profile, shows the meta screens and starts runs with the active
-## deck and the chosen wizard. Saves the profile after every change, so nothing is lost on quit.
+## Root of the game: loads the profile, opens on the title screen, shows the meta screens and
+## starts runs with the active deck and the chosen wizard. Saves the profile after every change,
+## so nothing is lost on quit.
 
-enum Screen { CAMP, BOOSTER, COLLECTION, DECKS, HEROES, COOP, RUN }
+enum Screen { TITLE, CAMP, BOOSTER, COLLECTION, DECKS, HEROES, COOP, LOBBY, RUN, RUN_END }
 
 const GAME_SCENE := preload("res://scenes/game.tscn")
 const THEME := preload("res://resources/ui/theme.tres")
@@ -18,7 +19,9 @@ var profile: Profile
 var net: NetSession
 var display: DisplaySettings
 var catalog: CardCatalog
-var current: Screen = Screen.CAMP
+var current: Screen = Screen.TITLE
+## RunScreen.summary() of the last finished run, shown on the run-end screen.
+var last_run: Dictionary = {}
 var _ui: CanvasLayer
 var _root: Control
 var _screen: Node
@@ -45,7 +48,7 @@ func _ready() -> void:
 	_root.theme = THEME
 	_root.size = MetaScreen.SCREEN
 	_ui.add_child(_root)
-	show_screen(Screen.CAMP)
+	show_screen(Screen.TITLE)
 
 
 ## F11 and Alt+Enter work on every screen, in and out of runs.
@@ -79,7 +82,7 @@ func show_screen(screen: Screen) -> void:
 	if screen == Screen.RUN:
 		_start_run()
 		return
-	if screen != Screen.COOP:
+	if screen != Screen.COOP and screen != Screen.LOBBY:
 		net.close()
 	var view: MetaScreen
 	match screen:
@@ -95,10 +98,20 @@ func show_screen(screen: Screen) -> void:
 			var coop := CoopScreen.new()
 			coop.session = net
 			view = coop
+		Screen.LOBBY:
+			var lobby := LobbyScreen.new()
+			lobby.session = net
+			view = lobby
+		Screen.TITLE:
+			var title := TitleScreen.new()
+			title.display = display
+			view = title
+		Screen.RUN_END:
+			var run_end := RunEndScreen.new()
+			run_end.summary = last_run
+			view = run_end
 		_:
-			var camp := CampScreen.new()
-			camp.display = display
-			view = camp
+			view = CampScreen.new()
 	view.setup(profile, catalog)
 	view.navigate.connect(func(next: int) -> void: show_screen(next as Screen))
 	_root.add_child(view)
@@ -113,10 +126,7 @@ func _start_run() -> void:
 		lane.reward_pool = catalog.all()
 		game.session = net
 		game.player = net.local_player()
-		game.run_ended.connect(profile.add_gold)
-		game.finished.connect(show_screen.bind(Screen.CAMP))
-		add_child(game)
-		_screen = game
+		_add_run(game)
 		return
 	var decks: Array[DeckData] = [profile.deck_data(profile.active_deck, catalog)]
 	lane.decks = decks
@@ -127,8 +137,17 @@ func _start_run() -> void:
 	var heroes: Array[HeroData] = [hero]
 	lane.heroes = heroes
 	lane.rng_seed = _rng.randi()
+	_add_run(game)
+
+
+## Pays the run's gold when it ends and shows the run-end screen when the player leaves it.
+func _add_run(game: RunScreen) -> void:
 	game.run_ended.connect(profile.add_gold)
-	game.finished.connect(show_screen.bind(Screen.CAMP))
+	game.finished.connect(
+		func() -> void:
+			last_run = game.summary()
+			show_screen(Screen.RUN_END)
+	)
 	add_child(game)
 	_screen = game
 

@@ -1,8 +1,8 @@
 class_name CoopScreen
 extends MetaScreen
 ## Co-op: online through the lobby (one player hosts and reads out the room code, the other
-## joins with it), or directly on a LAN by address and port. The run starts on both machines
-## as soon as the client has joined.
+## joins with it), or directly on a LAN by address and port. Once the partner is connected
+## both go to the lobby screen.
 
 var session: NetSession
 var name_edit: LineEdit
@@ -76,9 +76,7 @@ func refresh() -> void:
 
 ## What this player brings: name, wizard and active deck (CoopSetup.player_info).
 func player_info() -> Dictionary:
-	return CoopSetup.player_info(
-		profile.display_name(), profile.hero, profile.deck_cards(profile.active_deck)
-	)
+	return CoopSetup.from_profile(profile)
 
 
 func host_online() -> void:
@@ -164,12 +162,9 @@ func _on_name_changed(text: String) -> void:
 		profile.set_player_name(text)
 
 
-## Host: the client said hello, so start the run on both machines.
-func _on_partner_joined(hello: Dictionary) -> void:
-	var rng := RandomNumberGenerator.new()
-	rng.randomize()
-	var infos: Array[Dictionary] = [player_info(), hello]
-	session.start_run(CoopSetup.make(rng.randi(), infos))
+## The partner is here (host: the client's hello; client: the host's lobby info).
+func _on_partner_joined(_info: Dictionary) -> void:
+	navigate.emit(App.Screen.LOBBY)
 
 
 func _on_room_ready(code: String) -> void:

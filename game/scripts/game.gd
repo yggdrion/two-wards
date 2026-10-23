@@ -22,6 +22,7 @@ var selected := -1
 var host: LockstepHost
 var client: LockstepClient
 var _ended := false
+var _partner_left := false
 
 @onready var lane: Lane = $Lane
 @onready var overlay: Node2D = $Overlay
@@ -132,7 +133,26 @@ func _on_partner_left() -> void:
 	selected = -1
 	hud.notice = "Your partner left. +%d gold" % lane.gold
 	_ended = true
+	_partner_left = true
 	run_ended.emit(lane.gold)
+
+
+## How the run went, for the run-end screen: result ("won", "lost", "partner_left" or
+## "running"), waves cleared, waves in the run and gold earned.
+func summary() -> Dictionary:
+	var result := "running"
+	if lane.phase == Lane.Phase.WON:
+		result = "won"
+	elif lane.phase == Lane.Phase.LOST:
+		result = "lost"
+	elif _partner_left:
+		result = "partner_left"
+	return {
+		"result": result,
+		"waves_cleared": lane.waves_cleared,
+		"waves": lane.waves.size(),
+		"gold": lane.gold,
+	}
 
 
 func _select(slot: int) -> void:

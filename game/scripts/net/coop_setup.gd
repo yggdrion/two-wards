@@ -10,6 +10,13 @@ static func player_info(name: String, hero_id: String, deck: Array) -> Dictionar
 	return {"name": name, "hero": hero_id, "deck": deck.duplicate()}
 
 
+## What this player brings into a co-op run: name, wizard and active deck.
+static func from_profile(profile: Profile) -> Dictionary:
+	return player_info(
+		profile.display_name(), profile.hero, profile.deck_cards(profile.active_deck)
+	)
+
+
 ## The setup for a run of the players in `infos` (host first), each from player_info().
 static func make(rng_seed: int, infos: Array[Dictionary]) -> Dictionary:
 	var setup := {"seed": rng_seed, "names": [], "heroes": [], "decks": []}
