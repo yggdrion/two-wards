@@ -1,0 +1,18 @@
+{
+	# gvm's Caddy owns 80/443 on this host; this one only serves :8443.
+	http_port 8081
+	https_port 8443
+	auto_https disable_redirects
+}
+
+twowards.r4b2.de:8443 {
+	tls {
+		dns cloudflare {env.CF_API_TOKEN}
+	}
+	# Only the WebSocket and the health check are public; /metrics stays internal.
+	@public path /ws /healthz
+	handle @public {
+		reverse_proxy lobby:8080
+	}
+	respond 404
+}

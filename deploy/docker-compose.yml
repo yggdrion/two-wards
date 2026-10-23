@@ -1,21 +1,18 @@
-# Lobby and coturn on the gvm host (grafana.r4b2.de), next to its Caddy, VictoriaMetrics and
-# Grafana. Both join gvm's network, so Caddy proxies the lobby by name and vector scrapes both
-# metrics endpoints without publishing them. Setup and updates: deploy/README.md.
+# Two Wards server stack: lobby, coturn, a Caddy for the lobby's TLS, and a vector that ships
+# metrics to VictoriaMetrics. Self-contained: it runs from a clone of this repo on the gvm host
+# (grafana.r4b2.de) without touching gvm, which keeps ports 80/443. Setup: deploy/README.md.
 name: two-wards
 
 services:
   lobby:
-    image: ghcr.io/yggdrion/two-wards-lobby:${LOBBY_TAG:-latest}
-    container_name: two-wards-lobby
+    build: ../lobby
     environment:
       TURN_HOST: twowards.r4b2.de
       TURN_SECRET: ${TURN_SECRET:?set TURN_SECRET in .env}
     restart: unless-stopped
-    networks: [gvm]
 
   coturn:
     image: coturn/coturn:4.18.0
-    container_name: two-wards-coturn
     command:
       - -c
       - /etc/coturn/turnserver.conf
@@ -28,9 +25,28 @@ services:
       # Relay range; must match min-port/max-port in turnserver.conf.
       - "49160-49200:49160-49200/udp"
     restart: unless-stopped
-    networks: [gvm]
 
-networks:
-  gvm:
-    name: gvm_default
-    external: true
+  # TLS for wss://twowards.r4b2.de:8443 via a Cloudflare DNS challenge (gvm's Caddy has 80/443).
+  caddy:
+    build: ./caddy
+    environment:
+      CF_API_TOKEN: ${CF_API_TOKEN:?set CF_API_TOKEN in .env}
+    ports:
+      - "8443:8443"
+    volumes:
+      - ./caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+    restart: unless-stopped
+
+  vector:
+    image: timberio/vector:0.57.0-alpine
+    environment:
+      VM_USER: ${VM_USER:?set VM_USER in .env}
+      VM_PASSWORD: ${VM_PASSWORD:?set VM_PASSWORD in .env}
+    volumes:
+      - ./vector.yaml:/etc/vector/vector.yaml:ro
+    command: ["--config", "/etc/vector/vector.yaml"]
+    restart: unless-stopped
+
+volumes:
+  caddy-data:

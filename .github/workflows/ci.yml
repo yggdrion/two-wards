@@ -116,9 +116,6 @@ jobs:
     needs: detect
     if: needs.detect.outputs.lobby == 'true'
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      packages: write
     defaults:
       run:
         working-directory: lobby
@@ -130,15 +127,7 @@ jobs:
       - run: bun install --frozen-lockfile
       - run: bun test
       - name: Build container
-        run: docker build -t ghcr.io/yggdrion/two-wards-lobby:${{ github.sha }} .
-      # main publishes the image that deploy/docker-compose.yml runs.
-      - name: Push container
-        if: github.ref == 'refs/heads/main'
-        run: |
-          echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
-          docker tag ghcr.io/yggdrion/two-wards-lobby:${{ github.sha }} ghcr.io/yggdrion/two-wards-lobby:latest
-          docker push ghcr.io/yggdrion/two-wards-lobby:${{ github.sha }}
-          docker push ghcr.io/yggdrion/two-wards-lobby:latest
+        run: docker build -t two-wards-lobby:${{ github.sha }} .
 
   # Exports run and upload on every push, so every branch has a downloadable
   # playtest build. Each platform exports on its own OS so both the .sh and the
