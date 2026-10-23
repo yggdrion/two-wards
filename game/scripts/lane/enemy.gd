@@ -7,7 +7,7 @@ signal reached_core(enemy: Enemy)
 
 ## Values above 1 cancel part of the lane's dusk: units stay the highest-contrast thing on
 ## screen (STYLE_GUIDE section 5).
-const UNIT_LIFT := Color(2.0, 2.0, 1.5)
+const UNIT_LIFT := Color(1.5, 1.5, 1.25)
 ## Frame anchor: feet on row 59 of the 64x64 frame stand on the enemy's position.
 const SPRITE_OFFSET := Vector2(-32, -59)
 
