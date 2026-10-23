@@ -25,6 +25,7 @@ Plan-only PRs: #1 (CLAUDE.md, rename), #5 (revised plan), #9 (full pixel-art rou
 ## How we work
 
 - **Rapha** owns the project and develops on Windows. Every script in `tools/` has a `.ps1` twin; keep them in sync.
+- **New machine**: run `./tools/setup.sh` (Windows `.\tools\setup.ps1`) once; it installs everything the check needs.
 - **Local check before every push**: `./tools/check.sh` (Windows `.\tools\check.ps1`), push only on "All checks passed", never `--no-verify`. Use `--quick` while iterating. Say in each PR that the full check passed (with the test count).
 - **CI does all builds.** The repo is public (since 2026-10-23), so Actions minutes are free. Every push runs lint, Linux and Windows tests, the network test and both exports, and uploads `two-wards-<platform>-<sha>` artifacts. Don't build in a cloud container or on Rapha's PC for a playtest unless asked; don't attach executables.
 - **Playtest after each milestone.** When a milestone or major step is ready, give Rapha the link to the green CI run (its Artifacts section has the Windows build) plus a short "what to try" list, and wait for their OK before merging. Docs-only changes need no playtest.

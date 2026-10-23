@@ -20,7 +20,7 @@ $OutFile = Join-Path (Resolve-Path $Out).Path $File
 Push-Location (Join-Path $Root 'game')
 try {
     # Import once so class_name scripts and resources are registered.
-    & $Godot --headless --import 2>&1 | Out-Null
+    & { $ErrorActionPreference = 'Continue'; & $Godot --headless --import 2>&1 | Out-Null }
     & $Godot --headless --export-release $Preset $OutFile
 } finally {
     Pop-Location

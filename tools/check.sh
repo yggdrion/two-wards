@@ -7,7 +7,7 @@
 #   --quick         only steps 1 and 2 (no Godot), a few seconds
 #   --export        also export the Linux and Windows builds to build/<platform>/
 #   --install-hook  install a git pre-push hook that runs this script, then exit
-# Needs: pip install "gdtoolkit==4.5.0" -r tools/requirements.txt
+# Needs: ./tools/setup.sh once (Python packages, Godot, gdUnit4, hooks)
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
@@ -34,12 +34,13 @@ PYTHON="$(command -v python3 || command -v python)"
 step() { printf '\n== %s\n' "$1"; }
 
 step "Lint and format"
-if ! command -v gdlint >/dev/null; then
-	echo 'gdlint not found: pip install "gdtoolkit==4.5.0"' >&2
+# Through python -m, so a user-site pip install works without its bin dir on PATH.
+if ! "$PYTHON" -c 'import gdtoolkit' 2>/dev/null; then
+	echo 'gdtoolkit not installed: run ./tools/setup.sh' >&2
 	exit 1
 fi
-gdlint game/scripts game/tests game/tools
-gdformat --check game/scripts game/tests game/tools
+"$PYTHON" -m gdtoolkit.linter game/scripts game/tests game/tools
+"$PYTHON" -m gdtoolkit.formatter --check game/scripts game/tests game/tools
 
 step "Asset validator"
 "$PYTHON" -m unittest discover -s tools -p "test_*.py"

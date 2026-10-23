@@ -18,8 +18,9 @@ if (-not $Actual.StartsWith("$Version.stable.")) {
 
 Push-Location (Join-Path $Root 'game')
 try {
-    # Import once so class_name scripts and resources are registered.
-    & $Godot --headless --import 2>&1 | Out-Null
+    # Import once so class_name scripts and resources are registered. 'Continue' because
+    # PS 5.1 turns redirected native stderr into errors that 'Stop' throws on.
+    & { $ErrorActionPreference = 'Continue'; & $Godot --headless --import 2>&1 | Out-Null }
     $TestArgs = @('--headless', '--ignoreHeadlessMode', '-a', 'res://tests') + $args
     # Same invocation as addons/gdUnit4/runtest.sh. The unreachable remote debugger
     # keeps Godot from dropping into its interactive debugger on script errors.
