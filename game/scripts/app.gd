@@ -3,7 +3,7 @@ extends Node
 ## Root of the game: loads the profile, shows the meta screens and starts runs with the active
 ## deck and the chosen wizard. Saves the profile after every change, so nothing is lost on quit.
 
-enum Screen { CAMP, BOOSTER, COLLECTION, DECKS, HEROES, RUN }
+enum Screen { CAMP, BOOSTER, COLLECTION, DECKS, HEROES, COOP, RUN }
 
 const GAME_SCENE := preload("res://scenes/game.tscn")
 const THEME := preload("res://resources/ui/theme.tres")
@@ -14,6 +14,8 @@ const THEME := preload("res://resources/ui/theme.tres")
 @export var settings_path := DisplaySettings.PATH
 
 var profile: Profile
+## Co-op connection; the same node path on both machines, so RPCs find it.
+var net: NetSession
 var display: DisplaySettings
 var catalog: CardCatalog
 var current: Screen = Screen.CAMP
@@ -25,7 +27,14 @@ var _rng := RandomNumberGenerator.new()
 
 func _ready() -> void:
 	_rng.randomize()
+	net = NetSession.new()
+	net.name = "Net"
+	add_child(net)
+	net.run_started.connect(func(_setup: Dictionary) -> void: show_screen(Screen.RUN))
 	catalog = CardCatalog.load_dir()
+	var profile_arg := profile_from_args(OS.get_cmdline_args() + OS.get_cmdline_user_args())
+	if not profile_arg.is_empty():
+		save_path = SaveStore.path_for(profile_arg)
 	profile = SaveStore.load_or_create(save_path)
 	profile.changed.connect(save)
 	display = DisplaySettings.load_from(settings_path)
@@ -46,6 +55,14 @@ func _input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 
 
+## "--profile=<name>" picks another save, e.g. for two copies of the game on one PC.
+static func profile_from_args(args: PackedStringArray) -> String:
+	for arg in args:
+		if arg.begins_with("--profile="):
+			return arg.trim_prefix("--profile=").validate_filename()
+	return ""
+
+
 func save() -> void:
 	var err := SaveStore.save(profile, save_path)
 	if err != OK:
@@ -62,6 +79,8 @@ func show_screen(screen: Screen) -> void:
 	if screen == Screen.RUN:
 		_start_run()
 		return
+	if screen != Screen.COOP:
+		net.close()
 	var view: MetaScreen
 	match screen:
 		Screen.BOOSTER:
@@ -72,6 +91,10 @@ func show_screen(screen: Screen) -> void:
 			view = DeckBuilderScreen.new()
 		Screen.HEROES:
 			view = HeroSelectScreen.new()
+		Screen.COOP:
+			var coop := CoopScreen.new()
+			coop.session = net
+			view = coop
 		_:
 			var camp := CampScreen.new()
 			camp.display = display
@@ -85,6 +108,15 @@ func show_screen(screen: Screen) -> void:
 func _start_run() -> void:
 	var game: RunScreen = GAME_SCENE.instantiate()
 	var lane: Lane = game.get_node("Lane")
+	if net.is_active() and not net.setup.is_empty():
+		CoopSetup.configure(lane, net.setup, _find_card)
+		game.session = net
+		game.player = net.local_player()
+		game.run_ended.connect(profile.add_gold)
+		game.finished.connect(show_screen.bind(Screen.CAMP))
+		add_child(game)
+		_screen = game
+		return
 	lane.deck = profile.deck_data(profile.active_deck, catalog)
 	var hero := HeroData.find(profile.hero)
 	if hero == null:
@@ -96,3 +128,7 @@ func _start_run() -> void:
 	game.finished.connect(show_screen.bind(Screen.CAMP))
 	add_child(game)
 	_screen = game
+
+
+func _find_card(card_id: String) -> CardData:
+	return catalog.get_card(card_id) if catalog.has(card_id) else null

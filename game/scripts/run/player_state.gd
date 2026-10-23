@@ -2,10 +2,15 @@ class_name PlayerState
 extends RefCounted
 ## One player's run state: hand of 3, energy, and the wizard whose buff they bring.
 ##
-## A played or cycled card is replaced in the same hand slot at once.
+## A played or cycled card is replaced in the same hand slot at once. A card passed by the
+## partner sits in a fourth slot (GIFT_SLOT) until it is played, cycled or passed back; that
+## slot is never refilled.
 
 const HAND_SIZE := 3
+## Slot index of a card received from the partner; a hand holds at most one.
+const GIFT_SLOT := HAND_SIZE
 const CYCLE_COST := 1
+const PASS_COST := 1
 
 var deck: Deck
 ## The player's wizard; null plays without a buff (tests).
@@ -80,6 +85,28 @@ func card_at(index: int) -> CardData:
 	return hand[index]
 
 
+## Gives the card in a hand slot to `partner` for PASS_COST energy. The slot refills from the
+## deck; the partner keeps the card in their gift slot.
+func pass_to(index: int, partner: PlayerState) -> bool:
+	if not can_pass(index, partner):
+		return false
+	energy.spend(PASS_COST)
+	var card := hand[index]
+	_refill(index)
+	partner.hand.append(card)
+	return true
+
+
+func can_pass(index: int, partner: PlayerState) -> bool:
+	return (
+		partner != null
+		and partner != self
+		and card_at(index) != null
+		and partner.hand.size() <= GIFT_SLOT
+		and energy.can_spend(PASS_COST)
+	)
+
+
 ## Slot index of the first hand card with this id, or -1.
 func find_in_hand(card_id: StringName) -> int:
 	for i in hand.size():
@@ -90,4 +117,12 @@ func find_in_hand(card_id: StringName) -> int:
 
 func _replace(index: int) -> void:
 	deck.discard(hand[index])
-	hand[index] = deck.draw()
+	_refill(index)
+
+
+## Draws into a hand slot; the gift slot goes away instead.
+func _refill(index: int) -> void:
+	if index >= GIFT_SLOT:
+		hand.remove_at(index)
+	else:
+		hand[index] = deck.draw()

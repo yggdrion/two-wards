@@ -1,11 +1,12 @@
 class_name CampScreen
 extends MetaScreen
-## The hub between runs: start a run with the active deck, pick a wizard, open boosters,
-## browse the collection, build decks.
+## The hub between runs: start a run with the active deck (solo or co-op), pick a wizard,
+## open boosters, browse the collection, build decks.
 
 ## Optional; when set, the camp shows a fullscreen toggle.
 var display: DisplaySettings
 var start_button: Button
+var coop_button: Button
 var fullscreen_button: Button
 var booster_button: Button
 var hero_button: Button
@@ -20,12 +21,14 @@ func build() -> void:
 	menu.size = Vector2(200, 0)
 	add_child(menu)
 	start_button = button("Start run", func() -> void: navigate.emit(App.Screen.RUN))
+	coop_button = button("Co-op", func() -> void: navigate.emit(App.Screen.COOP))
 	hero_button = button("", func() -> void: navigate.emit(App.Screen.HEROES))
 	booster_button = button(
 		"Booster (%d gold)" % Booster.COST, func() -> void: navigate.emit(App.Screen.BOOSTER)
 	)
 	for item: Button in [
 		start_button,
+		coop_button,
 		hero_button,
 		booster_button,
 		button("Collection", func() -> void: navigate.emit(App.Screen.COLLECTION)),
@@ -51,6 +54,7 @@ func refresh() -> void:
 	var hero := HeroData.find(profile.hero)
 	hero_button.text = "Wizard: %s" % (hero.display_name if hero != null else profile.hero)
 	start_button.disabled = not ready
+	coop_button.disabled = not ready
 	if ready:
 		_deck_label.text = "Deck: %s" % deck_name
 	else:

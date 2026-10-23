@@ -24,6 +24,8 @@ const STARTER_DECK: Array[String] = [
 ]
 ## Wizard of a new profile (and of saves from before hero select).
 const DEFAULT_HERO := "frost"
+## Longest co-op name; it has to fit the partner panel.
+const MAX_NAME_LENGTH := 12
 
 var profile_name := "default"
 var gold := 0
@@ -37,6 +39,8 @@ var active_deck := 0
 var hero := DEFAULT_HERO
 ## Boosters opened since the last epic (Booster.PITY).
 var boosters_since_epic := 0
+## Name shown to the co-op partner; empty until the player sets one (see display_name()).
+var player_name := ""
 
 
 static func create(name: String = "default") -> Profile:
@@ -92,6 +96,22 @@ func set_hero(hero_id: String) -> void:
 	changed.emit()
 
 
+func set_player_name(value: String) -> void:
+	player_name = value.strip_edges().left(MAX_NAME_LENGTH)
+	changed.emit()
+
+
+## The co-op name: player_name, else the system user name, else "Wizard".
+func display_name() -> String:
+	if not player_name.is_empty():
+		return player_name
+	for key in ["USERNAME", "USER"]:
+		var user := OS.get_environment(key).strip_edges()
+		if not user.is_empty():
+			return user.left(MAX_NAME_LENGTH)
+	return "Wizard"
+
+
 func is_deck_valid(index: int) -> bool:
 	return DeckRules.is_valid(deck_cards(index), collection)
 
@@ -116,6 +136,7 @@ func to_dict() -> Dictionary:
 		"active_deck": active_deck,
 		"hero": hero,
 		"boosters_since_epic": boosters_since_epic,
+		"player_name": player_name,
 	}
 
 
@@ -138,4 +159,5 @@ static func from_dict(data: Dictionary) -> Profile:
 	profile.active_deck = clampi(int(data.get("active_deck", 0)), 0, DeckRules.MAX_DECKS - 1)
 	profile.hero = str(data.get("hero", DEFAULT_HERO))
 	profile.boosters_since_epic = int(data.get("boosters_since_epic", 0))
+	profile.player_name = str(data.get("player_name", ""))
 	return profile

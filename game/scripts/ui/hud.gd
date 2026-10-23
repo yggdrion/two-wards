@@ -1,10 +1,14 @@
 class_name Hud
 extends Control
 ## Slim bottom bar of the run screen: run status, the hand of 3 as mini cards and energy. The
-## full card shows above the hand while the mouse is on a card, never while aiming one.
+## full card shows above the hand while the mouse is on a card, never while aiming one. In
+## co-op a card passed by the partner shows as a fourth card, and the partner panel shows the
+## partner's name, wizard and hand.
 
 signal card_pressed(slot: int)
 signal cycle_requested(slot: int)
+## The partner panel was clicked: pass the selected card.
+signal pass_requested
 
 ## Screen size in base pixels; everything below is laid out from it and Lane.FIELD.
 const SCREEN := Vector2(640, 360)
@@ -12,9 +16,18 @@ const TOP := Lane.FIELD.end.y
 const CARD_X := 184.0
 const CARD_GAP := CardView.MINI_SIZE.x + 8.0
 const RIGHT_X := 520.0
+## Card spacing while the hand holds a gift card: four cards overlap to fit before RIGHT_X.
+const CROWDED_GAP := (RIGHT_X - 8.0 - CARD_X - CardView.MINI_SIZE.x) / PlayerState.HAND_SIZE
 const CONTINUE_HINT := "Click to continue"
 
 var lane: Lane
+## The player this screen belongs to (co-op: 0 on the host, 1 on the client).
+var player_index := 0
+## Player names in co-op, host first; empty when playing solo.
+var names: Array = []
+## Shown as the banner when set, e.g. when the partner left.
+var notice := ""
+var partner_panel: PartnerPanel
 ## Slot of the card waiting for a target, or -1.
 var selected := -1
 var cards: Array[CardView] = []
@@ -24,7 +37,7 @@ var _hovered := -1
 
 func _ready() -> void:
 	mouse_filter = MOUSE_FILTER_IGNORE
-	for i in PlayerState.HAND_SIZE:
+	for i in PlayerState.GIFT_SLOT + 1:
 		var view := CardView.new()
 		view.mini = true
 		view.position = Vector2(CARD_X + i * CARD_GAP, TOP + 4)
@@ -39,6 +52,10 @@ func _ready() -> void:
 	_preview.mouse_filter = MOUSE_FILTER_IGNORE
 	_preview.visible = false
 	add_child(_preview)
+	partner_panel = PartnerPanel.new()
+	partner_panel.visible = false
+	partner_panel.pressed.connect(pass_requested.emit)
+	add_child(partner_panel)
 
 
 func _process(_delta: float) -> void:
@@ -47,15 +64,22 @@ func _process(_delta: float) -> void:
 	refresh()
 
 
+## The player this screen belongs to.
+func own_player() -> PlayerState:
+	return lane.players[player_index]
+
+
 ## Pulls the current run state into the views.
 func refresh() -> void:
-	var player := lane.players[0]
+	var player := own_player()
+	var gap := CROWDED_GAP if player.hand.size() > PlayerState.HAND_SIZE else CARD_GAP
 	for i in cards.size():
 		var view := cards[i]
 		var card := player.card_at(i)
 		view.card = card
+		view.visible = i < PlayerState.HAND_SIZE or card != null
 		view.selected = i == selected
-		view.position.y = TOP + (-4 if i == selected else 4)
+		view.position = Vector2(CARD_X + i * gap, TOP + (-4 if i == selected else 4))
 		if card != null:
 			view.shown_cost = player.cost_of(card)
 			view.affordable = player.energy.can_spend(view.shown_cost)
@@ -67,6 +91,7 @@ func refresh() -> void:
 		_preview.affordable = cards[shown].affordable
 		var x := clampf(cards[shown].position.x - 24, 0, SCREEN.x - CardView.FULL_SIZE.x)
 		_preview.position = Vector2(x, TOP - CardView.FULL_SIZE.y - 4)
+	_refresh_partner()
 	queue_redraw()
 
 
@@ -80,7 +105,7 @@ func _draw() -> void:
 	draw_line(Vector2(0, TOP), Vector2(SCREEN.x, TOP), Palette.PATH_EDGE, 2.0)
 	if lane == null or lane.players.is_empty():
 		return
-	var player := lane.players[0]
+	var player := own_player()
 	UiFont.draw(
 		self,
 		Vector2(8, TOP + 6),
@@ -129,18 +154,36 @@ func _draw_energy(player: PlayerState, pos: Vector2) -> void:
 		draw_rect(cell, Palette.ENERGY if i < points else Palette.PATH)
 
 
+func _refresh_partner() -> void:
+	partner_panel.visible = lane.players.size() == 2
+	if not partner_panel.visible:
+		return
+	var partner := 1 - player_index
+	partner_panel.player = lane.players[partner]
+	partner_panel.player_name = str(names[partner]) if partner < names.size() else "Partner"
+	partner_panel.position = Vector2(4, TOP - PartnerPanel.SIZE.y - 4)
+	partner_panel.can_receive = (
+		selected >= 0 and own_player().can_pass(selected, lane.players[partner])
+	)
+	partner_panel.queue_redraw()
+
+
 func _draw_banner() -> void:
 	var text := ""
 	var hint := ""
-	match lane.phase:
-		Lane.Phase.BREAK:
-			text = "Wave %d cleared" % (lane.wave_index + 1)
-		Lane.Phase.WON:
-			text = "Victory! +%d gold" % lane.gold
-			hint = CONTINUE_HINT
-		Lane.Phase.LOST:
-			text = "The crystal shattered. +%d gold" % lane.gold
-			hint = CONTINUE_HINT
+	if not notice.is_empty() and not lane.is_over():
+		text = notice
+		hint = CONTINUE_HINT
+	else:
+		match lane.phase:
+			Lane.Phase.BREAK:
+				text = "Wave %d cleared" % (lane.wave_index + 1)
+			Lane.Phase.WON:
+				text = "Victory! +%d gold" % lane.gold
+				hint = CONTINUE_HINT
+			Lane.Phase.LOST:
+				text = "The crystal shattered. +%d gold" % lane.gold
+				hint = CONTINUE_HINT
 	if text.is_empty():
 		return
 	var w := maxf(UiFont.width(text), UiFont.width(hint)) + 16

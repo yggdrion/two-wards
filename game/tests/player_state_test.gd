@@ -80,3 +80,40 @@ func test_find_in_hand() -> void:
 	var player := _player(cards)
 	assert_int(player.find_in_hand(&"b")).is_equal(player.hand.find(cards[1]))
 	assert_int(player.find_in_hand(&"zzz")).is_equal(-1)
+
+
+func test_pass_gives_the_card_to_the_partner_for_one_energy() -> void:
+	var deck := Deck.new(_five_cards() + _five_cards(), 1)
+	var me := PlayerState.new(deck, null)
+	var mate := PlayerState.new(deck, null)
+	var passed := me.hand[2]
+	var next_draw: CardData = deck.draw_pile.back()
+	assert_bool(me.pass_to(2, mate)).is_true()
+	assert_int(me.energy.points()).is_equal(Energy.START - PlayerState.PASS_COST)
+	assert_object(me.hand[2]).is_same(next_draw)
+	assert_int(mate.hand.size()).is_equal(PlayerState.HAND_SIZE + 1)
+	assert_object(mate.card_at(PlayerState.GIFT_SLOT)).is_same(passed)
+	assert_bool(passed in deck.discard_pile).is_false()
+
+
+func test_gift_slot_holds_one_card_and_goes_away_when_played() -> void:
+	var deck := Deck.new(_five_cards() + _five_cards(), 1)
+	var me := PlayerState.new(deck, null)
+	var mate := PlayerState.new(deck, null)
+	assert_bool(me.pass_to(0, mate)).is_true()
+	assert_bool(me.can_pass(1, mate)).is_false()
+	assert_bool(me.can_pass(1, me)).is_false()
+	var gift := mate.card_at(PlayerState.GIFT_SLOT)
+	assert_bool(mate.play(PlayerState.GIFT_SLOT, _ctx(mate))).is_true()
+	assert_int(mate.hand.size()).is_equal(PlayerState.HAND_SIZE)
+	assert_bool(gift in deck.discard_pile).is_true()
+	assert_bool(me.can_pass(1, mate)).is_true()
+
+
+func test_pass_needs_energy() -> void:
+	var deck := Deck.new(_five_cards() + _five_cards(), 1)
+	var me := PlayerState.new(deck, null)
+	var mate := PlayerState.new(deck, null)
+	me.energy.value = 0.0
+	assert_bool(me.pass_to(0, mate)).is_false()
+	assert_int(mate.hand.size()).is_equal(PlayerState.HAND_SIZE)

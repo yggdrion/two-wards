@@ -27,9 +27,11 @@ const DAMAGE_MEMORY := 30.0
 const MIN_ENEMY_SPEED := 0.1
 
 @export var waves: Array[WaveData] = []
-## Cards the solo player brings; in co-op (M4) both decks merge into one.
+## The run deck. In co-op both players' decks are merged into it (DeckData.merged) and both
+## draw from it.
 @export var deck: DeckData
-## One wizard per player, in player order; its buff covers the whole battlefield.
+## One wizard per player, in player order (the host is player 0); its buff covers the whole
+## battlefield. The lane has one player per entry, and one player without a buff if empty.
 @export var heroes: Array[HeroData] = []
 ## Seeds the deck shuffle; same seed and inputs give the same run.
 @export var rng_seed: int = 1
@@ -64,8 +66,10 @@ func _ready() -> void:
 	var cards: Array[CardData] = []
 	if deck != null:
 		cards = deck.cards
-	var hero: HeroData = heroes[0] if not heroes.is_empty() else null
-	players.append(PlayerState.new(Deck.new(cards, rng_seed), hero))
+	var run_deck := Deck.new(cards, rng_seed)
+	for i in maxi(heroes.size(), 1):
+		var hero: HeroData = heroes[i] if i < heroes.size() else null
+		players.append(PlayerState.new(run_deck, hero))
 	if not waves.is_empty():
 		_start_wave(0)
 	set_physics_process(autorun)
@@ -124,6 +128,13 @@ func can_play_card(player_index: int, slot: int, target: Vector2 = Vector2.ZERO)
 
 func cycle_card(player_index: int, slot: int) -> bool:
 	return not is_over() and players[player_index].cycle(slot)
+
+
+## Gives a hand card to the other player of a two-player run.
+func pass_card(player_index: int, slot: int) -> bool:
+	if is_over() or players.size() != 2:
+		return false
+	return players[player_index].pass_to(slot, players[1 - player_index])
 
 
 # --- Wizard buffs ---
