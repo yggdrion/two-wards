@@ -20,7 +20,7 @@ Last updated: 2026-10-24, after the A1 v1 frame (PR #21) and tag releases (PR #2
 | M5 Lobby + WebRTC | Done, merged 2026-10-23; two-network playtest passed | #18 |
 | M7 Full loop | Done, merged 2026-10-23; two-person playtest passed | #20 |
 | A1 Look target (art track) | Approved 2026-10-24 (`art-reference/target-frame/a1_v1.png`); PixelLab upgraded | #21 |
-| A2 step 1: anchors in the game | Open: lane on the tile grid, Wang ground, dusk and lights, sprites for goblin runner, arrow tower, crystal | this PR |
+| A2 step 1: anchors in the game | Open: lane on the tile grid, Wang ground, dusk and lights, sprites for goblin runner, arrow tower, crystal | #25 |
 | Release on `v*` tags | Done | #23 |
 | **M8 Retro** | **Draft open**, waiting on Rapha's answers (lines marked **Rapha:** in `docs/RETRO.md`) | #22 |
 
