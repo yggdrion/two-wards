@@ -41,6 +41,8 @@ services:
   vector:
     image: timberio/vector:0.57.0-alpine
     environment:
+      # vector.yaml reads the login from these; vector only expands env vars with this switch.
+      VECTOR_DANGEROUSLY_ALLOW_ENV_VAR_INTERPOLATION: "true"
       VM_USER: ${VM_USER:?set VM_USER in .env}
       VM_PASSWORD: ${VM_PASSWORD:?set VM_PASSWORD in .env}
     volumes:
