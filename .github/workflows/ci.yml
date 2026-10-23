@@ -87,6 +87,9 @@ jobs:
       - name: Run gdUnit4 tests
         shell: pwsh
         run: ./tools/run_tests.ps1
+      - name: Run host + client network test
+        shell: pwsh
+        run: ./tools/run_network_test.ps1
 
   network:
     needs: detect

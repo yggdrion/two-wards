@@ -1,6 +1,7 @@
 # Runs the same checks as CI locally, in CI order, and stops at the first failure:
 #   1. gdlint + gdformat --check     2. asset validator + its unittest suite
-#   3. gdUnit4 tests (pinned Godot)  4. generated assets are up to date
+#   3. gdUnit4 tests (pinned Godot)  4. headless network test (host + client over ENet)
+#   5. generated assets are up to date
 # PowerShell counterpart of check.sh.
 # Usage: .\tools\check.ps1 [-Quick] [-Export] [-InstallHook]
 #   -Quick        only steps 1 and 2 (no Godot), a few seconds
@@ -53,6 +54,7 @@ try {
     }
 
     Invoke-Step 'gdUnit4 tests' { & (Join-Path $PSScriptRoot 'run_tests.ps1') }
+    Invoke-Step 'Network test' { & (Join-Path $PSScriptRoot 'run_network_test.ps1') }
 
     # Compare before and after, so local uncommitted work does not count as drift. Content
     # diff plus untracked files, not git status: with core.autocrlf, Godot rewriting a CRLF

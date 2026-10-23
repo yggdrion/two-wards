@@ -32,6 +32,7 @@ var _attempts := 0
 var _retry_at := 0
 var _started_ms := 0
 var _exit := -1
+var _started := false
 
 
 func _initialize() -> void:
@@ -53,6 +54,11 @@ func _initialize() -> void:
 	_session = NetSession.new()
 	_session.name = "Net"
 	root.add_child(_session)
+
+
+## Runs on the first frame: until then the session isn't in the tree and has no multiplayer.
+func _start() -> void:
+	_started = true
 	_session.run_started.connect(_on_run_started)
 	_session.partner_joined.connect(_on_partner_joined)
 	_session.connection_failed.connect(func() -> void: _retry_at = Time.get_ticks_msec() + RETRY_MS)
@@ -69,9 +75,12 @@ func _process(_delta: float) -> bool:
 		_log("timeout")
 		_exit = 2
 	if _exit >= 0:
-		_session.close()
+		if _session != null and _session.is_inside_tree():
+			_session.close()
 		quit(_exit)
 		return true
+	if not _started:
+		_start()
 	if _role == "client" and _retry_at > 0 and Time.get_ticks_msec() >= _retry_at:
 		_connect()
 	if _host != null:
@@ -175,6 +184,8 @@ func _on_partner_left() -> void:
 
 
 func _finish(ok: bool) -> void:
+	if _exit >= 0:
+		return
 	var hashes := _host.hashes if _host != null else _client.hashes
 	var result := Scenario.result_of(
 		_lane, _client.errors if _client != null else PackedStringArray()
