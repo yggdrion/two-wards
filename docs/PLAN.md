@@ -310,7 +310,7 @@ Every pull request runs lint, the unit tests, the headless network test and the 
 2. Unit, statistical and scenario tests.
 3. Headless network test.
 4. Lobby server tests and container build.
-5. On main: Windows + Linux exports as build artifacts.
+5. On `v*` tags and manual runs: Windows + Linux exports as build artifacts.
 
 Desync detection: host and client hash the game state at the end of each wave; the network test fails on any mismatch. The same hash is logged in real games for debugging.
 
