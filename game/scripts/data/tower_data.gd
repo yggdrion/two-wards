@@ -12,6 +12,8 @@ extends Resource
 @export var fire_interval: float = 1.0
 ## 48x72 sprite, base at the tower's position; empty keeps the gray-box drawing.
 @export var sprite: Texture2D
+## Color of the light at the top of the tower (Endesga 32).
+@export var light_color := Color("2ce8f5")
 
 @export_group("Hit pattern")
 ## Hit every enemy in range instead of one target.

@@ -40,6 +40,21 @@
 			"status": "done"
 		},
 		{
+			"id": "tower_ballista",
+			"type": "tower",
+			"status": "done"
+		},
+		{
+			"id": "tower_frost_totem",
+			"type": "tower",
+			"status": "done"
+		},
+		{
+			"id": "tower_storm_spire",
+			"type": "tower",
+			"status": "done"
+		},
+		{
 			"id": "prop_heart_crystal",
 			"type": "prop",
 			"status": "done",
@@ -48,62 +63,62 @@
 		{
 			"id": "card_art_arrow_tower",
 			"type": "card_art",
-			"status": "placeholder"
+			"status": "done"
 		},
 		{
 			"id": "card_art_frost_totem",
 			"type": "card_art",
-			"status": "placeholder"
+			"status": "done"
 		},
 		{
 			"id": "card_art_ballista",
 			"type": "card_art",
-			"status": "placeholder"
+			"status": "done"
 		},
 		{
 			"id": "card_art_arcane_bolt",
 			"type": "card_art",
-			"status": "placeholder"
+			"status": "done"
 		},
 		{
 			"id": "card_art_mend",
 			"type": "card_art",
-			"status": "placeholder"
+			"status": "done"
 		},
 		{
 			"id": "card_art_empower",
 			"type": "card_art",
-			"status": "placeholder"
+			"status": "done"
 		},
 		{
 			"id": "card_art_storm_spire",
 			"type": "card_art",
-			"status": "placeholder"
+			"status": "done"
 		},
 		{
 			"id": "card_art_decoy_effigy",
 			"type": "card_art",
-			"status": "placeholder"
+			"status": "done"
 		},
 		{
 			"id": "card_art_war_drums",
 			"type": "card_art",
-			"status": "placeholder"
+			"status": "done"
 		},
 		{
 			"id": "card_art_arcane_focus",
 			"type": "card_art",
-			"status": "placeholder"
+			"status": "done"
 		},
 		{
 			"id": "card_art_mirror_image",
 			"type": "card_art",
-			"status": "placeholder"
+			"status": "done"
 		},
 		{
 			"id": "card_art_time_warp",
 			"type": "card_art",
-			"status": "placeholder"
+			"status": "done"
 		},
 		{
 			"id": "icon_energy",

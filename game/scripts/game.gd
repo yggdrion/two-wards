@@ -228,6 +228,12 @@ func _draw_targeting() -> void:
 	for effect in card.effects:
 		if effect is PlaceTowerEffect:
 			overlay.draw_arc(at, effect.tower.attack_range, 0.0, TAU, 48, color, 2.0)
+			# A see-through copy of the tower, tinted by whether it can be built here.
+			if effect.tower.sprite != null:
+				var tint := Color.WHITE if ok else color
+				tint.a = 0.6
+				overlay.draw_texture(effect.tower.sprite, at + Tower.SPRITE_OFFSET, tint)
+				return
 		elif effect is LureEffect or effect is BuffEffect:
 			overlay.draw_arc(at, effect.radius, 0.0, TAU, 32, color, 2.0)
 	overlay.draw_rect(Rect2(at - Vector2(5, 5), Vector2(10, 10)), color, false, 2.0)

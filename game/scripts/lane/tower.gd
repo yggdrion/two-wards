@@ -21,7 +21,7 @@ func setup(tower: SimTower) -> void:
 		_sprite.centered = false
 		_sprite.offset = SPRITE_OFFSET
 		add_child(_sprite)
-	var top := Lane.make_light(Palette.FROST, 0.5, 0.35)
+	var top := Lane.make_light(tower.data.light_color, 0.5, 0.35)
 	top.position = Vector2(0, -60)
 	add_child(top)
 	var base := Lane.make_light(Palette.LURE, 0.3, 0.3)
