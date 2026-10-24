@@ -71,12 +71,26 @@ func test_client_lobby_shows_host_first_and_a_ready_button() -> void:
 	app.show_screen(App.Screen.CAMP)
 
 
-func test_camp_goes_back_to_the_title_screen() -> void:
+func _key(code: Key) -> InputEventKey:
+	var key := InputEventKey.new()
+	key.physical_keycode = code
+	key.pressed = true
+	return key
+
+
+func test_escape_twice_leaves_the_run_without_gold() -> void:
 	var app := _app()
-	app.show_screen(App.Screen.CAMP)
-	var title_button: Button = null
-	for item in app._screen.find_children("*", "Button", true, false):
-		if item.text == "Main menu":
-			title_button = item
-	title_button.pressed.emit()
-	assert_int(app.current).is_equal(App.Screen.TITLE)
+	app.show_screen(App.Screen.RUN)
+	var game: RunScreen = app._screen
+	game.lane.set_physics_process(false)
+	var gold := app.profile.gold
+	game.sim.gold = 30
+	game._unhandled_input(_key(KEY_ESCAPE))
+	assert_bool(game.hud.confirm_leave).is_true()
+	game._unhandled_input(_key(KEY_Q))
+	assert_bool(game.hud.confirm_leave).is_false()
+	assert_int(app.current).is_equal(App.Screen.RUN)
+	game._unhandled_input(_key(KEY_ESCAPE))
+	game._unhandled_input(_key(KEY_ESCAPE))
+	assert_int(app.current).is_equal(App.Screen.CAMP)
+	assert_int(app.profile.gold).is_equal(gold)

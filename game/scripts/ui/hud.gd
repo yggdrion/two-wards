@@ -32,6 +32,8 @@ var player_index := 0
 var names: Array = []
 ## Shown as the banner when set, e.g. when the partner left.
 var notice := ""
+## Asks whether to leave the run (after Esc with no card selected).
+var confirm_leave := false
 var partner_panel: PartnerPanel
 ## Slot of the card waiting for a target, or -1.
 var selected := -1
@@ -194,7 +196,10 @@ func _refresh_partner() -> void:
 func _draw_banner() -> void:
 	var text := ""
 	var hint := ""
-	if not notice.is_empty() and not sim.is_over():
+	if confirm_leave:
+		text = "Leave the run? No gold"
+		hint = "Esc again to leave, any other key to stay"
+	elif not notice.is_empty() and not sim.is_over():
 		text = notice
 		hint = CONTINUE_HINT
 	else:

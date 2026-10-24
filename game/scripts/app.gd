@@ -1,10 +1,10 @@
 class_name App
 extends Node
-## Root of the game: loads the profile, opens on the title screen, shows the meta screens and
+## Root of the game: loads the profile, opens on the camp, shows the meta screens and
 ## starts runs with the active deck and the chosen wizard. Saves the profile after every change,
 ## so nothing is lost on quit.
 
-enum Screen { TITLE, CAMP, BOOSTER, COLLECTION, DECKS, HEROES, COOP, LOBBY, RUN, RUN_END }
+enum Screen { CAMP, BOOSTER, COLLECTION, DECKS, HEROES, COOP, LOBBY, RUN, RUN_END }
 
 const GAME_SCENE := preload("res://scenes/game.tscn")
 const THEME := preload("res://resources/ui/theme.tres")
@@ -19,7 +19,7 @@ var profile: Profile
 var net: NetSession
 var display: DisplaySettings
 var catalog: CardCatalog
-var current: Screen = Screen.TITLE
+var current: Screen = Screen.CAMP
 ## RunScreen.summary() of the last finished run, shown on the run-end screen.
 var last_run: Dictionary = {}
 var _ui: CanvasLayer
@@ -48,7 +48,7 @@ func _ready() -> void:
 	_root.theme = THEME
 	_root.size = MetaScreen.SCREEN
 	_ui.add_child(_root)
-	show_screen(Screen.TITLE)
+	show_screen(Screen.CAMP)
 
 
 ## F11 and Alt+Enter work on every screen, in and out of runs.
@@ -102,16 +102,14 @@ func show_screen(screen: Screen) -> void:
 			var lobby := LobbyScreen.new()
 			lobby.session = net
 			view = lobby
-		Screen.TITLE:
-			var title := TitleScreen.new()
-			title.display = display
-			view = title
 		Screen.RUN_END:
 			var run_end := RunEndScreen.new()
 			run_end.summary = last_run
 			view = run_end
 		_:
-			view = CampScreen.new()
+			var camp := CampScreen.new()
+			camp.display = display
+			view = camp
 	view.setup(profile, catalog)
 	view.navigate.connect(func(next: int) -> void: show_screen(next as Screen))
 	_root.add_child(view)
@@ -145,6 +143,7 @@ func _start_run() -> void:
 ## Pays the run's gold when it ends and shows the run-end screen when the player leaves it.
 func _add_run(game: RunScreen) -> void:
 	game.run_ended.connect(profile.add_gold)
+	game.left.connect(func() -> void: show_screen(Screen.CAMP))
 	game.finished.connect(
 		func() -> void:
 			last_run = game.summary()
