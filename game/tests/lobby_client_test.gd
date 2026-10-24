@@ -55,6 +55,35 @@ func test_session_reports_lobby_failures() -> void:
 	assert_bool(session.is_active()).is_false()
 
 
+func test_host_refuses_another_build_and_the_client_says_why() -> void:
+	var host := NetSession.new()
+	add_child(host)
+	auto_free(host)
+	host.role = NetSession.Role.HOST
+	host._hello({"protocol": NetSession.PROTOCOL, "build": "abc1234", "name": "Kim"})
+	assert_dict(host.partner_info).is_empty()
+	assert_str(host.last_error).contains("dev").contains("abc1234")
+	var client := NetSession.new()
+	add_child(client)
+	auto_free(client)
+	var failures := [0]
+	client.connection_failed.connect(func() -> void: failures[0] += 1)
+	client.role = NetSession.Role.CLIENT
+	client._refused(host.last_error)
+	assert_int(failures[0]).is_equal(1)
+	assert_str(client.last_error).is_equal(host.last_error)
+	assert_bool(client.is_active()).is_false()
+
+
+func test_host_accepts_the_same_build() -> void:
+	var host := NetSession.new()
+	add_child(host)
+	auto_free(host)
+	host.role = NetSession.Role.HOST
+	host._hello({"protocol": NetSession.PROTOCOL, "build": NetSession.build_id(), "name": "Kim"})
+	assert_str(host.partner_info.get("name", "")).is_equal("Kim")
+
+
 func test_candidate_summary_reads_type_and_address() -> void:
 	(
 		assert_str(
@@ -86,4 +115,4 @@ func test_debug_lines_offline() -> void:
 	var session := NetSession.new()
 	add_child(session)
 	auto_free(session)
-	assert_array(session.debug_lines()).is_equal(["Net  offline"])
+	assert_array(session.debug_lines()).is_equal(["Build dev", "Net  offline"])

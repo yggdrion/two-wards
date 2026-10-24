@@ -180,5 +180,10 @@ func _on_connection_failed() -> void:
 
 func _on_partner_left() -> void:
 	session.close()
-	status_label.text = "The connection closed."
+	# Set when the host turned the partner away (another game version).
+	status_label.text = (
+		"%s." % session.last_error
+		if not session.last_error.is_empty()
+		else "The connection closed."
+	)
 	refresh()

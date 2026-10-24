@@ -67,6 +67,7 @@ var _connections: Array[Dictionary] = []
 ## Starts listening for a partner. Returns false if the port can't be opened.
 func host(port: int = Transport.DEFAULT_PORT) -> bool:
 	close()
+	last_error = ""
 	var peer := Transport.create_host(port)
 	if peer == null:
 		return false
@@ -78,6 +79,7 @@ func host(port: int = Transport.DEFAULT_PORT) -> bool:
 ## Starts connecting; connected peers send hello at once with this info.
 func join(address: String, port: int, hello: Dictionary) -> bool:
 	close()
+	last_error = ""
 	var peer := Transport.create_client(address, port)
 	if peer == null:
 		return false
@@ -90,6 +92,7 @@ func join(address: String, port: int, hello: Dictionary) -> bool:
 ## Opens a room on the lobby; room_ready gives its code, partner_joined follows as with host().
 func host_online(url: String = Transport.lobby_url()) -> void:
 	close()
+	last_error = ""
 	role = Role.HOST
 	_lobby_url = url
 	_start_lobby().create(url)
@@ -98,6 +101,7 @@ func host_online(url: String = Transport.lobby_url()) -> void:
 ## Joins the lobby room with this code; sends hello once connected, as with join().
 func join_online(code: String, hello: Dictionary, url: String = Transport.lobby_url()) -> void:
 	close()
+	last_error = ""
 	role = Role.CLIENT
 	_set_hello(hello)
 	_lobby_url = url
@@ -141,11 +145,12 @@ func _process(_delta: float) -> void:
 
 ## What the debug overlay shows about the connection, one entry per line.
 func debug_lines() -> PackedStringArray:
+	var lines := PackedStringArray(["Build " + build_id()])
 	if role == Role.NONE:
-		return PackedStringArray(["Net  offline"])
+		lines.append("Net  offline")
+		return lines
 	var peer := multiplayer.multiplayer_peer
 	var role_name := "host" if role == Role.HOST else "client"
-	var lines := PackedStringArray()
 	if peer is ENetMultiplayerPeer:
 		var line := "Net  %s (ENet)" % role_name
 		var peers := multiplayer.get_peers()
@@ -238,6 +243,13 @@ func reject(cmd: Dictionary, reason: String) -> void:
 func _set_hello(hello: Dictionary) -> void:
 	_hello_info = hello.duplicate()
 	_hello_info["protocol"] = PROTOCOL
+	_hello_info["build"] = build_id()
+
+
+## The commit this build was exported from (tools/export.py), "dev" when run from source.
+static func build_id() -> String:
+	var text := FileAccess.get_file_as_string("res://build_id.txt").strip_edges()
+	return text if not text.is_empty() else "dev"
 
 
 func _start_lobby() -> LobbyClient:
@@ -287,12 +299,23 @@ func _on_peer_disconnected(_id: int) -> void:
 func _hello(info: Dictionary) -> void:
 	if role != Role.HOST or not setup.is_empty():
 		return
-	if int(info.get("protocol", 0)) != PROTOCOL:
-		last_error = "Partner runs another game version"
-		multiplayer.multiplayer_peer.disconnect_peer(multiplayer.get_remote_sender_id())
+	var theirs := str(info.get("build", "?"))
+	if int(info.get("protocol", 0)) != PROTOCOL or theirs != build_id():
+		# The client hangs up itself on _refused, so the reason can't get lost behind a disconnect.
+		last_error = (
+			"Partner runs another game version (host %s, partner %s)" % [build_id(), theirs]
+		)
+		_refused.rpc_id(multiplayer.get_remote_sender_id(), last_error)
 		return
 	partner_info = info
 	partner_joined.emit(info)
+
+
+@rpc("authority", "call_remote", "reliable")
+func _refused(reason: String) -> void:
+	last_error = reason
+	close()
+	connection_failed.emit()
 
 
 @rpc("authority", "call_remote", "reliable")
