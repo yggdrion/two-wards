@@ -144,16 +144,26 @@ func _start_run() -> void:
 	var heroes: Array[HeroData] = [hero]
 	sim.heroes = heroes
 	sim.rng_seed = _rng.randi()
+	sim.tier = profile.tier
 	_add_run(game)
 
 
-## Pays the run's gold when it ends and shows the run-end screen when the player leaves it.
+## Pays the run's gold when it ends, unlocks the next tier after a win, and shows the run-end
+## screen when the player leaves it.
 func _add_run(game: RunScreen) -> void:
-	game.run_ended.connect(profile.add_gold)
+	var sim: Sim = game.get_node("Lane").sim
+	var unlocked := [false]
+	game.run_ended.connect(
+		func(gold: int) -> void:
+			profile.add_gold(gold)
+			if sim.phase == Sim.Phase.WON:
+				unlocked[0] = profile.unlock_tier(sim.tier + 1)
+	)
 	game.left.connect(func() -> void: show_screen(Screen.CAMP))
 	game.finished.connect(
 		func() -> void:
 			last_run = game.summary()
+			last_run["unlocked"] = unlocked[0]
 			show_screen(Screen.RUN_END)
 	)
 	var mode := "Co-op" if net.is_active() else "Solo"

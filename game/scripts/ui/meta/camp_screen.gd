@@ -1,7 +1,8 @@
 class_name CampScreen
 extends MetaScreen
 ## The hub the game opens on: start a run with the active deck (solo or co-op), pick a wizard,
-## open boosters, browse the collection, build decks, toggle fullscreen or quit.
+## cycle the difficulty tier, open boosters, browse the collection, build decks, toggle
+## fullscreen or quit.
 
 ## Optional; when set, the menu shows a fullscreen toggle.
 var display: DisplaySettings
@@ -10,6 +11,8 @@ var start_button: Button
 var coop_button: Button
 var booster_button: Button
 var hero_button: Button
+## Cycles the difficulty tier through the unlocked ones.
+var tier_button: Button
 var menu: VBoxContainer
 var deck_label: Label
 
@@ -28,14 +31,15 @@ func build() -> void:
 	add_child(menu)
 	start_button = button("Start run", func() -> void: navigate.emit(App.Screen.RUN))
 	coop_button = button("Co-op", func() -> void: navigate.emit(App.Screen.COOP))
+	tier_button = button("", _next_tier)
 	hero_button = button("", func() -> void: navigate.emit(App.Screen.HEROES))
 	booster_button = button(
 		"Booster (%d gold)" % Booster.COST, func() -> void: navigate.emit(App.Screen.BOOSTER)
 	)
-	for item: Button in [
+	for item: Control in [
 		start_button,
 		coop_button,
-		hero_button,
+		_row([hero_button, tier_button]),
 		booster_button,
 		button("Collection", func() -> void: navigate.emit(App.Screen.COLLECTION)),
 		button("Decks", func() -> void: navigate.emit(App.Screen.DECKS)),
@@ -49,6 +53,20 @@ func build() -> void:
 	menu.add_child(button("Quit", func() -> void: get_tree().quit()))
 
 
+## Buttons side by side in one menu row, sharing its width.
+func _row(items: Array[Button]) -> HBoxContainer:
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 4)
+	for item in items:
+		item.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		row.add_child(item)
+	return row
+
+
+func _next_tier() -> void:
+	profile.set_tier((profile.tier + 1) % (profile.tier_unlocked + 1))
+
+
 func _refresh_fullscreen() -> void:
 	fullscreen_button.text = "Fullscreen: %s (F11)" % ("on" if display.fullscreen else "off")
 
@@ -58,6 +76,8 @@ func refresh() -> void:
 	var deck_name: String = profile.decks[index]["name"]
 	var ready := profile.is_deck_valid(index)
 	var hero := HeroData.find(profile.hero)
+	tier_button.text = "Tier %d/%d" % [profile.tier + 1, profile.tier_unlocked + 1]
+	tier_button.disabled = profile.tier_unlocked == 0
 	hero_button.text = "Wizard: %s" % (hero.display_name if hero != null else profile.hero)
 	start_button.disabled = not ready
 	coop_button.disabled = not ready

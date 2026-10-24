@@ -45,8 +45,8 @@ func _draw() -> void:
 	draw_rect(Rect2(2, -4, 2, 2), Palette.GOBLIN_ACCENT)
 	if model.is_slowed():
 		draw_rect(Rect2(-half, -half, s, s), Palette.FROST, false, 2.0)
-	if model.hp < data.max_hp:
-		var ratio := float(model.hp) / data.max_hp
+	if model.hp < model.max_hp:
+		var ratio := float(model.hp) / model.max_hp
 		draw_rect(Rect2(-half, -half - 6, s, 2), Palette.HP_BACK)
 		draw_rect(Rect2(-half, -half - 6, s * ratio, 2), Palette.HP_FILL)
 
@@ -59,7 +59,7 @@ func _draw_sprite_overlay() -> void:
 		ellipse.append(Vector2(cos(a) * 12.0, sin(a) * 4.0))
 	draw_colored_polygon(ellipse, Palette.HP_BACK)
 	_sprite.modulate = Palette.FROST if model.is_slowed() else Color.WHITE
-	if model.hp < model.data.max_hp:
-		var ratio := float(model.hp) / model.data.max_hp
+	if model.hp < model.max_hp:
+		var ratio := float(model.hp) / model.max_hp
 		draw_rect(Rect2(-8, -34, 16, 2), Palette.HP_BACK)
 		draw_rect(Rect2(-8, -34, 16 * ratio, 2), Palette.HP_FILL)

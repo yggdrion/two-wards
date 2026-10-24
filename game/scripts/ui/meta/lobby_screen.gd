@@ -57,7 +57,7 @@ func refresh() -> void:
 		return
 	var all := infos()
 	for i in _columns.size():
-		_fill(_columns[i], all[i])
+		_fill(_columns[i], all[i], i == 0)
 	start_button.visible = is_host()
 	start_button.disabled = not session.partner_is_ready
 	ready_button.visible = not is_host()
@@ -89,7 +89,8 @@ func start() -> void:
 	session.start_run(CoopSetup.make(rng.randi(), infos()))
 
 
-func _fill(column: VBoxContainer, info: Dictionary) -> void:
+## The host's column (`host`) also shows the run's difficulty tier.
+func _fill(column: VBoxContainer, info: Dictionary, host: bool) -> void:
 	for child in column.get_children():
 		column.remove_child(child)
 		child.queue_free()
@@ -99,6 +100,8 @@ func _fill(column: VBoxContainer, info: Dictionary) -> void:
 	var hero := HeroData.find(str(info.get("hero", "")))
 	column.add_child(label(str(info.get("name", "Wizard"))))
 	column.add_child(label(hero.display_name if hero != null else "No wizard", &"GoldLabel"))
+	if host:
+		column.add_child(label("Tier %d" % (int(info.get("tier", 0)) + 1), &"GoldLabel"))
 	for card_id: Variant in info.get("deck", []):
 		var card := catalog.get_card(str(card_id)) if catalog != null else null
 		column.add_child(label(card.display_name if card != null else str(card_id), &"DimLabel"))

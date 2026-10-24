@@ -1,6 +1,6 @@
 extends GdUnitTestSuite
-## The full-loop screens around a run (co-op lobby, run end), driven through the App like the
-## meta screen tests.
+## The full-loop screens around a run (tier pick, co-op lobby, run end), driven through the
+## App like the meta screen tests.
 
 const APP_SCENE := preload("res://scenes/main.tscn")
 const PATH := "user://test_saves/loop_profile.json"
@@ -20,6 +20,19 @@ func _app() -> App:
 	add_child(app)
 	auto_free(app)
 	return app
+
+
+func test_camp_tier_button_cycles_unlocked_tiers() -> void:
+	var app := _app()
+	var camp: CampScreen = app._screen
+	assert_bool(camp.tier_button.disabled).is_true()
+	app.profile.unlock_tier(1)
+	assert_bool(camp.tier_button.disabled).is_false()
+	camp.tier_button.pressed.emit()
+	assert_int(app.profile.tier).is_equal(1)
+	assert_str(camp.tier_button.text).is_equal("Tier 2/2")
+	camp.tier_button.pressed.emit()
+	assert_int(app.profile.tier).is_equal(0)
 
 
 func test_run_end_leads_to_a_booster_with_enough_gold() -> void:

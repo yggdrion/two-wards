@@ -44,6 +44,8 @@ var decks: Array[PackedStringArray] = []
 var wave_count := -1
 var actions: Array[Dictionary] = []
 var rewards := false
+## Difficulty tier of the run (Sim.tier).
+var tier := 0
 var expect: Dictionary = {}
 
 
@@ -60,6 +62,7 @@ static func load_file(path: String) -> Scenario:
 		scenario.decks.append(PackedStringArray(ids))
 	scenario.wave_count = int(data.get("waves", -1))
 	scenario.rewards = bool(data.get("rewards", false))
+	scenario.tier = int(data.get("tier", 0))
 	var order := 0
 	for action: Dictionary in data.get("actions", []):
 		var copy := action.duplicate()
@@ -93,7 +96,7 @@ func setup() -> Dictionary:
 	var infos: Array[Dictionary] = []
 	for i in wizards.size():
 		var deck: PackedStringArray = decks[i] if i < decks.size() else PackedStringArray()
-		infos.append(CoopSetup.player_info("Player %d" % (i + 1), wizards[i], Array(deck)))
+		infos.append(CoopSetup.player_info("Player %d" % (i + 1), wizards[i], Array(deck), tier))
 	return CoopSetup.make(rng_seed, infos)
 
 

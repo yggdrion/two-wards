@@ -149,7 +149,7 @@ func _on_partner_left() -> void:
 
 
 ## How the run went, for the run-end screen: result ("won", "lost", "partner_left" or
-## "running"), waves cleared, waves in the run and gold earned.
+## "running"), difficulty tier, waves cleared, waves in the run and gold earned.
 func summary() -> Dictionary:
 	var result := "running"
 	if sim.phase == Sim.Phase.WON:
@@ -160,6 +160,7 @@ func summary() -> Dictionary:
 		result = "partner_left"
 	return {
 		"result": result,
+		"tier": sim.tier,
 		"waves_cleared": sim.waves_cleared,
 		"waves": sim.waves.size(),
 		"gold": sim.gold,

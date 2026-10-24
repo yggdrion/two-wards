@@ -34,6 +34,17 @@ const WAVE_BREAK := 5.0
 const REWARD_TIMEOUT := 60.0
 const GOLD_PER_WAVE := 10
 const GOLD_FOR_WIN := 25
+## Difficulty tiers 0..TIER_COUNT - 1. Each tier adds TIER_HP of enemy max HP, spawns
+## TIER_INTERVAL faster and pays TIER_GOLD_PER_WAVE / TIER_GOLD_FOR_WIN more gold.
+const TIER_COUNT := 5
+## Enemy max HP grows by WAVE_HP per wave (wave 1 is the base) and by PLAYER_HP per player
+## after the first, so the late waves keep up with the towers built by then.
+const WAVE_HP := 0.15
+const PLAYER_HP := 1.0
+const TIER_HP := 0.3
+const TIER_INTERVAL := 0.08
+const TIER_GOLD_PER_WAVE := 5
+const TIER_GOLD_FOR_WIN := 25
 ## Crystal damage older than this is forgotten (Time Warp looks back 10 s).
 const DAMAGE_MEMORY := 30.0
 ## Stacked slows never take enemies below this share of their speed.
@@ -51,6 +62,8 @@ var heroes: Array[HeroData] = []
 var upgrade_pool: Array[UpgradeData] = []
 ## Seeds the deck shuffles and reward offers; same seed and inputs give the same run.
 var rng_seed: int = 1
+## Difficulty tier, 0 to TIER_COUNT - 1.
+var tier: int = 0
 var path: Curve2D = load(PATH_RESOURCE)
 
 # --- State ---
@@ -130,8 +143,8 @@ func tick(delta: float) -> void:
 		if _break_timer <= 0.0:
 			_start_wave(wave_index + 1)
 	if phase == Phase.WAVE and _spawner != null:
-		for i in _spawner.step(delta):
-			spawn_enemy(waves[wave_index].enemy)
+		for unit in _spawner.step(delta):
+			spawn_enemy(unit)
 	_step_lures(delta)
 	var speed := enemy_speed_scale()
 	for enemy in enemies.duplicate():
@@ -225,11 +238,22 @@ func place_tower(data: TowerData, pos: Vector2, lifetime: float = 0.0) -> SimTow
 
 func spawn_enemy(unit: UnitData) -> SimEnemy:
 	var enemy := SimEnemy.new(unit, path)
+	enemy.max_hp = roundi(unit.max_hp * enemy_hp_scale())
+	enemy.hp = enemy.max_hp
 	enemy.died.connect(_remove_enemy)
 	enemy.reached_core.connect(_on_enemy_reached_core)
 	enemies.append(enemy)
 	enemy_spawned.emit(enemy)
 	return enemy
+
+
+## Enemy max HP multiplier for the current wave, tier and player count.
+func enemy_hp_scale() -> float:
+	return (
+		(1.0 + WAVE_HP * wave_index)
+		* (1.0 + TIER_HP * tier)
+		* (1.0 + PLAYER_HP * maxi(players.size() - 1, 0))
+	)
 
 
 func towers_near(pos: Vector2, radius: float) -> Array[SimTower]:
@@ -276,7 +300,9 @@ func core_damage_since(seconds: float) -> int:
 ## Short hash of the simulation state. Host and client compare it after each wave (M4);
 ## scenario tests pin it to catch behaviour changes.
 func state_hash() -> String:
-	var parts := PackedStringArray(["%d %d %d %d %.3f" % [phase, wave_index, gold, core.hp, time]])
+	var parts := PackedStringArray(
+		["%d %d %d %d %d %.3f" % [tier, phase, wave_index, gold, core.hp, time]]
+	)
 	for i in rewards.offers.size():
 		if not rewards.offers[i].is_empty():
 			parts.append("o %d %s" % [i, rewards.describe(i)])
@@ -325,16 +351,16 @@ func state_hash() -> String:
 func _start_wave(index: int) -> void:
 	wave_index = index
 	phase = Phase.WAVE
-	_spawner = WaveSpawner.new(waves[index])
+	_spawner = WaveSpawner.new(waves[index], 1.0 - TIER_INTERVAL * tier)
 	wave_started.emit(index)
 
 
 func _clear_wave() -> void:
 	waves_cleared += 1
-	gold += GOLD_PER_WAVE
+	gold += GOLD_PER_WAVE + TIER_GOLD_PER_WAVE * tier
 	wave_cleared.emit(wave_index)
 	if wave_index == waves.size() - 1:
-		gold += GOLD_FOR_WIN
+		gold += GOLD_FOR_WIN + TIER_GOLD_FOR_WIN * tier
 		phase = Phase.WON
 		run_won.emit()
 	else:
