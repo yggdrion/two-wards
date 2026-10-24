@@ -30,6 +30,8 @@ const FIELD := Rect2(0, 0, 640, 288)
 const TOWER_SPACING := 24.0
 ## Seconds between a cleared wave and the next one.
 const WAVE_BREAK := 5.0
+## In co-op, seconds a player has to pick a reward before the first card is picked for them.
+const REWARD_TIMEOUT := 60.0
 const GOLD_PER_WAVE := 10
 const GOLD_FOR_WIN := 25
 ## Crystal damage older than this is forgotten (Time Warp looks back 10 s).
@@ -68,6 +70,8 @@ var players: Array[PlayerState] = []
 var lures: Array[Dictionary] = []
 ## Reward offers after cleared waves; set up in start().
 var rewards: RunRewards
+## Seconds left on the co-op reward countdown while an offer is open.
+var reward_time_left := 0.0
 var _spawner: WaveSpawner
 var _break_timer := 0.0
 ## Crystal hits: {time: float, amount: int}.
@@ -107,6 +111,10 @@ func tick(delta: float) -> void:
 	time += delta
 	for player in players:
 		player.step(delta)
+	if phase == Phase.BREAK and rewards.is_open() and players.size() > 1:
+		reward_time_left -= delta
+		if reward_time_left <= 0.0:
+			_auto_pick_rewards()
 	if phase == Phase.BREAK and not rewards.is_open():
 		_break_timer -= delta
 		if _break_timer <= 0.0:
@@ -318,6 +326,14 @@ func _clear_wave() -> void:
 		phase = Phase.BREAK
 		_break_timer = WAVE_BREAK
 		rewards.open()
+		reward_time_left = REWARD_TIMEOUT
+
+
+## Picks the first offered card for every player who has not picked yet.
+func _auto_pick_rewards() -> void:
+	for i in rewards.offers.size():
+		if not rewards.offers[i].is_empty():
+			rewards.pick(i, String(rewards.offers[i][0].id), players[i].deck)
 
 
 func _step_lures(delta: float) -> void:
