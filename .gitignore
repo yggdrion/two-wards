@@ -21,3 +21,6 @@ build/
 
 # Deploy secrets (deploy/.env.example is the template)
 deploy/.env
+
+# Commit baked into exports, removed after export (tools/export.py)
+game/build_id.txt

@@ -3,6 +3,7 @@
 Usage: python tools/export.py <linux|windows> [output dir, default build/<platform>]
 """
 
+import subprocess
 import sys
 from pathlib import Path
 
@@ -20,7 +21,23 @@ godot_bin = godot()
 install.templates()
 out.mkdir(parents=True, exist_ok=True)
 godot_import(godot_bin)
-run(godot_bin, "--headless", "--export-release", preset, out / file, cwd=GAME)
+# The commit goes into the pck so co-op can refuse a partner on another build
+# (NetSession.build_id); runs from source have no file and count as "dev".
+# A fixed slice of the full hash: `--short` picks its length from the clone's object count, so
+# a shallow CI clone and a full local clone could disagree on the same commit.
+try:
+    git = subprocess.run(
+        ["git", "rev-parse", "HEAD"], capture_output=True, text=True, cwd=ROOT, check=False
+    )
+    commit = git.stdout.strip()[:12] if git.returncode == 0 else ""
+except OSError:  # no git on PATH
+    commit = ""
+build_id = GAME / "build_id.txt"
+build_id.write_text(commit or "dev")
+try:
+    run(godot_bin, "--headless", "--export-release", preset, out / file, cwd=GAME)
+finally:
+    build_id.unlink()
 # Godot can exit 0 after a failed export, so check the result.
 if not (out / file).exists() or (out / file).stat().st_size == 0:
     fail(f"Export of {preset} produced no {out / file}")
