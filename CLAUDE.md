@@ -13,7 +13,7 @@ This applies to every session, human or Claude: GitHub CI runs on every push, an
 - Before every push, run the full check, `python tools/check.py`, and push only when it ends with "All checks passed". If it fails, fix the cause and run it again; never push past a failure or use `git push --no-verify` to skip it.
 - While iterating, run `python tools/check.py --quick` (lint and asset validator, no Godot) after each change to GDScript, assets or the manifest, and the gdUnit4 suite you touched (`python tools/run_tests.py -a res://tests/<suite>_test.gd`).
 - In each PR description, say that the full check passed (test count) or what was not run and why.
-- Playtest builds come from CI. Every push exports Linux and Windows and uploads them as artifacts (`two-wards-<platform>-<sha>`). After every push, once the run is green, give Rapha the link to that run's page (its Artifacts section has the Windows build) and, after a milestone or major step, a short "what to try" list. Never build in the cloud container or on Rapha's PC for a playtest unless asked.
+- Playtest builds come from CI. Every push exports Linux, Windows and macOS and uploads them as artifacts (`two-wards-<platform>-<sha>`). After every push, once the run is green, give Rapha the link to that run's page (its Artifacts section has the Windows build) and, after a milestone or major step, a short "what to try" list. Never build in the cloud container or on Rapha's PC for a playtest unless asked.
 
 ## Commands
 
@@ -40,11 +40,13 @@ The Godot version is pinned in `.godot-version`. `python tools/install.py [godot
     # Single suite: append gdUnit4 args
     python tools/run_tests.py -a res://tests/tower_test.gd
 
-    # Release export (Linux or Windows) to build/<platform>/. Installs the pinned export
-    # templates (checksum in tools/godot-<version>.sha512) on first use; only the two
-    # release templates are extracted from the ~1.3 GB .tpz.
+    # Release export (Linux, Windows or macOS) to build/<platform>/. Installs the pinned export
+    # templates (checksum in tools/godot-<version>.sha512) on first use; only the release
+    # templates we ship are extracted from the ~1.3 GB .tpz. CI exports macOS on macos-latest
+    # (universal, ad-hoc signed, not notarized: players run `xattr -cr "Two Wards.app"` once).
     python tools/export.py linux
     python tools/export.py windows
+    python tools/export.py macos
 
     # Lint and format check (if gdlint is not on PATH: python -m gdtoolkit.linter / .formatter)
     gdlint game/scripts game/tests game/tools
@@ -64,7 +66,7 @@ Run the local check before pushing; it mirrors CI and stops at the first failure
     python tools/check.py --quick    # lint + asset validator only, no Godot
     python tools/check.py --export   # also export Linux and Windows builds to build/
 
-CI (`.github/workflows/ci.yml`) runs on every push to any branch (and by hand with "Run workflow"): lint and asset validation, gdUnit4 tests on Linux and Windows, the network test, lobby tests and container build, then Linux and Windows exports that are uploaded as artifacts on every run. Every job calls the same `python tools/<name>.py` scripts. The Linux test job also fails if `build_assets` changes anything under `game/`. Pushing a `v*` tag (`git tag v0.1.0 && git push origin v0.1.0`) also publishes a GitHub Release with the Windows build as a zip. The repo is meant to be public, so Actions minutes are free. Export presets live in `game/export_presets.cfg` (`Linux`, `Windows Desktop`). Commit the `*.gd.uid` files Godot generates next to scripts.
+CI (`.github/workflows/ci.yml`) runs on every push to any branch (and by hand with "Run workflow"): lint and asset validation, gdUnit4 tests on Linux and Windows, the network test, lobby tests and container build, then Linux, Windows and macOS exports that are uploaded as artifacts on every run. Every job calls the same `python tools/<name>.py` scripts. The Linux test job also fails if `build_assets` changes anything under `game/`. Pushing a `v*` tag (`git tag v0.1.0 && git push origin v0.1.0`) also publishes a GitHub Release with the Linux, Windows and macOS builds as zips. The repo is meant to be public, so Actions minutes are free. Export presets live in `game/export_presets.cfg` (`Linux`, `Windows Desktop`, `macOS`). Commit the `*.gd.uid` files Godot generates next to scripts.
 
 The headless network test (`python tools/run_network_test.py [scenario.json ...]`) starts a host and a client Godot (`game/tools/net_test.gd`) over ENet on localhost for every scenario in `game/tests/scenarios/`, then one co-op scenario over WebRTC through a local lobby (needs `bun`; skipped locally without it, required in CI), and fails on any per-wave hash mismatch; the local check and CI run it. New co-op scenarios can be recorded with a bot: `godot --headless --path game --script res://tools/record_scenario.gd -- --in=<draft.json> --out=<file.json>`.
 

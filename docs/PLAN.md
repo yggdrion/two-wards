@@ -35,7 +35,7 @@ The PoC is one map, two players, twelve cards and one full meta loop. Anything n
 | Run | 10 waves, card reward after each wave | Events, shops, elites, branching paths |
 | Meta | Gold, boosters, collection, deck builder, local save | Idle camp, server-side profiles, crafting |
 | Networking | Lobby server with room codes, WebRTC P2P, STUN/TURN | Matchmaking, reconnect, Steam transport |
-| Platforms | Windows + Linux desktop | Web, macOS, controller support |
+| Platforms | Windows + Linux + macOS desktop | Web, controller support |
 | Polish | Full pixel art for every screen, 2D lighting, shaders, VFX, juice (shake, hit flash, hit-stop, damage numbers), pack-opening animation, minimal SFX | Music, settings menu, localization |
 
 ## Success criteria
@@ -50,7 +50,7 @@ The PoC passes when every pillar meets its check below and two people on differe
 | Asset generation | Assets made with the style guide + PixelLab + Aseprite pass the validation script and look consistent side by side in-game |
 | Art | No gray box or placeholder is left on any screen, and a run looks like the approved target frame from A1 |
 | Networking | Two players on different home networks join by room code and play 10 waves without desync |
-| Build / deploy | CI produces Windows + Linux builds; lobby server and coturn run as containers on the self-hosted server with metrics in Grafana |
+| Build / deploy | CI produces Windows + Linux + macOS builds; lobby server and coturn run as containers on the self-hosted server with metrics in Grafana |
 | Full loop | Menu → deck builder → lobby → run → gold → booster → deck builder works in one session, and the save survives a restart |
 
 ## Architecture
@@ -310,7 +310,7 @@ Every pull request runs lint, the unit tests, the headless network test and the 
 2. Unit, statistical and scenario tests.
 3. Headless network test.
 4. Lobby server tests and container build.
-5. On main: Windows + Linux exports as build artifacts.
+5. On main: Windows + Linux + macOS exports as build artifacts.
 
 Desync detection: host and client hash the game state at the end of each wave; the network test fails on any mismatch. The same hash is logged in real games for debugging.
 

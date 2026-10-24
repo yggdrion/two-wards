@@ -6,8 +6,8 @@ Usage: python tools/install.py [godot|gdunit4|webrtc|templates]   (default: godo
              against tools/godot-<version>.sha512, plus webrtc. Prints the binary path.
   gdunit4    gdUnit4 into game/addons/gdUnit4 (gitignored).
   webrtc     the webrtc-native GDExtension into game/addons/webrtc_native (gitignored).
-  templates  the Linux and Windows release export templates into the directory Godot reads
-             them from; only the two we ship are extracted from the ~1.3 GB .tpz. Prints it.
+  templates  the Linux, Windows and macOS release export templates into the directory Godot
+             reads them from; only the ones we ship are extracted from the ~1.3 GB .tpz. Prints it.
 
 Logs go to stderr.
 """
@@ -26,7 +26,7 @@ from _common import RELEASES, ROOT, VERSION, download, expected_sum, fail, log
 GDUNIT4_VERSION = os.environ.get("GDUNIT4_VERSION", "v6.2.2")
 WEBRTC_VERSION = "1.2.2-stable"
 WEBRTC_SHA256 = "98e9446921740d995bd9ca1be48798dc3c2ceed51e044a25ce18b3cff11f56e5"
-TEMPLATES = ["version.txt", "linux_release.x86_64", "windows_release_x86_64.exe"]
+TEMPLATES = ["version.txt", "linux_release.x86_64", "windows_release_x86_64.exe", "macos.zip"]
 
 
 def godot():
