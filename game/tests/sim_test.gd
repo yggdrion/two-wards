@@ -3,14 +3,14 @@ extends GdUnitTestSuite
 
 const ARROW := preload("res://resources/towers/arrow_tower.tres")
 const WAVE_01 := preload("res://resources/waves/wave_01.tres")
+const DEV_DECK := preload("res://resources/decks/dev_all_cards.tres")
 const STEP := 1.0 / 60.0
 const MAX_SECONDS := 120.0
 
 
-func _make_sim(waves: Array[WaveData], pool: Array[CardData] = []) -> Sim:
+func _make_sim(waves: Array[WaveData]) -> Sim:
 	var sim := Sim.new()
 	sim.waves = waves
-	sim.reward_pool = pool
 	sim.start()
 	return sim
 
@@ -96,7 +96,9 @@ func _cleared_first_wave_with_rewards(rng_seed: int = 1, player_count: int = 1) 
 	var waves: Array[WaveData] = [WAVE_01, WAVE_01]
 	var sim := Sim.new()
 	sim.waves = waves
-	sim.reward_pool = CardCatalog.load_dir().all()
+	sim.upgrade_pool = UpgradeData.load_all()
+	for i in player_count:
+		sim.decks.append(DEV_DECK)
 	sim.rng_seed = rng_seed
 	sim.heroes.resize(player_count)
 	sim.start()
@@ -106,12 +108,14 @@ func _cleared_first_wave_with_rewards(rng_seed: int = 1, player_count: int = 1) 
 	return sim
 
 
-func test_cleared_wave_offers_three_different_cards() -> void:
+func test_cleared_wave_offers_upgrades_for_three_different_deck_cards() -> void:
 	var sim := _cleared_first_wave_with_rewards()
 	var offer: Array = sim.rewards.offers[0]
 	assert_int(offer.size()).is_equal(RunRewards.CHOICES)
-	for card: CardData in offer:
-		assert_int(offer.count(card)).is_equal(1)
+	var cards := offer.map(func(o: Dictionary) -> CardData: return o["card"])
+	for card: CardData in cards:
+		assert_int(cards.count(card)).is_equal(1)
+		assert_bool(card in sim.players[0].run_cards).is_true()
 
 
 func test_break_waits_for_the_pick() -> void:
@@ -119,10 +123,10 @@ func test_break_waits_for_the_pick() -> void:
 	for i in roundi((Sim.WAVE_BREAK + 1.0) / STEP):
 		sim.tick(STEP)
 	assert_int(sim.phase).is_equal(Sim.Phase.BREAK)
-	var card: CardData = sim.rewards.offers[0][1]
-	assert_bool(sim.rewards.pick(0, String(card.id), sim.players[0].deck)).is_true()
+	var card: CardData = sim.rewards.offers[0][1]["card"]
+	assert_bool(sim.rewards.pick(0, 1)).is_true()
 	assert_bool(sim.rewards.is_open()).is_false()
-	assert_bool(card in sim.players[0].deck.discard_pile).is_true()
+	assert_int(card.level).is_equal(1)
 	for i in roundi((Sim.WAVE_BREAK + 0.1) / STEP):
 		sim.tick(STEP)
 	assert_int(sim.phase).is_equal(Sim.Phase.WAVE)
@@ -130,8 +134,8 @@ func test_break_waits_for_the_pick() -> void:
 
 func test_coop_reward_is_auto_picked_after_timeout() -> void:
 	var sim := _cleared_first_wave_with_rewards(1, 2)
-	var first: CardData = sim.rewards.offers[1][0]
-	NetCommand.apply(sim, NetCommand.reward(0, String(sim.rewards.offers[0][0].id)))
+	var first: CardData = sim.rewards.offers[1][0]["card"]
+	NetCommand.apply(sim, NetCommand.reward(0, 0))
 	for i in roundi((Sim.REWARD_TIMEOUT - 0.5) / STEP):
 		sim.tick(STEP)
 	assert_int(sim.phase).is_equal(Sim.Phase.BREAK)
@@ -139,35 +143,43 @@ func test_coop_reward_is_auto_picked_after_timeout() -> void:
 	for i in roundi(1.0 / STEP):
 		sim.tick(STEP)
 	assert_bool(sim.rewards.is_open()).is_false()
-	assert_bool(first in sim.players[1].deck.discard_pile).is_true()
+	assert_int(first.level).is_equal(1)
 	for i in roundi((Sim.WAVE_BREAK + 0.1) / STEP):
 		sim.tick(STEP)
 	assert_int(sim.phase).is_equal(Sim.Phase.WAVE)
 
 
-func test_reward_must_be_from_the_offer() -> void:
+func test_coop_upgrade_only_changes_the_pickers_card() -> void:
+	var sim := _cleared_first_wave_with_rewards(1, 2)
+	var card: CardData = sim.rewards.offers[0][0]["card"]
+	NetCommand.apply(sim, NetCommand.reward(0, 0))
+	for other in sim.players[1].run_cards:
+		if other.id == card.id:
+			assert_int(other.level).is_equal(0)
+			assert_object(other).is_not_same(card)
+
+
+func test_reward_must_be_an_open_offer() -> void:
 	var sim := _cleared_first_wave_with_rewards()
-	var offered: Array = sim.rewards.offers[0].map(func(card: CardData) -> String: return card.id)
-	var other := ""
-	for card in sim.reward_pool:
-		if not String(card.id) in offered:
-			other = String(card.id)
-	var refused := NetCommand.apply(sim, NetCommand.reward(0, other))
-	assert_str(refused).is_not_empty()
-	assert_str(NetCommand.apply(sim, NetCommand.reward(0, offered[0]))).is_empty()
-	assert_str(NetCommand.apply(sim, NetCommand.reward(0, offered[1]))).is_not_empty()
+	assert_str(NetCommand.apply(sim, NetCommand.reward(0, RunRewards.CHOICES))).is_not_empty()
+	assert_str(NetCommand.apply(sim, NetCommand.reward(0, 0))).is_empty()
+	assert_str(NetCommand.apply(sim, NetCommand.reward(0, 1))).is_not_empty()
 
 
 func test_same_seed_gives_same_offer() -> void:
 	var a := _cleared_first_wave_with_rewards(4)
 	var b := _cleared_first_wave_with_rewards(4)
-	assert_array(a.rewards.offers[0]).is_equal(b.rewards.offers[0])
+	assert_str(a.rewards.describe(0)).is_equal(b.rewards.describe(0))
 	assert_str(a.state_hash()).is_equal(b.state_hash())
 
 
 func test_last_wave_offers_nothing() -> void:
 	var waves: Array[WaveData] = [WAVE_01]
-	var sim := _make_sim(waves, CardCatalog.load_dir().all())
+	var sim := Sim.new()
+	sim.waves = waves
+	sim.upgrade_pool = UpgradeData.load_all()
+	sim.decks = [DEV_DECK]
+	sim.start()
 	sim.place_tower(ARROW, Vector2(260, 128))
 	_run_until_over(sim)
 	assert_int(sim.phase).is_equal(Sim.Phase.WON)

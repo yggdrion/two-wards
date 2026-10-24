@@ -118,14 +118,20 @@ func test_passed_card_shows_as_a_fourth_card_and_hand_squeezes() -> void:
 func test_reward_offer_shows_and_a_click_picks() -> void:
 	var game: RunScreen = _game()
 	var sim := game.sim
-	var offer: Array = [ARROW_TOWER, ARROW_TOWER, ARROW_TOWER]
-	offer[1] = load("res://resources/cards/mend.tres")
+	var thrift: UpgradeData = load("res://resources/upgrades/thrift.tres")
+	var card: CardData = sim.players[0].run_cards[0]
+	var offer: Array = []
+	for i in RunRewards.CHOICES:
+		offer.append({"card": sim.players[0].run_cards[i], "upgrade": thrift})
 	sim.rewards.offers[0] = offer
 	sim.phase = Sim.Phase.BREAK
 	game.hud.refresh()
-	assert_bool(game.hud.rewards[1].visible).is_true()
+	assert_bool(game.hud.rewards[0].visible).is_true()
+	assert_object(game.hud.rewards[0].upgrade).is_same(thrift)
+	assert_int(game.hud.rewards[0].shown_cost).is_equal(maxi(card.cost - 1, 0))
+	var before := sim.players[0].run_cards[1].cost
 	game.hud.rewards[1].pressed.emit(game.hud.rewards[1])
 	assert_bool(sim.rewards.is_open()).is_false()
-	assert_bool(offer[1] in sim.players[0].deck.discard_pile).is_true()
+	assert_int(sim.players[0].run_cards[1].cost).is_equal(before - 1)
 	game.hud.refresh()
 	assert_bool(game.hud.rewards[1].visible).is_false()

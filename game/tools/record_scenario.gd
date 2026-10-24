@@ -2,7 +2,7 @@ extends SceneTree
 ## Records a scenario file by letting a simple bot play every player's hand, so co-op scenarios
 ## don't have to be written by hand. The bot plays the first affordable card every half second:
 ## towers on the next free spot of SPOTS, spells on the enemy furthest along the path, and it
-## passes one card to the partner now and then. With "rewards" on it takes the first card of
+## passes one card to the partner now and then. With "rewards" on it takes the first upgrade of
 ## every offer, like every scenario runner (Scenario.reward_pick). Pin the printed "expect"
 ## afterwards with the scenario test.
 ##

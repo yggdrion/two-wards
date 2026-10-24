@@ -17,7 +17,7 @@ A real-time co-op tower defense roguelite in a **dark-fantasy** setting, where t
 - **In a run:** each player gains energy over time and plays cards from a hand of 3 by clicking anywhere on the field. There is no avatar on the field.
 - **Heroes:** before a run each player picks one of two wizards. A wizard never appears on the field; it gives a passive buff to the whole battlefield, and the two buffs add up in co-op. In the run, each player sees their partner's name, wizard portrait and hand of cards in a partner panel.
 - **Co-op:** both players bring their own 8-card deck and each draws only from their own deck (decided 2026-10-23; before M7 the decks merged into one shared deck). Cards can be passed to the partner; a passed card goes back to its owner's deck once it is used.
-- **Between waves:** each player picks 1 of 3 offered cards into their own run deck (each card rolls its rarity like a booster slot); the 5 s break starts once both have picked.
+- **Between waves:** each player picks 1 of 3 run upgrades, each for a different card of their own deck (Rapid Fire, Heavy Bolts, Twin Shot, Thrift, ...; rarity rolled like a booster slot). The deck stays the 8 cards the player built; the upgrade changes every copy and the towers already placed, for the rest of the run (decided 2026-10-24, replaces the card reward, which added cards from the whole catalog). The 5 s break starts once both have picked.
 - **Meta:** runs earn gold, gold buys boosters, boosters grow the collection, the collection feeds the deck builder.
 
 ## Scope
@@ -31,8 +31,8 @@ The PoC is one map, two players, twelve cards and one full meta loop. Anything n
 | Units | 2 goblin types (fast runner, armored brute) with walk, attack, hit, death | Bosses, elites |
 | Heroes | 2 wizards, each with one battlefield buff; hero select in the main menu; portraits only, never on the field | More heroes, hero classes (hero-specific card pools), hero leveling |
 | Terrain | 1 tileset (ground, path, walls) with autotiling, about 12 props for one biome | More biomes |
-| Cards | 12 cards, 3 rarities, energy, hand of 3, own deck per player, card passing | Combo cards, card upgrades, keywords |
-| Run | 10 waves, card reward after each wave | Events, shops, elites, branching paths |
+| Cards | 12 cards, 3 rarities, energy, hand of 3, own deck per player, card passing, run-only card upgrades | Combo cards, permanent card levels, keywords |
+| Run | 10 waves, card upgrade after each wave | Events, shops, elites, branching paths |
 | Meta | Gold, boosters, collection, deck builder, local save | Idle camp, server-side profiles, crafting |
 | Networking | Lobby server with room codes, WebRTC P2P, STUN/TURN | Matchmaking, reconnect, Steam transport |
 | Platforms | Windows + Linux + macOS desktop | Web, controller support |
@@ -116,6 +116,7 @@ Twelve cards across three rarities cover every card type once or more; the meta 
 - Wizard buffs apply to the whole battlefield for the whole run. Two players with the same wizard get its buff twice. Stacks add up (two Frost: enemies 30% slower; Empower turns one player's stack into two), enemies never drop below 10% of their speed, and boosted tower damage rounds to whole points.
 - Passing a card to the partner costs 1 energy. The passed card goes into a fourth "gift" slot of the partner's hand (one at most) and leaves it when played, cycled or passed back; your own slot refills from the deck.
 - Deck empty → discard pile is shuffled back in.
+- Run upgrades (`UpgradeData`, one `.tres` each in `resources/upgrades/`) multiply or add to numbers on a card's parts: the card (cost), its effects (amount, radius, duration) and its tower (damage, fire_interval, attack_range, shots, chain_count, slow). `requires`/`excludes` decide which cards an upgrade fits. A card takes at most 5 upgrades.
 
 ### Card list (draft)
 
@@ -140,6 +141,7 @@ Twelve cards across three rarities cover every card type once or more; the meta 
 - Gold per run = 10 per wave survived + 25 for a win.
 - Booster costs 50 gold and holds 3 cards; each slot rolls 70% common, 25% rare, 5% epic.
 - Pity: the 10th booster in a row without an epic holds one.
+- A pulled card the profile already owns 2 copies of (the deck cap) pays gold instead: 10 common, 20 rare, 40 epic.
 - Pack opening: cards flip one at a time; new cards are marked.
 
 ### Deck building
@@ -299,7 +301,7 @@ Every pull request runs lint, the unit tests, the headless network test and the 
 | Unit | gdUnit4 | Energy regen, hand/draw/cycle, card effects, wave spawning, deck validation, save load + migration |
 | Scenario | gdUnit4, headless | Scripted runs: seed + deck + timed card plays, run N waves, assert crystal HP, gold earned and final state hash. Catches balance and behaviour regressions |
 | Statistical | gdUnit4 | 10,000 simulated boosters match drop rates within tolerance; pity triggers at 10 |
-| Network | 2 headless Godot instances (ENet, localhost) | Host + client connect, exchange decks, replay the scenario scripts (reward picks included), compare state hashes per wave |
+| Network | 2 headless Godot instances (ENet, localhost) | Host + client connect, exchange decks, replay the scenario scripts (upgrade picks included), compare state hashes per wave |
 | Lobby server | bun test | Room create/join, signaling relay, room cleanup |
 | Assets | Validation script | Size, palette, transparency, naming for every PNG |
 | Manual | Two real machines on different networks | WebRTC through NAT, TURN fallback, full loop playtest |
@@ -327,7 +329,7 @@ Eight milestones plus M3b (heroes, added after the M3 playtest); M4–M5 (networ
 | M4 | Local networking | Checkpoint first: decide pure sim core vs Node-based sim. Then ENet host/join, card events via RPC, deck merge, card passing, partner panel (name, wizard, hand) | Headless network test (replaying scenarios) passes with zero hash mismatches |
 | M5 | Lobby + WebRTC | Lobby/signaling server, room codes, WebRTC transport, coturn, deployed to the gvm host | Two players on different networks complete 10 waves |
 | M6 | Art and juice | A1–A3 of the art track finished: all units, towers, tiles, props, cards and UI in final art; lighting, shaders, VFX and juice | All assets pass validation; side-by-side review looks consistent; a run matches the A1 target frame |
-| M7 | Full loop | Title screen, lobby screen with deck preview, card reward after each wave, run-end screen, run → rewards → gold → booster flow | Full loop completed in co-op by two people in one session |
+| M7 | Full loop | Title screen, lobby screen with deck preview, card reward after each wave (now a card upgrade), run-end screen, run → rewards → gold → booster flow | Full loop completed in co-op by two people in one session |
 | M8 | Retro | Notes per pillar: what worked, what hurt, time spent, decisions for the real game | Go/no-go and approach for the full game decided |
 | R1 | Sim core + Python tooling (first real-game milestone, from the [M8 retro](RETRO.md#decisions-for-the-real-game); runs beside M6) | A pure simulation core with no scene tree that the Node layer renders; one cross-platform Python script per tool instead of the `.sh`/`.ps1` twins; CI, CLAUDE.md and HANDOFF updated. Steps in [R1](#r1-sim-core-and-python-tooling) | The four scenario files replay to their pinned hashes unchanged; the scenario, lockstep and network tests build no scene tree; no `.sh`/`.ps1` left in `tools/`; CI green on Linux and Windows with the Python scripts; a co-op playtest from the CI build plays like before |
 

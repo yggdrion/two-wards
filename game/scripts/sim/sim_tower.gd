@@ -44,6 +44,13 @@ func step(delta: float, enemies: Array[SimEnemy], damage_mult: float = 1.0) -> A
 		return []
 	_cooldown = data.fire_interval
 	var hits := _hits(target, enemies)
+	for i in data.shots - 1:
+		target = find_target(enemies, hits)
+		if target == null:
+			break
+		hits.append_array(
+			_hits(target, enemies).filter(func(e: SimEnemy) -> bool: return not e in hits)
+		)
 	var damage := roundi(data.damage * damage_mult)
 	for enemy in hits:
 		if damage > 0:
@@ -53,10 +60,11 @@ func step(delta: float, enemies: Array[SimEnemy], damage_mult: float = 1.0) -> A
 	return hits
 
 
-func find_target(enemies: Array[SimEnemy]) -> SimEnemy:
+## The enemy furthest along the path within range, skipping `taken`.
+func find_target(enemies: Array[SimEnemy], taken: Array[SimEnemy] = []) -> SimEnemy:
 	var best: SimEnemy = null
 	for enemy in enemies:
-		if not enemy.is_alive():
+		if not enemy.is_alive() or enemy in taken:
 			continue
 		if position.distance_to(enemy.position) > data.attack_range:
 			continue

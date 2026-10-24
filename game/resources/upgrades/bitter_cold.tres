@@ -1,0 +1,12 @@
+[gd_resource type="Resource" script_class="UpgradeData" format=3]
+
+[ext_resource type="Script" path="res://scripts/data/upgrade_data.gd" id="1_upgrade"]
+
+[resource]
+script = ExtResource("1_upgrade")
+id = &"bitter_cold"
+display_name = "Bitter Cold"
+text = "Slows harder and 1 s longer."
+requires = {"slow_duration": 0.0}
+mults = {"slow_factor": 0.8}
+adds = {"slow_duration": 1.0}

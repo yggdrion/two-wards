@@ -30,7 +30,7 @@ const FIELD := Rect2(0, 0, 640, 288)
 const TOWER_SPACING := 24.0
 ## Seconds between a cleared wave and the next one.
 const WAVE_BREAK := 5.0
-## In co-op, seconds a player has to pick a reward before the first card is picked for them.
+## In co-op, seconds a player has to pick a reward before the first one is picked for them.
 const REWARD_TIMEOUT := 60.0
 const GOLD_PER_WAVE := 10
 const GOLD_FOR_WIN := 25
@@ -47,8 +47,8 @@ var decks: Array[DeckData] = []
 ## One wizard per player, in player order (the host is player 0); its buff covers the whole
 ## battlefield. The run has one player per entry, and one player without a buff if empty.
 var heroes: Array[HeroData] = []
-## Cards a reward can offer (RunRewards); empty turns rewards off (most tests).
-var reward_pool: Array[CardData] = []
+## Upgrades a reward can offer (RunRewards); empty turns rewards off (most tests).
+var upgrade_pool: Array[UpgradeData] = []
 ## Seeds the deck shuffles and reward offers; same seed and inputs give the same run.
 var rng_seed: int = 1
 var path: Curve2D = load(PATH_RESOURCE)
@@ -96,11 +96,21 @@ func start() -> void:
 	core.destroyed.connect(_on_core_destroyed)
 	for i in maxi(heroes.size(), 1):
 		var hero: HeroData = heroes[i] if i < heroes.size() else null
+		# Every copy of a card id shares one run copy, so an upgrade reaches all of them.
+		var own: Dictionary[StringName, CardData] = {}
 		var cards: Array[CardData] = []
 		if i < decks.size() and decks[i] != null:
-			cards = decks[i].cards
-		players.append(PlayerState.new(Deck.new(cards, rng_seed + i), hero))
-	rewards = RunRewards.new(reward_pool, players.size(), rng_seed)
+			for card in decks[i].cards:
+				if not own.has(card.id):
+					own[card.id] = card.run_copy()
+				cards.append(own[card.id])
+		var player := PlayerState.new(Deck.new(cards, rng_seed + i), hero)
+		player.run_cards.assign(own.values())
+		player.run_cards.sort_custom(
+			func(a: CardData, b: CardData) -> bool: return String(a.id) < String(b.id)
+		)
+		players.append(player)
+	rewards = RunRewards.new(upgrade_pool, players.size(), rng_seed)
 	if not waves.is_empty():
 		_start_wave(0)
 
@@ -269,9 +279,14 @@ func state_hash() -> String:
 	var parts := PackedStringArray(["%d %d %d %d %.3f" % [phase, wave_index, gold, core.hp, time]])
 	for i in rewards.offers.size():
 		if not rewards.offers[i].is_empty():
-			var ids := rewards.offers[i].map(func(card: CardData) -> String: return String(card.id))
-			parts.append("o %d %s" % [i, ",".join(ids)])
+			parts.append("o %d %s" % [i, rewards.describe(i)])
 	for player in players:
+		var levels := PackedStringArray()
+		for card in player.run_cards:
+			if card.level > 0:
+				levels.append("%s:%d:%d" % [card.id, card.level, card.cost])
+		if not levels.is_empty():
+			parts.append("u %s" % ",".join(levels))
 		var hand_ids := PackedStringArray()
 		for card in player.hand:
 			hand_ids.append(String(card.id) if card != null else "-")
@@ -325,15 +340,15 @@ func _clear_wave() -> void:
 	else:
 		phase = Phase.BREAK
 		_break_timer = WAVE_BREAK
-		rewards.open()
+		rewards.open(players)
 		reward_time_left = REWARD_TIMEOUT
 
 
-## Picks the first offered card for every player who has not picked yet.
+## Picks the first offered upgrade for every player who has not picked yet.
 func _auto_pick_rewards() -> void:
 	for i in rewards.offers.size():
 		if not rewards.offers[i].is_empty():
-			rewards.pick(i, String(rewards.offers[i][0].id), players[i].deck)
+			rewards.pick(i, 0)
 
 
 func _step_lures(delta: float) -> void:

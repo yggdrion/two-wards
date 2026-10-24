@@ -130,14 +130,14 @@ func _start_run() -> void:
 	if net.is_active() and not net.setup.is_empty():
 		lane.autorun = false
 		CoopSetup.configure(sim, net.setup, _find_card)
-		sim.reward_pool = catalog.all()
+		sim.upgrade_pool = UpgradeData.load_all()
 		game.session = net
 		game.player = net.local_player()
 		_add_run(game)
 		return
 	var decks: Array[DeckData] = [profile.deck_data(profile.active_deck, catalog)]
 	sim.decks = decks
-	sim.reward_pool = catalog.all()
+	sim.upgrade_pool = UpgradeData.load_all()
 	var hero := HeroData.find(profile.hero)
 	if hero == null:
 		hero = HeroData.find(Profile.DEFAULT_HERO)

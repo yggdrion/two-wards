@@ -113,3 +113,16 @@ func test_timed_tower_expires() -> void:
 	assert_bool(tower.is_expired()).is_false()
 	tower.step(0.6, none)
 	assert_bool(tower.is_expired()).is_true()
+
+
+func test_twin_shot_hits_two_enemies() -> void:
+	var tower := _make_tower(100.0, 5, 1.0)
+	tower.data.shots = 2
+	var enemies: Array[SimEnemy] = [
+		_make_enemy_at(10.0), _make_enemy_at(40.0), _make_enemy_at(60.0)
+	]
+	var hits := tower.step(0.1, enemies)
+	assert_int(hits.size()).is_equal(2)
+	assert_int(enemies[0].hp).is_equal(100)
+	assert_int(enemies[1].hp).is_equal(95)
+	assert_int(enemies[2].hp).is_equal(95)

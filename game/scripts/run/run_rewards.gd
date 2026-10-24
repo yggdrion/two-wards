@@ -1,20 +1,21 @@
 class_name RunRewards
 extends RefCounted
-## Card rewards between waves: after a cleared wave every player gets an offer of CHOICES
-## different cards from the pool, each rolling its rarity like a booster slot, and picks one into
-## their own deck. The sim holds the next wave until every offer is answered.
+## Run upgrades between waves: after a cleared wave every player gets CHOICES offers, each an
+## upgrade for a different card of their own run deck, and picks one. Upgrades roll their
+## rarity like a booster slot and change the player's card for the rest of the run (every copy,
+## and the towers already placed). The sim holds the next wave until every offer is answered.
 
 const CHOICES := 3
 
-## Cards an offer can hold; empty turns rewards off (most tests).
-var pool: Array[CardData] = []
-## Each player's open offer: CHOICES cards, or empty.
+## Upgrades an offer can hold; empty turns rewards off (most tests).
+var pool: Array[UpgradeData] = []
+## Each player's open offers: up to CHOICES {"card": CardData, "upgrade": UpgradeData}, or empty.
 var offers: Array[Array] = []
 var _rng := RandomNumberGenerator.new()
 
 
-func _init(card_pool: Array[CardData], player_count: int, rng_seed: int) -> void:
-	pool = card_pool
+func _init(upgrade_pool: Array[UpgradeData], player_count: int, rng_seed: int) -> void:
+	pool = upgrade_pool
 	_rng.seed = rng_seed
 	for i in player_count:
 		offers.append([])
@@ -24,31 +25,50 @@ func is_open() -> bool:
 	return offers.any(func(offer: Array) -> bool: return not offer.is_empty())
 
 
-## Rolls a new offer for every player.
-func open() -> void:
+## Rolls new offers for every player from the cards in their run deck.
+func open(players: Array[PlayerState]) -> void:
 	for i in offers.size():
-		offers[i] = _roll()
+		offers[i] = _roll(players[i].run_cards)
 
 
-## Puts the offered card into `deck` (discard pile) and closes the player's offer.
-func pick(player: int, card_id: String, deck: Deck) -> bool:
-	if player < 0 or player >= offers.size():
+## Applies the player's offer at `index` and closes their offers.
+func pick(player: int, index: int) -> bool:
+	if player < 0 or player >= offers.size() or index < 0 or index >= offers[player].size():
 		return false
-	for card: CardData in offers[player]:
-		if String(card.id) == card_id:
-			deck.discard(card)
-			offers[player] = []
-			return true
-	return false
+	var offer: Dictionary = offers[player][index]
+	(offer["upgrade"] as UpgradeData).apply(offer["card"])
+	offers[player] = []
+	return true
 
 
-func _roll() -> Array:
+## Short text of a player's offers for the state hash.
+func describe(player: int) -> String:
+	var parts := PackedStringArray()
+	for offer: Dictionary in offers[player]:
+		parts.append("%s:%s" % [offer["card"].id, offer["upgrade"].id])
+	return ",".join(parts)
+
+
+func _roll(cards: Array[CardData]) -> Array:
 	var offer := []
-	for i in mini(CHOICES, pool.size()):
-		var rarity := Booster.roll_rarity(_rng)
-		var left := pool.filter(func(card: CardData) -> bool: return card not in offer)
-		var bucket := left.filter(func(card: CardData) -> bool: return card.rarity == rarity)
-		if bucket.is_empty():
-			bucket = left
-		offer.append(bucket[_rng.randi_range(0, bucket.size() - 1)])
+	var left := cards.duplicate()
+	for i in CHOICES:
+		var pairs := _pairs(left, Booster.roll_rarity(_rng))
+		if pairs.is_empty():
+			pairs = _pairs(left, -1)
+		if pairs.is_empty():
+			break
+		var pair: Dictionary = pairs[_rng.randi_range(0, pairs.size() - 1)]
+		left.erase(pair["card"])
+		offer.append(pair)
 	return offer
+
+
+## Every {card, upgrade} that fits, for upgrades of `rarity` (-1: any).
+func _pairs(cards: Array, rarity: int) -> Array:
+	var pairs := []
+	for card: CardData in cards:
+		for upgrade in pool:
+			if (rarity < 0 or upgrade.rarity == rarity) and upgrade.fits(card):
+				pairs.append({"card": card, "upgrade": upgrade})
+	return pairs

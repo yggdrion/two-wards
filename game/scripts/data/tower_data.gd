@@ -23,6 +23,8 @@ extends Resource
 ## Total enemies hit by one shot; each jump goes to the nearest enemy within chain_range.
 @export var chain_count: int = 1
 @export var chain_range: float = 64.0
+## Targets per attack: each shot picks the next enemy furthest along the path (Twin Shot).
+@export var shots: int = 1
 
 @export_group("Slow")
 ## Speed multiplier applied to hit enemies; 1.0 means no slow.
