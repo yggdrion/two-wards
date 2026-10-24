@@ -16,6 +16,6 @@ id = &"ballista"
 display_name = "Ballista"
 kind = 0
 cost = 4
-text = "Tower. Bolts pierce goblins in a line."
+text = "Bolts pierce goblins in a line."
 art = ExtResource("1_7m4m1")
 effects = Array[ExtResource("2_aljqh")]([SubResource("Resource_b8tew")])
