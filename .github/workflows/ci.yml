@@ -72,7 +72,7 @@ jobs:
       # The network test's WebRTC pass runs a local lobby.
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:
-          bun-version: 1.4.2
+          bun-version: 1.4.4
       - name: Run host + client network test
         run: python tools/run_network_test.py
 
@@ -91,7 +91,7 @@ jobs:
           key: godot-${{ runner.os }}-${{ hashFiles('.godot-version', 'tools/godot-*.sha512') }}
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:
-          bun-version: 1.4.2
+          bun-version: 1.4.4
       # Starts a headless host and client over ENet on localhost, then over WebRTC through a
       # local lobby, plays scripted card events and exits non-zero on any per-wave state hash
       # mismatch.
@@ -107,7 +107,7 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
       - uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6 # v2.2.0
         with:
-          bun-version: 1.4.2
+          bun-version: 1.4.4
       - run: bun install --frozen-lockfile
       - run: bun test
       - name: Build container
