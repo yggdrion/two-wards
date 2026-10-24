@@ -235,12 +235,16 @@ func _draw_banner() -> void:
 		match sim.phase:
 			Sim.Phase.BREAK:
 				text = "Wave %d cleared" % (sim.wave_index + 1)
+				var countdown := ""
+				if sim.players.size() > 1:
+					countdown = " - auto-pick in %ds" % ceili(sim.reward_time_left)
 				if not sim.rewards.offers[player_index].is_empty():
 					hint = (
-						"Pick a card for your deck (1-%d)" % sim.rewards.offers[player_index].size()
+						"Pick a card for your deck (1-%d)%s"
+						% [sim.rewards.offers[player_index].size(), countdown]
 					)
 				elif sim.rewards.is_open():
-					hint = "Waiting for your partner to pick"
+					hint = "Waiting for your partner to pick" + countdown
 			Sim.Phase.WON:
 				text = "Victory! +%d gold" % sim.gold
 				hint = CONTINUE_HINT

@@ -92,12 +92,13 @@ func test_placement_rules() -> void:
 	assert_bool(sim.can_place_tower(Vector2(310, 120))).is_false()
 
 
-func _cleared_first_wave_with_rewards(rng_seed: int = 1) -> Sim:
+func _cleared_first_wave_with_rewards(rng_seed: int = 1, player_count: int = 1) -> Sim:
 	var waves: Array[WaveData] = [WAVE_01, WAVE_01]
 	var sim := Sim.new()
 	sim.waves = waves
 	sim.reward_pool = CardCatalog.load_dir().all()
 	sim.rng_seed = rng_seed
+	sim.heroes.resize(player_count)
 	sim.start()
 	sim.place_tower(ARROW, Vector2(260, 128))
 	while sim.waves_cleared == 0:
@@ -122,6 +123,23 @@ func test_break_waits_for_the_pick() -> void:
 	assert_bool(sim.rewards.pick(0, String(card.id), sim.players[0].deck)).is_true()
 	assert_bool(sim.rewards.is_open()).is_false()
 	assert_bool(card in sim.players[0].deck.discard_pile).is_true()
+	for i in roundi((Sim.WAVE_BREAK + 0.1) / STEP):
+		sim.tick(STEP)
+	assert_int(sim.phase).is_equal(Sim.Phase.WAVE)
+
+
+func test_coop_reward_is_auto_picked_after_timeout() -> void:
+	var sim := _cleared_first_wave_with_rewards(1, 2)
+	var first: CardData = sim.rewards.offers[1][0]
+	NetCommand.apply(sim, NetCommand.reward(0, String(sim.rewards.offers[0][0].id)))
+	for i in roundi((Sim.REWARD_TIMEOUT - 0.5) / STEP):
+		sim.tick(STEP)
+	assert_int(sim.phase).is_equal(Sim.Phase.BREAK)
+	assert_bool(sim.rewards.is_open()).is_true()
+	for i in roundi(1.0 / STEP):
+		sim.tick(STEP)
+	assert_bool(sim.rewards.is_open()).is_false()
+	assert_bool(first in sim.players[1].deck.discard_pile).is_true()
 	for i in roundi((Sim.WAVE_BREAK + 0.1) / STEP):
 		sim.tick(STEP)
 	assert_int(sim.phase).is_equal(Sim.Phase.WAVE)
