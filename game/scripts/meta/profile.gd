@@ -41,6 +41,10 @@ var hero := DEFAULT_HERO
 var boosters_since_epic := 0
 ## Name shown to the co-op partner; empty until the player sets one (see display_name()).
 var player_name := ""
+## Highest difficulty tier this profile may pick (Sim.tier); winning a run unlocks the next.
+var tier_unlocked := 0
+## Tier taken into the next run, 0 to tier_unlocked.
+var tier := 0
 
 
 static func create(name: String = "default") -> Profile:
@@ -96,6 +100,21 @@ func set_hero(hero_id: String) -> void:
 	changed.emit()
 
 
+func set_tier(value: int) -> void:
+	tier = clampi(value, 0, tier_unlocked)
+	changed.emit()
+
+
+## Unlocks tiers up to value (never past the last one); returns true if that was new.
+func unlock_tier(value: int) -> bool:
+	value = mini(value, Sim.TIER_COUNT - 1)
+	if value <= tier_unlocked:
+		return false
+	tier_unlocked = value
+	changed.emit()
+	return true
+
+
 func set_player_name(value: String) -> void:
 	player_name = value.strip_edges().left(MAX_NAME_LENGTH)
 	changed.emit()
@@ -137,6 +156,8 @@ func to_dict() -> Dictionary:
 		"hero": hero,
 		"boosters_since_epic": boosters_since_epic,
 		"player_name": player_name,
+		"tier_unlocked": tier_unlocked,
+		"tier": tier,
 	}
 
 
@@ -160,4 +181,6 @@ static func from_dict(data: Dictionary) -> Profile:
 	profile.hero = str(data.get("hero", DEFAULT_HERO))
 	profile.boosters_since_epic = int(data.get("boosters_since_epic", 0))
 	profile.player_name = str(data.get("player_name", ""))
+	profile.tier_unlocked = clampi(int(data.get("tier_unlocked", 0)), 0, Sim.TIER_COUNT - 1)
+	profile.tier = clampi(int(data.get("tier", 0)), 0, profile.tier_unlocked)
 	return profile

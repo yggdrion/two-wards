@@ -1,12 +1,21 @@
 [gd_resource type="Resource" script_class="WaveData" format=3]
 
 [ext_resource type="Script" path="res://scripts/data/wave_data.gd" id="1_wave"]
-[ext_resource type="Resource" path="res://resources/units/goblin_brute.tres" id="2_unit"]
+[ext_resource type="Resource" path="res://resources/units/goblin_brute.tres" id="2_brute"]
+[ext_resource type="Resource" path="res://resources/units/goblin_runner.tres" id="2_runner"]
+
+[sub_resource type="Resource" id="Resource_group"]
+script = ExtResource("1_wave")
+enemy = ExtResource("2_runner")
+count = 8
+spawn_interval = 0.7
+start_delay = 2.0
 
 [resource]
 script = ExtResource("1_wave")
 id = &"wave_07"
-enemy = ExtResource("2_unit")
-count = 5
-spawn_interval = 2.0
+enemy = ExtResource("2_brute")
+count = 6
+spawn_interval = 1.6
 start_delay = 1.0
+groups = Array[ExtResource("1_wave")]([SubResource("Resource_group")])

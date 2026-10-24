@@ -7,6 +7,8 @@ signal reached_core(enemy: SimEnemy)
 
 var data: UnitData
 var hp: int
+## Starting HP: the unit's, raised by the run's difficulty tier (Sim.spawn_enemy).
+var max_hp: int
 var position: Vector2
 ## Distance travelled along the path, in pixels.
 var progress: float = 0.0
@@ -20,7 +22,8 @@ var _alive := true
 
 func _init(unit: UnitData, curve: Curve2D) -> void:
 	data = unit
-	hp = unit.max_hp
+	max_hp = unit.max_hp
+	hp = max_hp
 	_curve = curve
 	position = curve.sample_baked(0.0)
 

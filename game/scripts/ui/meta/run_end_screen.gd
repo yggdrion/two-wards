@@ -1,6 +1,7 @@
 class_name RunEndScreen
 extends MetaScreen
-## After a run: how it ended, waves cleared and the gold it earned, with the way on to a
+## After a run: how it ended, its tier, waves cleared, the gold it earned and a newly unlocked
+## tier, with the way on to a
 ## booster or back to the camp.
 
 ## RunScreen.summary() of the run that just ended.
@@ -16,16 +17,22 @@ func build() -> void:
 	title.position = Vector2(0, 88)
 	title.size = Vector2(SCREEN.x, 24)
 	add_child(title)
-	var details := label(
-		(
-			"Waves cleared %d/%d\n+%d gold"
-			% [summary.get("waves_cleared", 0), summary.get("waves", 0), summary.get("gold", 0)]
-		),
-		&"GoldLabel"
+	var tier := int(summary.get("tier", 0))
+	var text := (
+		"Tier %d - waves cleared %d/%d\n+%d gold"
+		% [
+			tier + 1,
+			summary.get("waves_cleared", 0),
+			summary.get("waves", 0),
+			summary.get("gold", 0)
+		]
 	)
+	if summary.get("unlocked", false):
+		text += "\nTier %d unlocked!" % (tier + 2)
+	var details := label(text, &"GoldLabel")
 	details.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	details.position = Vector2(0, 124)
-	details.size = Vector2(SCREEN.x, 48)
+	details.size = Vector2(SCREEN.x, 64)
 	add_child(details)
 	var menu := VBoxContainer.new()
 	menu.add_theme_constant_override("separation", 8)

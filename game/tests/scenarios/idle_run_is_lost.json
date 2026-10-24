@@ -1,7 +1,7 @@
 {
-	"description": "Nobody plays a card: goblins break the crystal during wave 4.",
+	"description": "Nobody plays a card: goblins break the crystal during wave 3.",
 	"seed": 1,
 	"deck": ["arrow_tower", "mend", "arcane_bolt"],
 	"actions": [],
-	"expect": {"result": "lost", "waves_cleared": 3, "crystal_hp": 0, "gold": 30, "hash": "0f0c98829d2886a7"}
+	"expect": {"result": "lost", "waves_cleared": 2, "crystal_hp": 0, "gold": 20, "hash": "b25753ed68e494ac"}
 }

@@ -66,6 +66,24 @@ func test_run_is_lost_when_crystal_breaks() -> void:
 	assert_bool(sim.play_card(0, 0, Vector2(260, 128))).is_false()
 
 
+func test_tier_raises_enemy_hp_and_gold() -> void:
+	var waves: Array[WaveData] = [WAVE_01]
+	var sim := Sim.new()
+	sim.waves = waves
+	sim.tier = 2
+	sim.start()
+	var enemy := sim.spawn_enemy(WAVE_01.enemy)
+	assert_int(enemy.max_hp).is_equal(roundi(WAVE_01.enemy.max_hp * (1.0 + 2 * Sim.TIER_HP)))
+	assert_int(enemy.hp).is_equal(enemy.max_hp)
+	sim.enemies.clear()
+	sim.place_tower(ARROW, Vector2(260, 128))
+	_run_until_over(sim)
+	assert_int(sim.phase).is_equal(Sim.Phase.WON)
+	assert_int(sim.gold).is_equal(
+		Sim.GOLD_PER_WAVE + Sim.GOLD_FOR_WIN + 2 * (Sim.TIER_GOLD_PER_WAVE + Sim.TIER_GOLD_FOR_WIN)
+	)
+
+
 func test_default_run_has_ten_waves_in_order() -> void:
 	var waves := Sim.default_waves()
 	assert_int(waves.size()).is_equal(10)

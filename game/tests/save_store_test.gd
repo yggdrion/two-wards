@@ -78,6 +78,14 @@ func test_v2_save_gets_an_empty_player_name() -> void:
 	assert_str(profile.display_name()).is_not_empty()
 
 
+func test_v3_save_starts_on_tier_0() -> void:
+	_write({"version": 3, "name": "m4", "gold": 5, "hero": "ember", "player_name": "Kim"})
+	var profile := SaveStore.load_profile(PATH)
+	assert_int(profile.tier_unlocked).is_equal(0)
+	assert_int(profile.tier).is_equal(0)
+	assert_str(profile.player_name).is_equal("Kim")
+
+
 func test_migrate_sets_current_version() -> void:
 	var migrated := SaveStore.migrate({"cards": []})
 	assert_int(int(migrated["version"])).is_equal(SaveStore.VERSION)

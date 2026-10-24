@@ -49,3 +49,18 @@ func test_deck_data_builds_run_deck() -> void:
 	var deck := Profile.create().deck_data(0, CardCatalog.load_dir())
 	assert_int(deck.cards.size()).is_equal(DeckRules.SIZE)
 	assert_str(String(deck.cards[0].id)).is_equal(Profile.STARTER_DECK[0])
+
+
+func test_tiers_unlock_one_by_one_and_cap_at_the_last() -> void:
+	var profile := Profile.create()
+	profile.set_tier(2)
+	assert_int(profile.tier).is_equal(0)
+	assert_bool(profile.unlock_tier(1)).is_true()
+	assert_bool(profile.unlock_tier(1)).is_false()
+	profile.set_tier(2)
+	assert_int(profile.tier).is_equal(1)
+	profile.unlock_tier(99)
+	assert_int(profile.tier_unlocked).is_equal(Sim.TIER_COUNT - 1)
+	var loaded := Profile.from_dict(profile.to_dict())
+	assert_int(loaded.tier_unlocked).is_equal(Sim.TIER_COUNT - 1)
+	assert_int(loaded.tier).is_equal(1)

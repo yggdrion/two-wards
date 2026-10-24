@@ -18,7 +18,7 @@ A real-time co-op tower defense roguelite in a **dark-fantasy** setting, where t
 - **Heroes:** before a run each player picks one of two wizards. A wizard never appears on the field; it gives a passive buff to the whole battlefield, and the two buffs add up in co-op. In the run, each player sees their partner's name, wizard portrait and hand of cards in a partner panel.
 - **Co-op:** both players bring their own 8-card deck and each draws only from their own deck (decided 2026-10-23; before M7 the decks merged into one shared deck). Cards can be passed to the partner; a passed card goes back to its owner's deck once it is used.
 - **Between waves:** each player picks 1 of 3 run upgrades, each for a different card of their own deck (Rapid Fire, Heavy Bolts, Twin Shot, Thrift, ...; rarity rolled like a booster slot). The deck stays the 8 cards the player built; the upgrade changes every copy and the towers already placed, for the rest of the run (decided 2026-10-24, replaces the card reward, which added cards from the whole catalog). The 5 s break starts once both have picked.
-- **Meta:** runs earn gold, gold buys boosters, boosters grow the collection, the collection feeds the deck builder.
+- **Meta:** runs earn gold, gold buys boosters, boosters grow the collection, the collection feeds the deck builder. Winning a run unlocks the next of 5 difficulty tiers, which has tougher enemies and pays more gold (decided 2026-10-25).
 
 ## Scope
 
@@ -32,7 +32,7 @@ The PoC is one map, two players, twelve cards and one full meta loop. Anything n
 | Heroes | 2 wizards, each with one battlefield buff; hero select in the main menu; portraits only, never on the field | More heroes, hero classes (hero-specific card pools), hero leveling |
 | Terrain | 1 tileset (ground, path, walls) with autotiling, about 12 props for one biome | More biomes |
 | Cards | 12 cards, 3 rarities, energy, hand of 3, own deck per player, card passing, run-only card upgrades | Combo cards, permanent card levels, keywords |
-| Run | 10 waves, card upgrade after each wave | Events, shops, elites, branching paths |
+| Run | 10 waves (mixed enemy groups), card upgrade after each wave, 5 difficulty tiers | Events, shops, elites, branching paths |
 | Meta | Gold, boosters, collection, deck builder, local save | Idle camp, server-side profiles, crafting |
 | Networking | Lobby server with room codes, WebRTC P2P, STUN/TURN | Matchmaking, reconnect, Steam transport |
 | Platforms | Windows + Linux + macOS desktop | Web, controller support |
@@ -138,7 +138,8 @@ Twelve cards across three rarities cover every card type once or more; the meta 
 ### Collection and boosters
 
 - New profile starts with 2 copies of each of the 6 commons and an 8-card starter deck (one copy each would not fill a deck).
-- Gold per run = 10 per wave survived + 25 for a win.
+- Gold per run = (10 + 5 × tier) per wave survived + (25 + 25 × tier) for a win; tier is 0 to 4 (shown as Tier 1–5).
+- Difficulty tiers: a new profile has tier 0; winning on tier N unlocks N + 1, and the camp cycles through unlocked tiers. Co-op runs on the host's tier, and a win unlocks the next tier for both players. Enemy max HP = unit HP × (1 + 0.15 × wave index) × (1 + 0.3 × tier) × (1 + 1.0 per extra player); each tier spawns 8% faster (`Sim.TIER_*`, `WAVE_HP`, `PLAYER_HP`).
 - Booster costs 50 gold and holds 3 cards; each slot rolls 70% common, 25% rare, 5% epic.
 - Pity: the 10th booster in a row without an epic holds one.
 - A pulled card the profile already owns 2 copies of (the deck cap) pays gold instead: 10 common, 20 rare, 40 epic.
@@ -153,7 +154,7 @@ Twelve cards across three rarities cover every card type once or more; the meta 
 ### Persistence
 
 - Local JSON save per profile: collection, gold, decks, selected wizard, pity counter, save version.
-- Save on every meta change; load with a migration step keyed on the version. Version 2 (M3b) added the selected wizard (old saves get Frost) and turned owned Blink copies into Empower. Version 3 (M4) added the player name shown to the co-op partner.
+- Save on every meta change; load with a migration step keyed on the version. Version 2 (M3b) added the selected wizard (old saves get Frost) and turned owned Blink copies into Empower. Version 3 (M4) added the player name shown to the co-op partner. Version 4 added the unlocked and the selected difficulty tier (old saves start on tier 0).
 - Server-side profiles are out of scope; the lobby server could host them later.
 
 ## Art direction
