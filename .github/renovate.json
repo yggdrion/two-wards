@@ -95,6 +95,16 @@
                 "dependencies",
                 "bun"
             ]
+        },
+        {
+            "description": "Non-major updates merge on their own once the required CI checks pass",
+            "matchUpdateTypes": [
+                "minor",
+                "patch",
+                "pin",
+                "digest"
+            ],
+            "automerge": true
         }
     ]
 }
