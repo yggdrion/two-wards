@@ -5,33 +5,14 @@ name: CI
 #   3. Headless network test              4. Lobby tests + container build
 #   5. Windows + Linux exports (uploaded as artifacts on every push)
 #   6. GitHub Release with the Windows zip on `v*` tags
-# Jobs for parts that don't exist yet (network test, lobby, asset validator)
-# are gated on their entry point and switch on once it lands.
+# Every job runs the same tools/*.py scripts as the local check (python tools/check.py).
 
 on:
   push:
   workflow_dispatch:
 
 jobs:
-  detect:
-    runs-on: ubuntu-latest
-    outputs:
-      network: ${{ steps.check.outputs.network }}
-      lobby: ${{ steps.check.outputs.lobby }}
-      assets: ${{ steps.check.outputs.assets }}
-    steps:
-      - uses: actions/checkout@v4
-      - id: check
-        run: |
-          has() { [ -e "$1" ] && echo true || echo false; }
-          {
-            echo "network=$(has tools/run_network_test.sh)"
-            echo "lobby=$(has lobby/package.json)"
-            echo "assets=$(has tools/validate_assets.py)"
-          } | tee -a "$GITHUB_OUTPUT"
-
   lint:
-    needs: detect
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -42,7 +23,6 @@ jobs:
       - run: gdlint game/scripts game/tests game/tools
       - run: gdformat --check game/scripts game/tests game/tools
       - name: Validate assets
-        if: needs.detect.outputs.assets == 'true'
         run: |
           python -m unittest discover -s tools -p "test_*.py"
           python tools/validate_assets.py
@@ -51,13 +31,16 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
       - name: Cache Godot
         uses: actions/cache@v4
         with:
           path: .tools/godot
           key: godot-${{ runner.os }}-${{ hashFiles('.godot-version', 'tools/godot-*.sha512') }}
       - name: Run gdUnit4 tests
-        run: ./tools/run_tests.sh
+        run: python tools/run_tests.py
       - name: Upload test report
         if: always()
         uses: actions/upload-artifact@v4
@@ -67,7 +50,7 @@ jobs:
           if-no-files-found: ignore
       - name: Check generated asset resources are up to date
         run: |
-          ./tools/build_assets.sh
+          python tools/build_assets.py
           # Fails if the import changed or added files (stale .tres or missing .import).
           git status --porcelain game/
           test -z "$(git status --porcelain game/)"
@@ -76,29 +59,31 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
       - name: Cache Godot
         uses: actions/cache@v4
         with:
           path: .tools/godot
           key: godot-${{ runner.os }}-${{ hashFiles('.godot-version', 'tools/godot-*.sha512') }}
       - name: Run gdUnit4 tests
-        shell: pwsh
-        run: ./tools/run_tests.ps1
+        run: python tools/run_tests.py
       # The network test's WebRTC pass runs a local lobby.
       - uses: oven-sh/setup-bun@v2
         with:
           bun-version: 1.4.2
       - name: Run host + client network test
-        shell: pwsh
-        run: ./tools/run_network_test.ps1
+        run: python tools/run_network_test.py
 
   network:
-    needs: detect
-    if: needs.detect.outputs.network == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
       - name: Cache Godot
         uses: actions/cache@v4
         with:
@@ -111,11 +96,9 @@ jobs:
       # local lobby, plays scripted card events and exits non-zero on any per-wave state hash
       # mismatch.
       - name: Run host + client network test
-        run: ./tools/run_network_test.sh
+        run: python tools/run_network_test.py
 
   lobby:
-    needs: detect
-    if: needs.detect.outputs.lobby == 'true'
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -131,8 +114,7 @@ jobs:
         run: docker build -t two-wards-lobby:${{ github.sha }} .
 
   # Exports run and upload on every push, so every branch has a downloadable
-  # playtest build. Each platform exports on its own OS so both the .sh and the
-  # .ps1 export scripts stay exercised.
+  # playtest build. Each platform exports on its own OS.
   export:
     name: export (${{ matrix.platform }})
     needs: [lint, test, test-windows]
@@ -149,6 +131,9 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
       - name: Cache Godot
         uses: actions/cache@v4
         with:
@@ -159,13 +144,8 @@ jobs:
         with:
           path: ${{ matrix.templates }}
           key: godot-templates-${{ runner.os }}-${{ hashFiles('.godot-version', 'tools/godot-*.sha512') }}
-      - name: Export (bash)
-        if: runner.os != 'Windows'
-        run: ./tools/export.sh ${{ matrix.platform }}
-      - name: Export (PowerShell)
-        if: runner.os == 'Windows'
-        shell: pwsh
-        run: ./tools/export.ps1 ${{ matrix.platform }}
+      - name: Export
+        run: python tools/export.py ${{ matrix.platform }}
       - name: Upload build
         uses: actions/upload-artifact@v4
         with:

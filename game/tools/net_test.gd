@@ -2,7 +2,7 @@ extends SceneTree
 ## One side of the headless network test: a host or a client that plays a scenario over ENet
 ## on localhost, or over WebRTC through a lobby, the same way the game does (NetSession,
 ## LockstepHost, LockstepClient).
-## tools/run_network_test.sh starts both sides for every scenario.
+## tools/run_network_test.py starts both sides for every scenario.
 ##
 ## The host plays the scenario's player 0 actions, the client those of player 1 (a solo
 ## scenario's client joins without a deck or wizard and only watches). Both compare lane hashes
