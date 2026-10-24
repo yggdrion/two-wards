@@ -9,14 +9,14 @@ export_presets.cfg.local
 game/reports/
 game/gdunit4_testadapter/
 
-# Pinned tool downloads (tools/install_godot.sh)
+# Pinned tool downloads (tools/install.py)
 .tools/
 
 # Tooling
 __pycache__/
 .venv/
 
-# Exports (tools/export.sh)
+# Exports (tools/export.py)
 build/
 
 # Deploy secrets (deploy/.env.example is the template)
