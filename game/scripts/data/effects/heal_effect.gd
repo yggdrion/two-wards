@@ -6,4 +6,4 @@ extends CardEffect
 
 
 func apply(ctx: CardContext) -> void:
-	ctx.lane.core.heal(amount)
+	ctx.sim.core.heal(amount)

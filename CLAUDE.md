@@ -70,7 +70,8 @@ The headless network test (`python tools/run_network_test.py [scenario.json ...]
 
 ## Code conventions
 
-- Simulation advances only through explicit `step(delta)` / `Lane.tick(delta)` calls, never real time inside logic. Tests set `lane.autorun = false` and tick with a fixed delta; the co-op host (`LockstepHost`) drives the same path, and every card action goes through `NetCommand.apply`.
+- Simulation advances only through explicit `step(delta)` / `Sim.tick(delta)` calls, never real time inside logic. Tests build a `Sim` directly (configure it, `start()`, tick with a fixed delta), no scene tree; the co-op host (`LockstepHost`) drives the same path, and every card action goes through `NetCommand.apply`.
+- The sim (`scripts/sim/`: `Sim`, `SimEnemy`, `SimTower`, `SimCrystal`) is plain `RefCounted`: no `Node`, `get_tree`, `queue_free` or `add_child` there. `Lane` and the `Enemy`/`Tower`/`HeartCrystal` views in `scripts/lane/` only read it and react to its presentation signals; nothing in a view feeds back into the sim. Configure `lane.sim` before the lane enters the tree; card effects reach the sim through `CardContext.sim`.
 - Gray-box drawing uses `_draw()` with colors from `scripts/palette.gd` (Endesga 32 only) until M6 replaces it with art.
 - Test files live in `game/tests/` and are named `*_test.gd`.
 
@@ -80,7 +81,7 @@ Two Wards: a real-time 2-player co-op tower defense roguelite with a card deck. 
 
 ## Planned layout
 
-    game/          Godot project: scenes/, scripts/{data,lane}/, resources/, tests/
+    game/          Godot project: scenes/, scripts/{data,sim,lane}/, resources/, tests/
     lobby/         Lobby/signaling server (TypeScript on Bun) + tests + Dockerfile
     deploy/        server stack (lobby, coturn, vector) run from a clone on the gvm host
     assets-src/    Aseprite sources, palette, anchors
@@ -99,4 +100,4 @@ Two Wards: a real-time 2-player co-op tower defense roguelite with a card deck. 
 
 ## Asset rules
 
-Every PNG under `game/assets/` must pass `tools/validate_assets.py` (pre-commit + CI): Endesga 32 palette only, alpha 0 or 255, base resolution 640×360, per-frame sizes units 64×64 / tiles 32×32 / card art 128×96 / icons 32×32 / towers 48×72 / props sized per manifest entry, units as horizontal strips of frames, directions `down`/`up`/`side` (left = `flip_h`), and naming `units/<name>/unit_<name>_<anim>_<dir>.png`, `tiles/<set>/tile_<set>_<nn>.png`, `cards/card_art_<id>.png`, `icons/icon_<name>.png`, `towers/tower_<id>.png`, `props/prop_<name>.png`. Ground tiles are a 16-tile Wang set: `tile_base_<nn>` with nn = the corner bits NW NE SW SE (1 = path) read as binary; `Lane` picks them from the path. Every PNG needs an entry in `game/assets/manifest.json`, which also holds frame counts, fps and loop. Full style guide in `docs/STYLE_GUIDE.md` (summary table in `docs/PLAN.md`).
+Every PNG under `game/assets/` must pass `tools/validate_assets.py` (pre-commit + CI): Endesga 32 palette only, alpha 0 or 255, base resolution 640×360, per-frame sizes units 64×64 / tiles 32×32 / card art 128×96 / icons 32×32 / towers 48×72 / props sized per manifest entry, units as horizontal strips of frames, directions `down`/`up`/`side` (left = `flip_h`), and naming `units/<name>/unit_<name>_<anim>_<dir>.png`, `tiles/<set>/tile_<set>_<nn>.png`, `cards/card_art_<id>.png`, `icons/icon_<name>.png`, `towers/tower_<id>.png`, `props/prop_<name>.png`. Ground tiles are a 16-tile Wang set: `tile_base_<nn>` with nn = the corner bits NW NE SW SE (1 = path) read as binary; `Lane` picks them from the path (`resources/maps/lane_01_path.tres`). Every PNG needs an entry in `game/assets/manifest.json`, which also holds frame counts, fps and loop. Full style guide in `docs/STYLE_GUIDE.md` (summary table in `docs/PLAN.md`).

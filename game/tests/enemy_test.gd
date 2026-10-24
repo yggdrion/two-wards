@@ -16,10 +16,8 @@ func _straight_curve(length: float) -> Curve2D:
 	return curve
 
 
-func _make_enemy(unit: UnitData, length: float = 100.0) -> Enemy:
-	var enemy: Enemy = auto_free(Enemy.new())
-	enemy.setup(unit, _straight_curve(length))
-	return enemy
+func _make_enemy(unit: UnitData, length: float = 100.0) -> SimEnemy:
+	return SimEnemy.new(unit, _straight_curve(length))
 
 
 func test_walks_along_path_at_speed() -> void:

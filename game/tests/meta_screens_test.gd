@@ -110,11 +110,11 @@ func test_run_uses_active_deck_and_pays_gold() -> void:
 	var lane: Lane = game.get_node("Lane")
 	lane.autorun = false
 	lane.set_physics_process(false)
-	assert_int(lane.decks[0].cards.size()).is_equal(DeckRules.SIZE)
-	assert_bool(lane.reward_pool.is_empty()).is_false()
-	lane.gold = 30
-	lane.phase = Lane.Phase.LOST
-	lane.run_lost.emit()
+	assert_int(lane.sim.decks[0].cards.size()).is_equal(DeckRules.SIZE)
+	assert_bool(lane.sim.reward_pool.is_empty()).is_false()
+	lane.sim.gold = 30
+	lane.sim.phase = Sim.Phase.LOST
+	lane.sim.run_lost.emit()
 	assert_int(app.profile.gold).is_equal(30)
 	game.finished.emit()
 	assert_int(app.current).is_equal(App.Screen.RUN_END)
@@ -165,7 +165,7 @@ func test_hero_select_saves_the_wizard_and_the_run_uses_it() -> void:
 	again.show_screen(App.Screen.RUN)
 	var lane: Lane = again._screen.get_node("Lane")
 	lane.set_physics_process(false)
-	assert_str(String(lane.players[0].hero.id)).is_equal("ember")
+	assert_str(String(lane.sim.players[0].hero.id)).is_equal("ember")
 
 
 func test_coop_screen_hosts_and_cancels() -> void:
@@ -245,9 +245,9 @@ func test_coop_run_starts_from_the_setup() -> void:
 	app.show_screen(App.Screen.RUN)
 	var game: RunScreen = app._screen
 	assert_object(game.host).is_not_null()
-	assert_int(game.lane.players.size()).is_equal(2)
-	assert_int(game.lane.decks.size()).is_equal(2)
-	assert_object(game.lane.players[0].deck).is_not_same(game.lane.players[1].deck)
+	assert_int(game.sim.players.size()).is_equal(2)
+	assert_int(game.sim.decks.size()).is_equal(2)
+	assert_object(game.sim.players[0].deck).is_not_same(game.sim.players[1].deck)
 	assert_bool(game.lane.autorun).is_false()
 	app.net.role = NetSession.Role.NONE
 	app.show_screen(App.Screen.CAMP)

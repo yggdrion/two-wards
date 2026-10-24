@@ -9,9 +9,9 @@ extends CardEffect
 
 
 func can_apply(ctx: CardContext) -> bool:
-	return not ctx.lane.towers_near(ctx.target, radius).is_empty()
+	return not ctx.sim.towers_near(ctx.target, radius).is_empty()
 
 
 func apply(ctx: CardContext) -> void:
-	for tower in ctx.lane.towers_near(ctx.target, radius):
+	for tower in ctx.sim.towers_near(ctx.target, radius):
 		tower.apply_buff(fire_rate, duration)

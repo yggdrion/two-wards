@@ -3,8 +3,8 @@ extends CardScript
 
 
 func can_apply(ctx: CardContext, params: Dictionary) -> bool:
-	return ctx.lane.core_damage_since(params.get("window", 10.0)) > 0
+	return ctx.sim.core_damage_since(params.get("window", 10.0)) > 0
 
 
 func apply(ctx: CardContext, params: Dictionary) -> void:
-	ctx.lane.core.heal(ctx.lane.core_damage_since(params.get("window", 10.0)))
+	ctx.sim.core.heal(ctx.sim.core_damage_since(params.get("window", 10.0)))

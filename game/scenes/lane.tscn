@@ -1,37 +1,14 @@
 [gd_scene format=3]
 
 [ext_resource type="Script" path="res://scripts/lane/lane.gd" id="1_lane"]
-[ext_resource type="Script" path="res://scripts/data/wave_data.gd" id="2_wave_script"]
 [ext_resource type="Script" path="res://scripts/lane/heart_crystal.gd" id="3_core"]
-[ext_resource type="Script" path="res://scripts/data/hero_data.gd" id="4_hero_script"]
-[ext_resource type="Script" path="res://scripts/data/deck_data.gd" id="7_deck_script"]
-[ext_resource type="Resource" path="res://resources/heroes/frost.tres" id="6_frost"]
-[ext_resource type="Resource" path="res://resources/decks/dev_all_cards.tres" id="5_deck"]
 [ext_resource type="TileSet" path="res://resources/generated/tile_base.tres" id="8_tiles"]
 [ext_resource type="Texture2D" path="res://assets/props/prop_heart_crystal.png" id="9_crystal"]
-[ext_resource type="Resource" path="res://resources/waves/wave_01.tres" id="w01"]
-[ext_resource type="Resource" path="res://resources/waves/wave_02.tres" id="w02"]
-[ext_resource type="Resource" path="res://resources/waves/wave_03.tres" id="w03"]
-[ext_resource type="Resource" path="res://resources/waves/wave_04.tres" id="w04"]
-[ext_resource type="Resource" path="res://resources/waves/wave_05.tres" id="w05"]
-[ext_resource type="Resource" path="res://resources/waves/wave_06.tres" id="w06"]
-[ext_resource type="Resource" path="res://resources/waves/wave_07.tres" id="w07"]
-[ext_resource type="Resource" path="res://resources/waves/wave_08.tres" id="w08"]
-[ext_resource type="Resource" path="res://resources/waves/wave_09.tres" id="w09"]
-[ext_resource type="Resource" path="res://resources/waves/wave_10.tres" id="w10"]
-
-[sub_resource type="Curve2D" id="Curve2D_lane"]
-_data = {
-"points": PackedVector2Array(0, 0, 0, 0, -16, 64, 0, 0, 0, 0, 192, 64, 0, 0, 0, 0, 192, 224, 0, 0, 0, 0, 448, 224, 0, 0, 0, 0, 448, 96, 0, 0, 0, 0, 576, 96)
-}
-point_count = 6
+[ext_resource type="Curve2D" path="res://resources/maps/lane_01_path.tres" id="10_path"]
 
 [node name="Lane" type="Node2D"]
 y_sort_enabled = true
 script = ExtResource("1_lane")
-waves = Array[ExtResource("2_wave_script")]([ExtResource("w01"), ExtResource("w02"), ExtResource("w03"), ExtResource("w04"), ExtResource("w05"), ExtResource("w06"), ExtResource("w07"), ExtResource("w08"), ExtResource("w09"), ExtResource("w10")])
-decks = Array[ExtResource("7_deck_script")]([ExtResource("5_deck"), ExtResource("5_deck")])
-heroes = Array[ExtResource("4_hero_script")]([ExtResource("6_frost")])
 
 [node name="Ground" type="TileMapLayer" parent="."]
 z_index = -1
@@ -41,7 +18,7 @@ tile_set = ExtResource("8_tiles")
 color = Color(0.62, 0.62, 0.78, 1)
 
 [node name="Path" type="Path2D" parent="."]
-curve = SubResource("Curve2D_lane")
+curve = ExtResource("10_path")
 
 [node name="Towers" type="Node2D" parent="."]
 y_sort_enabled = true

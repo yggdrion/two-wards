@@ -1,21 +1,21 @@
 class_name LockstepClient
 extends RefCounted
-## The client side of a co-op run: replays the host's frames on its own lane. The client never
-## changes the lane on its own; its card plays go to the host as requests and come back in a
+## The client side of a co-op run: replays the host's frames on its own sim. The client never
+## changes the sim on its own; its card plays go to the host as requests and come back in a
 ## frame. See LockstepHost.
 
-var lane: Lane
+var sim: Sim
 ## Ticks done so far.
 var tick := 0
 var hashes: DesyncLog
-## Host commands that failed here. Any entry means the lanes have already drifted apart.
+## Host commands that failed here. Any entry means the sims have already drifted apart.
 var errors := PackedStringArray()
 var _frames: Array = []
 
 
-func _init(run_lane: Lane) -> void:
-	lane = run_lane
-	hashes = DesyncLog.new(lane)
+func _init(run_sim: Sim) -> void:
+	sim = run_sim
+	hashes = DesyncLog.new(sim)
 
 
 func receive(frames: Array) -> void:
@@ -33,10 +33,10 @@ func advance(max_ticks: int = 1 << 30) -> int:
 	while done < max_ticks and not _frames.is_empty():
 		var frame: Array = _frames.pop_front()
 		for cmd: Dictionary in frame[1]:
-			var error := NetCommand.apply(lane, cmd)
+			var error := NetCommand.apply(sim, cmd)
 			if not error.is_empty():
 				errors.append("tick %d: %s" % [frame[0], error])
-		lane.tick(LockstepHost.STEP)
+		sim.tick(LockstepHost.STEP)
 		tick = frame[0]
 		done += 1
 	return done

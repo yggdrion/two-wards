@@ -26,12 +26,11 @@ extends RefCounted
 ## card of each player's offer as soon as it opens (reward_pick), so picks need no timed actions.
 
 const STEP := 1.0 / 60.0
-const LANE_SCENE := "res://scenes/lane.tscn"
 const CARD_PATH := "res://resources/cards/%s.tres"
 const HERO_PATH := "res://resources/heroes/%s.tres"
 ## A run that hasn't ended by then counts as "timeout".
 const MAX_SECONDS := 900.0
-## Absorbs float drift in the accumulated lane time.
+## Absorbs float drift in the accumulated sim time.
 const EPSILON := 0.000001
 
 var name := ""
@@ -40,7 +39,7 @@ var rng_seed := 1
 var wizards := PackedStringArray(["frost"])
 ## One list of card ids per player.
 var decks: Array[PackedStringArray] = []
-## Number of waves to play; -1 plays all waves of the lane scene.
+## Number of waves to play; -1 plays all waves (Sim.default_waves).
 var wave_count := -1
 var actions: Array[Dictionary] = []
 var rewards := false
@@ -75,16 +74,17 @@ static func load_file(path: String) -> Scenario:
 	return scenario
 
 
-## A lane set up for this scenario (or for `run_setup`, a CoopSetup such as the network test
-## gets from its host), not yet in the tree and with autorun off.
-func build_lane(run_setup: Dictionary = {}) -> Lane:
-	var lane: Lane = load(LANE_SCENE).instantiate()
-	CoopSetup.configure(lane, run_setup if not run_setup.is_empty() else setup(), find_card)
+## A started sim for this scenario (or for `run_setup`, a CoopSetup such as the network test
+## gets from its host).
+func build_sim(run_setup: Dictionary = {}) -> Sim:
+	var sim := Sim.new()
+	CoopSetup.configure(sim, run_setup if not run_setup.is_empty() else setup(), find_card)
 	if wave_count >= 0:
-		lane.waves = lane.waves.slice(0, wave_count)
+		sim.waves = sim.waves.slice(0, wave_count)
 	if rewards:
-		lane.reward_pool = CardCatalog.load_dir().all()
-	return lane
+		sim.reward_pool = CardCatalog.load_dir().all()
+	sim.start()
+	return sim
 
 
 ## The scenario as a co-op run setup (CoopSetup format), one entry per player.
@@ -105,53 +105,53 @@ static func find_card(card_id: String) -> CardData:
 	return load(path) if ResourceLoader.exists(path) else null
 
 
-## Plays the scenario on a lane from build_lane() that is already in the tree.
-func run(lane: Lane) -> Dictionary:
+## Plays the scenario on a sim from build_sim().
+func run(sim: Sim) -> Dictionary:
 	var errors := PackedStringArray()
 	var next := 0
 	var answered := {}
-	while not lane.is_over() and lane.time < MAX_SECONDS:
-		for p in lane.players.size():
-			var pick := reward_pick(lane, p, answered)
+	while not sim.is_over() and sim.time < MAX_SECONDS:
+		for p in sim.players.size():
+			var pick := reward_pick(sim, p, answered)
 			if not pick.is_empty():
-				NetCommand.apply(lane, pick)
-		while next < actions.size() and is_due(actions[next], lane.time):
-			var cmd := command(lane, actions[next])
+				NetCommand.apply(sim, pick)
+		while next < actions.size() and is_due(actions[next], sim.time):
+			var cmd := command(sim, actions[next])
 			var error: String = cmd.get("error", "")
 			if error.is_empty():
-				error = NetCommand.apply(lane, cmd)
+				error = NetCommand.apply(sim, cmd)
 			if not error.is_empty():
-				errors.append("t=%.2f: %s" % [lane.time, error])
+				errors.append("t=%.2f: %s" % [sim.time, error])
 			next += 1
-		lane.tick(STEP)
+		sim.tick(STEP)
 	if next < actions.size():
 		errors.append("%d action(s) after the run ended" % (actions.size() - next))
-	return result_of(lane, errors)
+	return result_of(sim, errors)
 
 
-static func result_of(lane: Lane, errors: PackedStringArray) -> Dictionary:
+static func result_of(sim: Sim, errors: PackedStringArray) -> Dictionary:
 	var result := "timeout"
-	if lane.phase == Lane.Phase.WON:
+	if sim.phase == Sim.Phase.WON:
 		result = "won"
-	elif lane.phase == Lane.Phase.LOST:
+	elif sim.phase == Sim.Phase.LOST:
 		result = "lost"
 	return {
 		"result": result,
-		"waves_cleared": lane.waves_cleared,
-		"crystal_hp": lane.core.hp,
-		"gold": lane.gold,
-		"hash": lane.state_hash(),
+		"waves_cleared": sim.waves_cleared,
+		"crystal_hp": sim.core.hp,
+		"gold": sim.gold,
+		"hash": sim.state_hash(),
 		"errors": errors,
 	}
 
 
 ## The pick of the first offered card if `player` has an open offer that wasn't answered yet;
 ## `answered` keeps the wave of each player's last pick. Empty otherwise.
-static func reward_pick(lane: Lane, player: int, answered: Dictionary) -> Dictionary:
-	var offer: Array = lane.rewards.offers[player]
-	if offer.is_empty() or answered.get(player, -1) == lane.wave_index:
+static func reward_pick(sim: Sim, player: int, answered: Dictionary) -> Dictionary:
+	var offer: Array = sim.rewards.offers[player]
+	if offer.is_empty() or answered.get(player, -1) == sim.wave_index:
 		return {}
-	answered[player] = lane.wave_index
+	answered[player] = sim.wave_index
 	return NetCommand.reward(player, String(offer[0].id))
 
 
@@ -163,9 +163,9 @@ static func player_of(action: Dictionary) -> int:
 	return int(action.get("player", 0))
 
 
-## The NetCommand for an action on the lane as it is now, or {"error": why} if the card isn't
+## The NetCommand for an action on the sim as it is now, or {"error": why} if the card isn't
 ## in the player's hand.
-static func command(lane: Lane, action: Dictionary) -> Dictionary:
+static func command(sim: Sim, action: Dictionary) -> Dictionary:
 	var player := player_of(action)
 	var kind := ""
 	for key in [NetCommand.PLAY, NetCommand.CYCLE, NetCommand.PASS]:
@@ -174,9 +174,9 @@ static func command(lane: Lane, action: Dictionary) -> Dictionary:
 	if kind.is_empty():
 		return {"error": "unknown action %s" % action}
 	var card_id := str(action[kind])
-	var cmd := NetCommand.for_card(lane, player, kind, card_id, _vec(action.get("at", [0, 0])))
+	var cmd := NetCommand.for_card(sim, player, kind, card_id, _vec(action.get("at", [0, 0])))
 	if cmd.is_empty():
-		var hand := _hand(lane.players[player]) if player < lane.players.size() else "-"
+		var hand := _hand(sim.players[player]) if player < sim.players.size() else "-"
 		return {"error": "%s not in hand %s of player %d" % [card_id, hand, player]}
 	return cmd
 

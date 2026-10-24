@@ -9,5 +9,5 @@ extends CardEffect
 
 
 func apply(ctx: CardContext) -> void:
-	for enemy in ctx.lane.enemies_near(ctx.target, radius):
+	for enemy in ctx.sim.enemies_near(ctx.target, radius):
 		enemy.apply_slow(factor, duration)

@@ -1,6 +1,6 @@
 class_name WaveSpawner
 extends RefCounted
-## Decides when enemies of a wave spawn. Pure logic; the lane creates the nodes.
+## Decides when enemies of a wave spawn. Pure logic; the sim spawns the enemies.
 
 var wave: WaveData
 var spawned: int = 0

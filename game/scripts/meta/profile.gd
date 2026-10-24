@@ -116,7 +116,7 @@ func is_deck_valid(index: int) -> bool:
 	return DeckRules.is_valid(deck_cards(index), collection)
 
 
-## The deck as a resource for Lane, with ids the catalog doesn't know left out.
+## The deck as a resource for the Sim, with ids the catalog doesn't know left out.
 func deck_data(index: int, catalog: CardCatalog) -> DeckData:
 	var deck := DeckData.new()
 	deck.id = StringName("%s_%d" % [profile_name, index])

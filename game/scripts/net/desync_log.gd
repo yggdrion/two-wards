@@ -1,27 +1,27 @@
 class_name DesyncLog
 extends RefCounted
-## Lane state hashes at fixed points of a run: "wave_<n>" after wave n (1-based) is cleared and
+## Sim state hashes at fixed points of a run: "wave_<n>" after wave n (1-based) is cleared and
 ## "end" when the run is won or lost. Host and client keep one each; the host compares the
 ## client's entries with its own. Every hash is also printed, for debugging real games.
 
-## This lane reached a point; the client sends the hash to the host.
+## This sim reached a point; the client sends the hash to the host.
 signal recorded(key: String, hash: String)
 ## A point got both hashes and they differ.
 signal mismatch(key: String, ours: String, theirs: String)
 
-## key -> hash of this lane.
+## key -> hash of this sim.
 var own: Dictionary = {}
 ## key -> hash reported by the other side.
 var remote: Dictionary = {}
 var mismatches := PackedStringArray()
-var _lane: Lane
+var _sim: Sim
 
 
-func _init(lane: Lane) -> void:
-	_lane = lane
-	lane.wave_cleared.connect(func(index: int) -> void: _record("wave_%d" % (index + 1)))
-	lane.run_won.connect(_record.bind("end"))
-	lane.run_lost.connect(_record.bind("end"))
+func _init(sim: Sim) -> void:
+	_sim = sim
+	sim.wave_cleared.connect(func(index: int) -> void: _record("wave_%d" % (index + 1)))
+	sim.run_won.connect(_record.bind("end"))
+	sim.run_lost.connect(_record.bind("end"))
 
 
 ## A hash from the other side; compared at once if ours is known, else when it is.
@@ -40,7 +40,7 @@ func compared() -> int:
 
 
 func _record(key: String) -> void:
-	own[key] = _lane.state_hash()
+	own[key] = _sim.state_hash()
 	print("[net] %s hash %s" % [key, own[key]])
 	recorded.emit(key, own[key])
 	_compare(key)

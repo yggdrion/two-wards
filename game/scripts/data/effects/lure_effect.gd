@@ -7,4 +7,4 @@ extends CardEffect
 
 
 func apply(ctx: CardContext) -> void:
-	ctx.lane.add_lure(ctx.target, radius, duration)
+	ctx.sim.add_lure(ctx.target, radius, duration)

@@ -13,9 +13,9 @@ signal pass_requested
 ## A card of the reward offer was clicked.
 signal reward_picked(card_id: String)
 
-## Screen size in base pixels; everything below is laid out from it and Lane.FIELD.
+## Screen size in base pixels; everything below is laid out from it and Sim.FIELD.
 const SCREEN := Vector2(640, 360)
-const TOP := Lane.FIELD.end.y
+const TOP := Sim.FIELD.end.y
 const CARD_X := 184.0
 const CARD_GAP := CardView.MINI_SIZE.x + 8.0
 const RIGHT_X := 520.0
@@ -25,7 +25,7 @@ const CONTINUE_HINT := "Click to continue"
 const REWARD_GAP := 16.0
 const REWARD_Y := 40.0
 
-var lane: Lane
+var sim: Sim
 ## The player this screen belongs to (co-op: 0 on the host, 1 on the client).
 var player_index := 0
 ## Player names in co-op, host first; empty when playing solo.
@@ -77,14 +77,14 @@ func _ready() -> void:
 
 
 func _process(_delta: float) -> void:
-	if lane == null or lane.players.is_empty():
+	if sim == null or sim.players.is_empty():
 		return
 	refresh()
 
 
 ## The player this screen belongs to.
 func own_player() -> PlayerState:
-	return lane.players[player_index]
+	return sim.players[player_index]
 
 
 ## Pulls the current run state into the views.
@@ -109,7 +109,7 @@ func refresh() -> void:
 		_preview.affordable = cards[shown].affordable
 		var x := clampf(cards[shown].position.x - 24, 0, SCREEN.x - CardView.FULL_SIZE.x)
 		_preview.position = Vector2(x, TOP - CardView.FULL_SIZE.y - 4)
-	var offer: Array = lane.rewards.offers[player_index]
+	var offer: Array = sim.rewards.offers[player_index]
 	for i in rewards.size():
 		rewards[i].visible = i < offer.size()
 		if rewards[i].visible:
@@ -126,19 +126,19 @@ func is_preview_shown() -> bool:
 func _draw() -> void:
 	draw_rect(Rect2(0, TOP, SCREEN.x, SCREEN.y - TOP), Palette.PANEL)
 	draw_line(Vector2(0, TOP), Vector2(SCREEN.x, TOP), Palette.PATH_EDGE, 2.0)
-	if lane == null or lane.players.is_empty():
+	if sim == null or sim.players.is_empty():
 		return
 	var player := own_player()
 	UiFont.draw(
 		self,
 		Vector2(8, TOP + 6),
-		"Wave %d/%d" % [lane.wave_index + 1, lane.waves.size()],
+		"Wave %d/%d" % [sim.wave_index + 1, sim.waves.size()],
 		Palette.TEXT
 	)
 	UiFont.draw(
-		self, Vector2(8, TOP + 24), "Crystal %d/%d" % [lane.core.hp, lane.core.max_hp], Palette.TEXT
+		self, Vector2(8, TOP + 24), "Crystal %d/%d" % [sim.core.hp, sim.core.max_hp], Palette.TEXT
 	)
-	UiFont.draw(self, Vector2(8, TOP + 42), "Gold %d" % lane.gold, Palette.ENERGY)
+	UiFont.draw(self, Vector2(8, TOP + 42), "Gold %d" % sim.gold, Palette.ENERGY)
 	_draw_wizard(player)
 	_draw_energy(player, Vector2(RIGHT_X, TOP + 4))
 	UiFont.draw(
@@ -178,15 +178,15 @@ func _draw_energy(player: PlayerState, pos: Vector2) -> void:
 
 
 func _refresh_partner() -> void:
-	partner_panel.visible = lane.players.size() == 2
+	partner_panel.visible = sim.players.size() == 2
 	if not partner_panel.visible:
 		return
 	var partner := 1 - player_index
-	partner_panel.player = lane.players[partner]
+	partner_panel.player = sim.players[partner]
 	partner_panel.player_name = str(names[partner]) if partner < names.size() else "Partner"
 	partner_panel.position = Vector2(4, TOP - PartnerPanel.SIZE.y - 4)
 	partner_panel.can_receive = (
-		selected >= 0 and own_player().can_pass(selected, lane.players[partner])
+		selected >= 0 and own_player().can_pass(selected, sim.players[partner])
 	)
 	partner_panel.queue_redraw()
 
@@ -194,25 +194,24 @@ func _refresh_partner() -> void:
 func _draw_banner() -> void:
 	var text := ""
 	var hint := ""
-	if not notice.is_empty() and not lane.is_over():
+	if not notice.is_empty() and not sim.is_over():
 		text = notice
 		hint = CONTINUE_HINT
 	else:
-		match lane.phase:
-			Lane.Phase.BREAK:
-				text = "Wave %d cleared" % (lane.wave_index + 1)
-				if not lane.rewards.offers[player_index].is_empty():
+		match sim.phase:
+			Sim.Phase.BREAK:
+				text = "Wave %d cleared" % (sim.wave_index + 1)
+				if not sim.rewards.offers[player_index].is_empty():
 					hint = (
-						"Pick a card for your deck (1-%d)"
-						% lane.rewards.offers[player_index].size()
+						"Pick a card for your deck (1-%d)" % sim.rewards.offers[player_index].size()
 					)
-				elif lane.rewards.is_open():
+				elif sim.rewards.is_open():
 					hint = "Waiting for your partner to pick"
-			Lane.Phase.WON:
-				text = "Victory! +%d gold" % lane.gold
+			Sim.Phase.WON:
+				text = "Victory! +%d gold" % sim.gold
 				hint = CONTINUE_HINT
-			Lane.Phase.LOST:
-				text = "The crystal shattered. +%d gold" % lane.gold
+			Sim.Phase.LOST:
+				text = "The crystal shattered. +%d gold" % sim.gold
 				hint = CONTINUE_HINT
 	if text.is_empty():
 		return

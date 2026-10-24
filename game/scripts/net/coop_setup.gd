@@ -30,15 +30,14 @@ static func make(rng_seed: int, infos: Array[Dictionary]) -> Dictionary:
 	return setup
 
 
-## Sets up a lane (before it enters the tree) for the run: seed, wizards and one deck each.
+## Sets up a sim (before start()) for the run: seed, wizards and one deck each.
 ## `find_card` maps a card id to its CardData; unknown ids are left out.
-static func configure(lane: Lane, setup: Dictionary, find_card: Callable) -> void:
-	lane.autorun = false
-	lane.rng_seed = int(setup["seed"])
+static func configure(sim: Sim, setup: Dictionary, find_card: Callable) -> void:
+	sim.rng_seed = int(setup["seed"])
 	var heroes: Array[HeroData] = []
 	for hero_id: Variant in setup["heroes"]:
 		heroes.append(HeroData.find(str(hero_id)))
-	lane.heroes = heroes
+	sim.heroes = heroes
 	var decks: Array[DeckData] = []
 	for ids: Array in setup["decks"]:
 		var deck := DeckData.new()
@@ -47,4 +46,4 @@ static func configure(lane: Lane, setup: Dictionary, find_card: Callable) -> voi
 			if card != null:
 				deck.cards.append(card)
 		decks.append(deck)
-	lane.decks = decks
+	sim.decks = decks
