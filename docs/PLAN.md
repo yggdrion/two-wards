@@ -277,7 +277,7 @@ Implementation:
 | Palette | `tools/endesga32.hex` (validator), `assets-src/palette/endesga-32.gpl` (Aseprite) |
 | Validator (Python + Pillow, also checks the manifest) | `tools/validate_assets.py`, tests in `tools/test_validate_assets.py` |
 | Placeholder art for `placeholder` entries | `tools/make_placeholders.py` |
-| Import script → `game/resources/generated/*.tres` (committed; CI fails if stale) | `game/tools/build_assets.gd`, run via `tools/build_assets.sh` / `.ps1` |
+| Import script → `game/resources/generated/*.tres` (committed; CI fails if stale) | `game/tools/build_assets.gd`, run via `tools/build_assets.py` |
 | Pre-commit hook | `.pre-commit-config.yaml` |
 
 All of it runs natively on Windows; no global texture atlas for the PoC (strips are small atlases already).
@@ -292,7 +292,7 @@ The Frost wizard portrait, goblin runner, base tileset, one tower, the Heart Cry
 
 ## Testing and CI
 
-Every pull request runs lint, the unit tests, the headless network test and the asset validation on Linux; main and manual runs also run the Windows checks and build both exports. The same checks run locally with `tools/check.sh` or `tools/check.ps1` (optionally as a pre-push hook), so CI is a safety net rather than the inner loop. Godot runs headless in CI, so no display is needed.
+Every pull request runs lint, the unit tests, the headless network test and the asset validation on Linux; main and manual runs also run the Windows checks and build both exports. The same checks run locally with `python tools/check.py` (also as a pre-push hook), so CI is a safety net rather than the inner loop. Godot runs headless in CI, so no display is needed.
 
 | Layer | Tool | What it covers |
 | --- | --- | --- |

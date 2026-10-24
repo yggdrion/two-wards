@@ -62,7 +62,7 @@ The import script has to live under `game/` because Godot can only run scripts i
 - Directions: draw `down`, `up`, `side` (facing right) and get left with `flip_h`. Three drawn directions instead of four or eight saves a quarter to half of all generation and cleanup.
 - `build_assets.gd` reads the manifest, slices each strip into `AtlasTexture` regions and writes one `SpriteFrames` per unit with animations named `<anim>_<dir>` (`walk_down`, `attack_side`). FPS (8–12) and loop come from the manifest; idle and walk loop, attack does not.
 - `UnitData` holds a reference to its `SpriteFrames`, so a new unit stays data-only: art + manifest entry + `.tres`, no code.
-- Run it with `./tools/build_assets.sh` (`.ps1` on Windows). Commit the generated `.tres`; CI reruns it and fails on `git diff`, so resources never drift from the PNGs.
+- Run it with `python tools/build_assets.py`. Commit the generated `.tres`; CI reruns it and fails on `git diff`, so resources never drift from the PNGs.
 
 ## Tiles
 
@@ -93,9 +93,9 @@ It prints all failures with file and pixel coordinates and exits non-zero.
 Everything runs natively on Windows, no WSL needed:
 
 - **Validator**: plain Python + Pillow, so `py tools\validate_assets.py` works the same as on Linux (`py -m pip install -r tools\requirements.txt`).
-- **Pre-commit hook**: `py -m pip install pre-commit`, then `pre-commit install`. It runs the Python validator directly.
+- **Pre-commit hook**: `py tools\setup.py` installs it. It runs the Python validator directly.
 - **Aseprite export**: the same CLI flags work with `"C:\Program Files\Aseprite\Aseprite.exe" -b ...` (Steam installs live under `steamapps\common\Aseprite`).
-- **Import script**: `.\tools\build_assets.ps1`.
+- **Import script**: `py tools\build_assets.py`.
 - **Paths**: Godot resources use `res://` paths, so generated `.tres` files are identical on Windows and in CI.
 
 ## Original order of work (superseded by the art track)

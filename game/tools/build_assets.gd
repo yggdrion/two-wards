@@ -1,6 +1,6 @@
 extends SceneTree
 ## Builds SpriteFrames and TileSet resources from the PNGs listed in res://assets/manifest.json.
-## Run headless after an import: tools/build_assets.sh (or .ps1). Output goes to
+## Run headless after an import: python tools/build_assets.py. Output goes to
 ## res://resources/generated/ and is committed; CI reruns this and fails on any diff.
 
 const MANIFEST_PATH := "res://assets/manifest.json"

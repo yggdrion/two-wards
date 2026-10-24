@@ -23,15 +23,17 @@ Last updated: 2026-10-24, after the M8 retro (PR #22) was closed.
 | A2 step 1: anchors in the game | Open: lane on the tile grid, Wang ground, dusk and lights, sprites for goblin runner, arrow tower, crystal | #25 |
 | Release on `v*` tags | Done | #23 |
 | M8 Retro | Done: go once M6 proves bulk art; first real-game milestone is the pure sim core plus Python tooling (`docs/RETRO.md`) | #22 |
-| R1 plan (sim core + Python tooling) | Plan merged; R1b (pure `Sim` core) PR open, waiting for the solo + co-op playtest; R1a tooling next | — |
+| R1 plan (sim core + Python tooling) | Plan merged | #26 |
+| R1a Python tooling | Merged: one Python script per tool, `.sh`/`.ps1` twins and the `detect` CI job gone | #28 |
+| R1b pure sim core | Open: `Sim` without the scene tree, `Lane` only draws it; waiting for the solo + co-op playtest | #27 |
 
 Plan-only PRs: #1 (CLAUDE.md, rename), #5 (revised plan), #9 (full pixel-art route), #12 (hero redesign).
 
 ## How we work
 
-- **Rapha** owns the project and develops on Windows. Every script in `tools/` has a `.ps1` twin; keep them in sync.
-- **New machine**: run `./tools/setup.sh` (Windows `.\tools\setup.ps1`) once; it installs everything the check needs.
-- **Local check before every push**: `./tools/check.sh` (Windows `.\tools\check.ps1`), push only on "All checks passed", never `--no-verify`. Use `--quick` while iterating. Say in each PR that the full check passed (with the test count).
+- **Rapha** owns the project and develops on Windows. Every tool in `tools/` is one stdlib-only Python script (`python tools/<name>.py`; `py` on Windows works the same), no `.sh`/`.ps1` twins.
+- **New machine**: run `python tools/setup.py` once; it installs everything the check needs, including the pre-push hook that runs the full check. Existing checkouts: re-run it once after R1a, because the old `pre-push` hook calls the deleted `check.sh`/`check.ps1`.
+- **Local check before every push**: `python tools/check.py`, push only on "All checks passed", never `--no-verify`. Use `--quick` while iterating. Say in each PR that the full check passed (with the test count).
 - **CI does all builds.** The repo is public (since 2026-10-23), so Actions minutes are free. Every push runs lint, Linux and Windows tests, the network test and both exports, and uploads `two-wards-<platform>-<sha>` artifacts. Don't build in a cloud container or on Rapha's PC for a playtest unless asked; don't attach executables.
 - **Playtest after each milestone.** When a milestone or major step is ready, give Rapha the link to the green CI run (its Artifacts section has the Windows build) plus a short "what to try" list, and wait for their OK before merging. Docs-only changes need no playtest.
 - **Ask before opening a PR or merging** unless Rapha already said to.
@@ -84,7 +86,7 @@ Rapha kept the Node-based sim (no pure sim core). Lockstep with the host as the 
 - **Hosting**: no Kubernetes. Rapha's existing gvm box (`grafana.r4b2.de`, Hetzner, already runs Caddy, VictoriaMetrics, Grafana and vector) hosts the server stack, but Rapha wants it to stay in this repo and gvm untouched: `/root/two-wards` is a clone, `deploy/docker-compose.yml` builds the lobby from source and brings its own vector (remote-writes to `vm.r4b2.de`). The only gvm change is one Caddyfile block: gvm's Caddy terminates TLS for `twowards.r4b2.de` and proxies to the lobby, which joins `gvm_default` (a separate Caddy would have needed a Cloudflare token for a DNS challenge, since gvm has 80/443). Dashboard "Two Wards server" on grafana.r4b2.de. `twowards.r4b2.de` points at the host without Cloudflare proxy (TURN is UDP). The Hetzner firewall already lets 3478 and the relay range through (tested from outside). Steps in [deploy/README.md](../deploy/README.md).
 - **Lobby** (`lobby/`, Bun, no runtime deps): 4-letter room codes, relays WebRTC offer/answer/candidates verbatim, mints time-limited coturn credentials (REST scheme, `TURN_SECRET` only on the host). Rooms end once the peers report `connected` or after 10 minutes. Its `PROTOCOL` must match `LobbyClient.PROTOCOL` (the signaling format); game messages have their own `NetSession.PROTOCOL`, checked by the host on hello, so a game-only change needs no lobby redeploy.
 - **Game**: `LobbyClient` hands its `WebRTCMultiplayerPeer` to `NetSession` at once, so the existing hello/start handshake and lockstep run unchanged. The co-op screen has "Host online" / "Join code" and keeps the M4 LAN row as the fallback. The old `two_wards/network/transport` setting is gone; `two_wards/network/lobby_url` points at a different lobby.
-- **WebRTC** comes from the pinned webrtc-native GDExtension, installed by `install_godot` into `game/addons/webrtc_native/` (gitignored), so it ships in every export.
+- **WebRTC** comes from the pinned webrtc-native GDExtension, installed by `tools/install.py` into `game/addons/webrtc_native/` (gitignored), so it ships in every export.
 
 ### M7 full loop
 
@@ -94,7 +96,7 @@ Rapha kept the Node-based sim (no pure sim core). Lockstep with the host as the 
 
 ## Next
 
-Two tracks side by side. Real game, first milestone R1 (from the M8 retro, steps in `docs/PLAN.md`): R1a replaces the `.sh`/`.ps1` tool twins with one Python script per tool; R1b splits the simulation into a pure `Sim` without the scene tree that `Lane` renders, with the four pinned scenario hashes unchanged. M6 (art and juice): A1 is approved and the anchors are in the game (`art-reference/a2/run_anchors.png`). Data drives the art: `UnitData.frames` and `TowerData.sprite` switch a unit or tower from gray box to sprite, so each new asset is a PNG, a manifest entry and one line in its `.tres`. The goblin runner's `walk_side` is the anchor frame with a 1 px bob; all directions use it until PixelLab animates it. Next is bulk generation (goblin walk cycles in 3 directions, brute, frost totem, ballista, storm spire, props such as trees and rocks), then particles and juice. Generation needs the PixelLab key: a cloud session with the network secret, or a local untracked env var. Card art and HUD skin are A3.
+Two tracks side by side. Real game, first milestone R1 (from the M8 retro, steps in `docs/PLAN.md`): R1a (open) replaces the `.sh`/`.ps1` tool twins with one Python script per tool; R1b splits the simulation into a pure `Sim` without the scene tree that `Lane` renders, with the four pinned scenario hashes unchanged. M6 (art and juice): A1 is approved and the anchors are in the game (`art-reference/a2/run_anchors.png`). Data drives the art: `UnitData.frames` and `TowerData.sprite` switch a unit or tower from gray box to sprite, so each new asset is a PNG, a manifest entry and one line in its `.tres`. The goblin runner's `walk_side` is the anchor frame with a 1 px bob; all directions use it until PixelLab animates it. Next is bulk generation (goblin walk cycles in 3 directions, brute, frost totem, ballista, storm spire, props such as trees and rocks), then particles and juice. Generation needs the PixelLab key: a cloud session with the network secret, or a local untracked env var. Card art and HUD skin are A3.
 
 ## Reference images
 

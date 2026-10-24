@@ -1,4 +1,4 @@
-# Installed by tools/setup.sh / tools/setup.ps1 (pre-commit install).
+# Installed by tools/setup.py (pre-commit install --hook-type pre-commit --hook-type pre-push).
 repos:
   - repo: local
     hooks:
@@ -9,3 +9,12 @@ repos:
         additional_dependencies: ["pillow==12.3.0"]
         files: ^game/assets/
         pass_filenames: false
+        stages: [pre-commit]
+      # The full local check before every push (skip once with: git push --no-verify).
+      - id: check
+        name: Local check (tools/check.py)
+        entry: python tools/check.py
+        language: system
+        always_run: true
+        pass_filenames: false
+        stages: [pre-push]

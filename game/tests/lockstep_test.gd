@@ -1,7 +1,7 @@
 extends GdUnitTestSuite
 ## Co-op lockstep without a network: a host and a client sim in one process, with frames and
 ## requests delivered a few ticks late, must stay identical. The ENet version of the same
-## check is the network test (tools/run_network_test.sh).
+## check is the network test (tools/run_network_test.py).
 
 const SCENARIO := "res://tests/scenarios/coop_two_wizards_pass_cards.json"
 ## Ticks a message takes from one side to the other.
