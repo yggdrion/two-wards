@@ -83,6 +83,28 @@ static func rarity_color(rarity: CardData.Rarity) -> Color:
 	return Palette.RARITY_COMMON
 
 
+static func kind_color(kind: CardData.Kind) -> Color:
+	match kind:
+		CardData.Kind.TOWER:
+			return Palette.KIND_TOWER
+		CardData.Kind.BUFF:
+			return Palette.KIND_BUFF
+		CardData.Kind.HERO:
+			return Palette.KIND_HERO
+	return Palette.KIND_SPELL
+
+
+static func kind_label(kind: CardData.Kind) -> String:
+	match kind:
+		CardData.Kind.TOWER:
+			return "Tower"
+		CardData.Kind.BUFF:
+			return "Buff"
+		CardData.Kind.HERO:
+			return "Hero"
+	return "Spell"
+
+
 func _draw() -> void:
 	var rect := Rect2(Vector2.ZERO, size)
 	if face_down:
@@ -102,6 +124,7 @@ func _draw() -> void:
 	var border := Palette.SHOT if selected else rarity_color(card.rarity)
 	draw_rect(rect.grow(-BORDER / 2.0), border, false, BORDER)
 	_draw_cost()
+	_draw_kind()
 
 
 func _draw_compact() -> void:
@@ -119,7 +142,8 @@ func _draw_full() -> void:
 	if card.art != null:
 		draw_texture_rect(card.art, Rect2(8, 8, 128, 96), false)
 	UiFont.draw_centered(self, 72, 106, card.display_name, Palette.TEXT)
-	UiFont.draw_wrapped(self, Vector2(8, 126), card.text, 128, 5, Palette.CARD_TEXT_DIM)
+	UiFont.draw_centered(self, 72, 122, kind_label(card.kind), kind_color(card.kind))
+	UiFont.draw_wrapped(self, Vector2(8, 140), card.text, 128, 4, Palette.CARD_TEXT_DIM)
 
 
 func _draw_cost() -> void:
@@ -130,6 +154,55 @@ func _draw_cost() -> void:
 		badge.grow(-BORDER / 2.0), Palette.ENERGY if affordable else Palette.INVALID, false, BORDER
 	)
 	UiFont.draw_centered(self, 12, 5, str(cost), Palette.ENERGY if affordable else Palette.INVALID)
+
+
+## Kind badge in the top-right corner. The symbol's shape tells the kind without its color:
+## turret = tower, sparkle = spell, up arrow = buff, crown = hero.
+func _draw_kind() -> void:
+	var color := kind_color(card.kind)
+	var badge := Rect2(size.x - 22, 2, 20, 20)
+	draw_rect(badge, Palette.PANEL)
+	draw_rect(badge.grow(-BORDER / 2.0), color, false, BORDER)
+	var c := badge.get_center()
+	var points: PackedVector2Array
+	match card.kind:
+		CardData.Kind.TOWER:
+			draw_rect(Rect2(c.x - 4, c.y - 3, 8, 9), color)
+			for x in [-6.0, -1.5, 3.0]:
+				draw_rect(Rect2(c.x + x, c.y - 6, 3, 3), color)
+			return
+		CardData.Kind.BUFF:
+			points = [
+				Vector2(0, -7),
+				Vector2(6, -1),
+				Vector2(2, -1),
+				Vector2(2, 6),
+				Vector2(-2, 6),
+				Vector2(-2, -1),
+				Vector2(-6, -1)
+			]
+		CardData.Kind.HERO:
+			points = [
+				Vector2(-6, 5),
+				Vector2(-6, -4),
+				Vector2(-3, 0),
+				Vector2(0, -6),
+				Vector2(3, 0),
+				Vector2(6, -4),
+				Vector2(6, 5)
+			]
+		_:
+			points = [
+				Vector2(0, -7),
+				Vector2(2, -2),
+				Vector2(7, 0),
+				Vector2(2, 2),
+				Vector2(0, 7),
+				Vector2(-2, 2),
+				Vector2(-7, 0),
+				Vector2(-2, -2)
+			]
+	draw_colored_polygon(Transform2D(0.0, c) * points, color)
 
 
 func _draw_back(rect: Rect2) -> void:

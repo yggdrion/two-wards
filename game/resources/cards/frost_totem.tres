@@ -16,6 +16,6 @@ id = &"frost_totem"
 display_name = "Frost Totem"
 kind = 0
 cost = 2
-text = "Tower. Slows goblins in range by 50%."
+text = "Slows goblins in range by 50%."
 art = ExtResource("1_rnq1g")
 effects = Array[ExtResource("2_fekfs")]([SubResource("Resource_fl1j6")])

@@ -17,6 +17,6 @@ display_name = "Storm Spire"
 kind = 0
 rarity = 1
 cost = 5
-text = "Tower. Lightning chains to 3 goblins."
+text = "Lightning chains to 3 goblins."
 art = ExtResource("1_uyvqg")
 effects = Array[ExtResource("2_u3ncj")]([SubResource("Resource_r7psv")])
