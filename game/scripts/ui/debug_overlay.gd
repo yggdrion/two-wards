@@ -14,14 +14,20 @@ var _wait := 0.0
 func _ready() -> void:
 	layer = 100
 	visible = false
-	_label.position = Vector2(4, 4)
+	# Unscaled m5x7 on a see-through dark box, so the readout stays small over the game.
+	var box := StyleBoxFlat.new()
+	box.bg_color = Color(Palette.PANEL, 0.7)
+	box.set_content_margin_all(3)
+	var panel := PanelContainer.new()
+	panel.position = Vector2(2, 2)
+	panel.add_theme_stylebox_override("panel", box)
+	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_label.add_theme_font_override("font", UiFont.font())
-	_label.add_theme_font_size_override("font_size", UiFont.size())
+	_label.add_theme_font_size_override("font_size", UiFont.PIXEL_SIZE / UiFont.SCALE)
 	_label.add_theme_color_override("font_color", Palette.TEXT)
-	_label.add_theme_color_override("font_outline_color", Palette.PANEL)
-	_label.add_theme_constant_override("outline_size", 4)
 	_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(_label)
+	panel.add_child(_label)
+	add_child(panel)
 
 
 func _input(event: InputEvent) -> void:
