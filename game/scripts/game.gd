@@ -9,7 +9,7 @@ extends Node2D
 signal run_ended(gold: int)
 ## The player left the end-of-run banner.
 signal finished
-## The player gave up the run (Esc twice); pays nothing.
+## The player gave up the run (Leave run in the Esc menu); pays nothing.
 signal left
 
 ## How many host frames the client plays per physics frame when it has fallen behind.
@@ -39,6 +39,7 @@ func _ready() -> void:
 	hud.cycle_requested.connect(_cycle)
 	hud.pass_requested.connect(func() -> void: _pass(selected))
 	hud.reward_picked.connect(_pick_reward)
+	hud.leave_requested.connect(left.emit)
 	overlay.draw.connect(_draw_targeting)
 	sim.run_won.connect(_on_run_over)
 	sim.run_lost.connect(_on_run_over)
@@ -88,11 +89,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	var key := event as InputEventKey
 	var click := event as InputEventMouseButton
 	if hud.confirm_leave:
-		if key != null and key.pressed and not key.echo:
-			if key.physical_keycode == KEY_ESCAPE:
-				left.emit()
-			hud.confirm_leave = false
-		elif click != null and click.pressed:
+		if key != null and key.pressed and not key.echo and key.physical_keycode == KEY_ESCAPE:
 			hud.confirm_leave = false
 		return
 	if key != null and key.pressed and not key.echo:

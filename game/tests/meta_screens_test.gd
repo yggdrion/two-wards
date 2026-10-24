@@ -29,6 +29,13 @@ func test_starts_on_camp_with_new_profile() -> void:
 	assert_bool(FileAccess.file_exists(PATH)).is_true()
 
 
+func test_camp_menu_fits_the_screen_below_the_deck_label() -> void:
+	var camp: CampScreen = _app()._screen
+	var bottom := camp.menu.position.y + camp.menu.get_combined_minimum_size().y
+	assert_float(bottom).is_less_equal(MetaScreen.SCREEN.y)
+	assert_float(camp.menu.position.y).is_greater_equal(camp.deck_label.get_rect().end.y)
+
+
 func test_save_survives_restart() -> void:
 	var app := _app()
 	app.profile.add_gold(70)

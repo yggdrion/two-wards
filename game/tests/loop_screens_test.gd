@@ -78,7 +78,7 @@ func _key(code: Key) -> InputEventKey:
 	return key
 
 
-func test_escape_twice_leaves_the_run_without_gold() -> void:
+func test_escape_menu_leaves_the_run_without_gold() -> void:
 	var app := _app()
 	app.show_screen(App.Screen.RUN)
 	var game: RunScreen = app._screen
@@ -88,9 +88,11 @@ func test_escape_twice_leaves_the_run_without_gold() -> void:
 	game._unhandled_input(_key(KEY_ESCAPE))
 	assert_bool(game.hud.confirm_leave).is_true()
 	game._unhandled_input(_key(KEY_Q))
+	assert_bool(game.hud.confirm_leave).is_true()
+	game._unhandled_input(_key(KEY_ESCAPE))
 	assert_bool(game.hud.confirm_leave).is_false()
 	assert_int(app.current).is_equal(App.Screen.RUN)
 	game._unhandled_input(_key(KEY_ESCAPE))
-	game._unhandled_input(_key(KEY_ESCAPE))
+	game.hud.leave_button.pressed.emit()
 	assert_int(app.current).is_equal(App.Screen.CAMP)
 	assert_int(app.profile.gold).is_equal(gold)
