@@ -72,7 +72,7 @@ The `art-reference/hero/` images are the first PixelLab hero frames from before 
 
 ### M4 netcode (PR #15)
 
-Rapha kept the Node-based sim (no pure sim core). Lockstep with the host as the clock: `LockstepHost.step()` applies queued `NetCommand`s and ticks, frames go to the client, `LockstepClient` replays. Hashes after each wave and at the end; the headless network test fails on mismatch. Card passing costs 1 energy and lands in the partner's 4th gift slot (max one); the partner panel is bottom-left (click it or press E). Save v3 adds `player_name`; `--profile=<name>` runs two copies on one PC. ENet by address and port; M5 added the online path next to it.
+Rapha kept the Node-based sim (no pure sim core). Lockstep with the host as the clock: `LockstepHost.step()` applies queued `NetCommand`s and ticks, frames go to the client, `LockstepClient` replays. Hashes after each wave and at the end; the headless network test fails on mismatch. Card passing costs 1 energy and lands in the partner's 4th gift slot (max one); the partner panel is bottom-left (click it or press E). Save v3 adds `player_name`; `--profile=<name>` runs two copies on one PC. ENet by address and port; M5 added the online path next to it. F3 toggles a debug overlay on every screen (`DebugOverlay`): fps, role and transport, ping (an unreliable ping/pong RPC once a second, same for ENet and WebRTC; `NetSession.PROTOCOL` 3), the ENet peer address with LAN/internet, or for WebRTC the room, lobby URL and the partner's ICE candidates. Godot exposes no WebRTC stats, so the candidates are what the partner offered, not the pair in use: only `relay` means TURN.
 
 ## Asset pipeline and PixelLab
 

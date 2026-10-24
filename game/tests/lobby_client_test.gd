@@ -53,3 +53,37 @@ func test_session_reports_lobby_failures() -> void:
 	assert_int(failures[0]).is_equal(1)
 	assert_str(session.last_error).is_equal("Room is full")
 	assert_bool(session.is_active()).is_false()
+
+
+func test_candidate_summary_reads_type_and_address() -> void:
+	(
+		assert_str(
+			LobbyClient.candidate_summary(
+				"candidate:1 1 UDP 2122317823 192.168.1.20 51234 typ host"
+			)
+		)
+		. is_equal("host 192.168.1.20")
+	)
+	(
+		assert_str(
+			LobbyClient.candidate_summary(
+				"a=candidate:2 1 UDP 1686052607 84.1.2.3 40000 typ srflx raddr 0.0.0.0 rport 0"
+			)
+		)
+		. is_equal("srflx 84.1.2.3")
+	)
+	assert_str(LobbyClient.candidate_summary("garbage")).is_empty()
+
+
+func test_private_addresses_count_as_lan() -> void:
+	for ip in ["127.0.0.1", "10.0.0.5", "172.16.0.1", "172.31.255.1", "192.168.1.20", "::1"]:
+		assert_bool(NetSession.is_private_ip(ip)).override_failure_message(ip).is_true()
+	for ip in ["172.32.0.1", "84.1.2.3", "8.8.8.8", "2001:db8::1"]:
+		assert_bool(NetSession.is_private_ip(ip)).override_failure_message(ip).is_false()
+
+
+func test_debug_lines_offline() -> void:
+	var session := NetSession.new()
+	add_child(session)
+	auto_free(session)
+	assert_array(session.debug_lines()).is_equal(["Net  offline"])

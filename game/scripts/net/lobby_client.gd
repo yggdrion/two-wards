@@ -23,6 +23,10 @@ const PROTOCOL := 1
 const CLIENT_ID := 2
 
 var code := ""
+## The partner's ICE candidates as "<type> <address>", for the debug overlay. Godot exposes no
+## WebRTC stats, so this is what the partner offered, not the pair that won: matching private
+## "host" candidates usually mean a direct LAN link, and only "relay" goes through TURN.
+var remote_candidates := PackedStringArray()
 var _ws := WebSocketPeer.new()
 ## The first message, sent once the socket is open.
 var _hello: Dictionary = {}
@@ -143,9 +147,22 @@ func _on_signal(data: Variant) -> void:
 			# Setting the remote offer makes the joiner create its answer.
 			_connection.set_remote_description(str(data["kind"]), str(data.get("sdp")))
 		"candidate":
-			_connection.add_ice_candidate(
-				str(data.get("mid")), int(data.get("index", 0)), str(data.get("sdp"))
-			)
+			var sdp := str(data.get("sdp"))
+			_connection.add_ice_candidate(str(data.get("mid")), int(data.get("index", 0)), sdp)
+			var summary := candidate_summary(sdp)
+			if summary != "" and not summary in remote_candidates:
+				remote_candidates.append(summary)
+
+
+## "<type> <address>" from an ICE candidate line
+## ("candidate:<foundation> <component> <proto> <priority> <address> <port> typ <type> ..."),
+## or "" if it doesn't parse.
+static func candidate_summary(sdp: String) -> String:
+	var fields := sdp.split(" ", false)
+	var typ := fields.find("typ")
+	if typ < 6 or typ + 1 >= fields.size():
+		return ""
+	return "%s %s" % [fields[typ + 1], fields[4]]
 
 
 func _send(msg: Dictionary) -> void:
