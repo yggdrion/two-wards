@@ -3,7 +3,7 @@ name: CI
 # Pipeline from docs/PLAN.md "Testing and CI":
 #   1. Lint GDScript + asset validation   2. Unit and statistical tests
 #   3. Headless network test              4. Lobby tests + container build
-#   5. Windows + Linux exports (only on `v*` tags and manual "Run workflow")
+#   5. Windows + Linux exports (uploaded as artifacts on every push)
 #   6. GitHub Release with the Windows zip on `v*` tags
 # Every job runs the same tools/*.py scripts as the local check (python tools/check.py).
 
@@ -113,12 +113,11 @@ jobs:
       - name: Build container
         run: docker build -t two-wards-lobby:${{ github.sha }} .
 
-  # Exports only run for `v*` tags and manual runs ("Run workflow" on a branch gives a
-  # playtest build), not on every push. Each platform exports on its own OS.
+  # Exports run and upload on every push, so every branch has a downloadable
+  # playtest build. Each platform exports on its own OS.
   export:
     name: export (${{ matrix.platform }})
     needs: [lint, test, test-windows]
-    if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
     strategy:
       fail-fast: false
       matrix:
