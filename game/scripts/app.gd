@@ -18,6 +18,7 @@ var profile: Profile
 ## Co-op connection; the same node path on both machines, so RPCs find it.
 var net: NetSession
 var display: DisplaySettings
+var presence: DiscordPresence
 var catalog: CardCatalog
 var current: Screen = Screen.CAMP
 ## RunScreen.summary() of the last finished run, shown on the run-end screen.
@@ -37,6 +38,8 @@ func _ready() -> void:
 	var overlay := DebugOverlay.new()
 	overlay.session = net
 	add_child(overlay)
+	presence = DiscordPresence.new()
+	add_child(presence)
 	catalog = CardCatalog.load_dir()
 	var profile_arg := profile_from_args(OS.get_cmdline_args() + OS.get_cmdline_user_args())
 	if not profile_arg.is_empty():
@@ -85,6 +88,7 @@ func show_screen(screen: Screen) -> void:
 	if screen == Screen.RUN:
 		_start_run()
 		return
+	presence.set_activity("In camp")
 	if screen != Screen.COOP and screen != Screen.LOBBY:
 		net.close()
 	var view: MetaScreen
@@ -152,6 +156,12 @@ func _add_run(game: RunScreen) -> void:
 			last_run = game.summary()
 			show_screen(Screen.RUN_END)
 	)
+	var mode := "Co-op" if net.is_active() else "Solo"
+	var lane: Lane = game.get_node("Lane")
+	lane.sim.wave_started.connect(
+		func(index: int) -> void: presence.set_activity("Wave %d" % (index + 1), mode)
+	)
+	presence.set_activity("Starting a run", mode)
 	add_child(game)
 	_screen = game
 
