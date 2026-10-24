@@ -21,11 +21,8 @@ func _app() -> App:
 	return app
 
 
-func test_starts_on_title_and_plays_into_camp_with_new_profile() -> void:
+func test_starts_on_camp_with_new_profile() -> void:
 	var app := _app()
-	assert_int(app.current).is_equal(App.Screen.TITLE)
-	var title: TitleScreen = app._screen
-	title.play_button.pressed.emit()
 	assert_int(app.current).is_equal(App.Screen.CAMP)
 	var camp: CampScreen = app._screen
 	assert_bool(camp.start_button.disabled).is_false()
@@ -126,13 +123,13 @@ func test_run_uses_active_deck_and_pays_gold() -> void:
 	assert_int(app.current).is_equal(App.Screen.CAMP)
 
 
-func test_title_toggles_fullscreen_and_remembers_it() -> void:
+func test_camp_toggles_fullscreen_and_remembers_it() -> void:
 	var app := _app()
-	var title: TitleScreen = app._screen
-	assert_str(title.fullscreen_button.text).contains("off")
-	title.fullscreen_button.pressed.emit()
+	var camp: CampScreen = app._screen
+	assert_str(camp.fullscreen_button.text).contains("off")
+	camp.fullscreen_button.pressed.emit()
 	assert_bool(app.display.fullscreen).is_true()
-	assert_str(title.fullscreen_button.text).contains("on")
+	assert_str(camp.fullscreen_button.text).contains("on")
 	app.free()
 	assert_bool(_app().display.fullscreen).is_true()
 

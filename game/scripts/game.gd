@@ -9,6 +9,8 @@ extends Node2D
 signal run_ended(gold: int)
 ## The player left the end-of-run banner.
 signal finished
+## The player gave up the run (Esc twice); pays nothing.
+signal left
 
 ## How many host frames the client plays per physics frame when it has fallen behind.
 const MAX_CATCH_UP := 8
@@ -84,6 +86,15 @@ func _unhandled_input(event: InputEvent) -> void:
 		_input_after_run(event)
 		return
 	var key := event as InputEventKey
+	var click := event as InputEventMouseButton
+	if hud.confirm_leave:
+		if key != null and key.pressed and not key.echo:
+			if key.physical_keycode == KEY_ESCAPE:
+				left.emit()
+			hud.confirm_leave = false
+		elif click != null and click.pressed:
+			hud.confirm_leave = false
+		return
 	if key != null and key.pressed and not key.echo:
 		var choice := key.physical_keycode - KEY_1
 		var offer: Array = sim.rewards.offers[player]
@@ -100,8 +111,10 @@ func _unhandled_input(event: InputEvent) -> void:
 				if selected >= 0:
 					_pass(selected)
 			KEY_ESCAPE:
-				selected = -1
-	var click := event as InputEventMouseButton
+				if selected >= 0:
+					selected = -1
+				else:
+					hud.confirm_leave = true
 	if click != null and click.pressed:
 		if click.button_index == MOUSE_BUTTON_LEFT and selected >= 0:
 			var at := lane.get_local_mouse_position()

@@ -1,8 +1,11 @@
 class_name CampScreen
 extends MetaScreen
-## The hub between runs: start a run with the active deck (solo or co-op), pick a wizard,
-## open boosters, browse the collection, build decks, or go back to the title screen.
+## The hub the game opens on: start a run with the active deck (solo or co-op), pick a wizard,
+## open boosters, browse the collection, build decks, toggle fullscreen or quit.
 
+## Optional; when set, the menu shows a fullscreen toggle.
+var display: DisplaySettings
+var fullscreen_button: Button
 var start_button: Button
 var coop_button: Button
 var booster_button: Button
@@ -30,14 +33,23 @@ func build() -> void:
 		booster_button,
 		button("Collection", func() -> void: navigate.emit(App.Screen.COLLECTION)),
 		button("Decks", func() -> void: navigate.emit(App.Screen.DECKS)),
-		button("Main menu", func() -> void: navigate.emit(App.Screen.TITLE)),
 	]:
 		menu.add_child(item)
+	if display != null:
+		fullscreen_button = button("", display.toggle_fullscreen)
+		menu.add_child(fullscreen_button)
+		display.changed.connect(_refresh_fullscreen)
+		_refresh_fullscreen()
+	menu.add_child(button("Quit", func() -> void: get_tree().quit()))
 	_deck_label = label("", &"DimLabel")
 	_deck_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_deck_label.position = Vector2(0, 316)
 	_deck_label.size = Vector2(SCREEN.x, 24)
 	add_child(_deck_label)
+
+
+func _refresh_fullscreen() -> void:
+	fullscreen_button.text = "Fullscreen: %s (F11)" % ("on" if display.fullscreen else "off")
 
 
 func refresh() -> void:
