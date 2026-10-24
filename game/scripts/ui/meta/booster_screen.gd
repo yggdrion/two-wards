@@ -135,4 +135,5 @@ func _deal() -> void:
 
 func _turn_over(i: int) -> void:
 	cards[i].face_down = false
-	new_badges[i].visible = pulls[i]["new"]
+	new_badges[i].visible = pulls[i]["new"] or pulls[i]["gold"] > 0
+	new_badges[i].text = "+%d gold" % pulls[i]["gold"] if pulls[i]["gold"] > 0 else "NEW"

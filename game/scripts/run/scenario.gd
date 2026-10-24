@@ -22,8 +22,9 @@ extends RefCounted
 ## A co-op scenario gives "wizards" and "decks" (one per player, host first) instead of
 ## "wizard" and "deck", and its actions name a "player" (default 0); "pass" gives a card to the
 ## partner. A play, cycle or pass names a card id; it uses the first hand slot holding that card.
-## With "rewards": true every card can be offered after a wave, and every runner picks the first
-## card of each player's offer as soon as it opens (reward_pick), so picks need no timed actions.
+## With "rewards": true every upgrade can be offered after a wave, and every runner picks the
+## first upgrade of each player's offer as soon as it opens (reward_pick), so picks need no
+## timed actions.
 
 const STEP := 1.0 / 60.0
 const CARD_PATH := "res://resources/cards/%s.tres"
@@ -82,7 +83,7 @@ func build_sim(run_setup: Dictionary = {}) -> Sim:
 	if wave_count >= 0:
 		sim.waves = sim.waves.slice(0, wave_count)
 	if rewards:
-		sim.reward_pool = CardCatalog.load_dir().all()
+		sim.upgrade_pool = UpgradeData.load_all()
 	sim.start()
 	return sim
 
@@ -145,14 +146,14 @@ static func result_of(sim: Sim, errors: PackedStringArray) -> Dictionary:
 	}
 
 
-## The pick of the first offered card if `player` has an open offer that wasn't answered yet;
+## The pick of the first offered upgrade if `player` has an open offer that wasn't answered yet;
 ## `answered` keeps the wave of each player's last pick. Empty otherwise.
 static func reward_pick(sim: Sim, player: int, answered: Dictionary) -> Dictionary:
 	var offer: Array = sim.rewards.offers[player]
 	if offer.is_empty() or answered.get(player, -1) == sim.wave_index:
 		return {}
 	answered[player] = sim.wave_index
-	return NetCommand.reward(player, String(offer[0].id))
+	return NetCommand.reward(player, 0)
 
 
 static func is_due(action: Dictionary, time: float) -> bool:

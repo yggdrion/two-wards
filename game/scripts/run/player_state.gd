@@ -13,6 +13,8 @@ const CYCLE_COST := 1
 const PASS_COST := 1
 
 var deck: Deck
+## One run copy per card id in the deck, ordered by id; run upgrades change these (RunRewards).
+var run_cards: Array[CardData] = []
 ## The player's wizard; null plays without a buff (tests).
 var hero: HeroData
 var energy := Energy.new()

@@ -44,6 +44,11 @@ var selected := false:
 	set(value):
 		selected = value
 		queue_redraw()
+## A run upgrade offered for this card (full view only); null shows the card itself.
+var upgrade: UpgradeData:
+	set(value):
+		upgrade = value
+		queue_redraw()
 ## Shows the card back (booster opening, cards not owned yet).
 var face_down := false:
 	set(value):
@@ -127,21 +132,37 @@ func _draw() -> void:
 	_draw_kind()
 
 
+## The name with the run upgrade level, e.g. "Arrow Tower +2".
+func _name() -> String:
+	return card.display_name + (" +%d" % card.level if card.level > 0 else "")
+
+
 func _draw_compact() -> void:
 	if card.art != null:
 		draw_texture_rect_region(card.art, Rect2(4, 4, 88, 60), COMPACT_CROP)
-	UiFont.draw_wrapped(self, Vector2(4, 68), card.display_name, 88, 3, Palette.TEXT)
+	UiFont.draw_wrapped(self, Vector2(4, 68), _name(), 88, 3, Palette.TEXT)
 
 
 func _draw_mini() -> void:
 	if card.art != null:
 		draw_texture_rect_region(card.art, Rect2(4, 4, 88, 56), MINI_CROP)
+	if card.level > 0:
+		var mark := "+%d" % card.level
+		var x := size.x - UiFont.width(mark) - 6
+		draw_rect(Rect2(x - 2, 44, UiFont.width(mark) + 4, UiFont.LINE), Palette.PANEL)
+		UiFont.draw(self, Vector2(x, 44), mark, Palette.ENERGY)
 
 
+## With an upgrade the name line shows the upgrade and the rules text says what it does.
 func _draw_full() -> void:
 	if card.art != null:
 		draw_texture_rect(card.art, Rect2(8, 8, 128, 96), false)
-	UiFont.draw_centered(self, 72, 106, card.display_name, Palette.TEXT)
+	if upgrade != null:
+		UiFont.draw_centered(self, 72, 106, upgrade.display_name, Palette.ENERGY)
+		UiFont.draw_centered(self, 72, 122, _name(), Palette.TEXT)
+		UiFont.draw_wrapped(self, Vector2(8, 140), upgrade.text, 128, 4, Palette.CARD_TEXT_DIM)
+		return
+	UiFont.draw_centered(self, 72, 106, _name(), Palette.TEXT)
 	UiFont.draw_centered(self, 72, 122, kind_label(card.kind), kind_color(card.kind))
 	UiFont.draw_wrapped(self, Vector2(8, 140), card.text, 128, 4, Palette.CARD_TEXT_DIM)
 

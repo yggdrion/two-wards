@@ -3,15 +3,16 @@ extends Control
 ## Slim bottom bar of the run screen: run status, the hand of 3 as mini cards and energy. The
 ## full card shows above the hand while the mouse is on a card, never while aiming one. In
 ## co-op a card passed by the partner shows as a fourth card, and the partner panel shows the
-## partner's name, wizard and hand. After a cleared wave the reward offer shows as full cards
-## over the field until the player picks one. Esc opens a menu to leave the run or stay.
+## partner's name, wizard and hand. After a cleared wave the upgrade offers show as full cards
+## (the card with the upgrade's name and text) over the field until the player picks one. Esc
+## opens a menu to leave the run or stay.
 
 signal card_pressed(slot: int)
 signal cycle_requested(slot: int)
 ## The partner panel was clicked: pass the selected card.
 signal pass_requested
-## A card of the reward offer was clicked.
-signal reward_picked(card_id: String)
+## An upgrade offer was clicked; `offer` indexes the player's offers.
+signal reward_picked(offer: int)
 ## The player chose to leave the run in the Esc menu.
 signal leave_requested
 
@@ -45,7 +46,7 @@ var leave_button: Button
 ## Slot of the card waiting for a target, or -1.
 var selected := -1
 var cards: Array[CardView] = []
-## The reward offer, one full card per choice.
+## The upgrade offers, one full card per choice.
 var rewards: Array[CardView] = []
 var _preview: CardView
 var _hovered := -1
@@ -77,7 +78,7 @@ func _ready() -> void:
 		view.position = Vector2(
 			(SCREEN.x - row) / 2.0 + i * (CardView.FULL_SIZE.x + REWARD_GAP), REWARD_Y
 		)
-		view.pressed.connect(func(v: CardView) -> void: reward_picked.emit(String(v.card.id)))
+		view.pressed.connect(func(_v: CardView) -> void: reward_picked.emit(i))
 		add_child(view)
 		rewards.append(view)
 	partner_panel = PartnerPanel.new()
@@ -147,7 +148,12 @@ func refresh() -> void:
 	for i in rewards.size():
 		rewards[i].visible = i < offer.size()
 		if rewards[i].visible:
-			rewards[i].card = offer[i]
+			var upgrade: UpgradeData = offer[i]["upgrade"]
+			rewards[i].card = offer[i]["card"]
+			rewards[i].upgrade = upgrade
+			rewards[i].shown_cost = maxi(
+				offer[i]["card"].cost + int(upgrade.adds.get("cost", 0)), 0
+			)
 	_refresh_partner()
 	queue_redraw()
 
@@ -240,7 +246,7 @@ func _draw_banner() -> void:
 					countdown = " - auto-pick in %ds" % ceili(sim.reward_time_left)
 				if not sim.rewards.offers[player_index].is_empty():
 					hint = (
-						"Pick a card for your deck (1-%d)%s"
+						"Upgrade a card in your deck (1-%d)%s"
 						% [sim.rewards.offers[player_index].size(), countdown]
 					)
 				elif sim.rewards.is_open():

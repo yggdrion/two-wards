@@ -6,7 +6,7 @@ class_name NetCommand
 ##   {"player": 1, "kind": "play", "slot": 0, "card": "arrow_tower", "at": Vector2(150, 60)}
 ## "card" must still be in that slot when the command is applied; a command sent against an
 ## older hand is refused instead of playing whatever card took the slot's place. A reward pick
-## has no slot: {"player": 0, "kind": "reward", "card": "ballista"}.
+## names the index of the picked upgrade offer: {"player": 0, "kind": "reward", "offer": 1}.
 
 const PLAY := "play"
 const CYCLE := "cycle"
@@ -26,8 +26,8 @@ static func pass_card(player: int, slot: int, card_id: String) -> Dictionary:
 	return {"player": player, "kind": PASS, "slot": slot, "card": card_id}
 
 
-static func reward(player: int, card_id: String) -> Dictionary:
-	return {"player": player, "kind": REWARD, "card": card_id}
+static func reward(player: int, offer: int) -> Dictionary:
+	return {"player": player, "kind": REWARD, "offer": offer}
 
 
 ## Builds a command for the first hand slot holding `card_id`; empty if it isn't in the hand.
@@ -48,9 +48,9 @@ static func apply(sim: Sim, cmd: Dictionary) -> String:
 	if player < 0 or player >= sim.players.size():
 		return "no player %d" % player
 	if str(cmd.get("kind", "")) == REWARD:
-		if sim.rewards.pick(player, str(cmd.get("card", "")), sim.players[player].deck):
+		if sim.rewards.pick(player, int(cmd.get("offer", -1))):
 			return ""
-		return "%s is not offered to player %d" % [cmd.get("card", "?"), player]
+		return "no upgrade offer %s for player %d" % [cmd.get("offer", "?"), player]
 	var slot := int(cmd.get("slot", -1))
 	var card := sim.players[player].card_at(slot)
 	if card == null or String(card.id) != str(cmd.get("card", "")):

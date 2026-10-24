@@ -63,13 +63,18 @@ func test_booster_screen_opens_and_reveals() -> void:
 	assert_bool(screen.is_animating()).is_true()
 	screen.reveal_all()
 	assert_bool(screen.is_animating()).is_false()
-	assert_int(app.profile.gold).is_equal(0)
+	# Starter commons are already at the copy cap, so pulling one pays gold back.
+	var refund: int = screen.pulls.reduce(
+		func(sum: int, pull: Dictionary) -> int: return sum + pull["gold"], 0
+	)
+	assert_int(app.profile.gold).is_equal(refund)
 	assert_bool(screen.open_button.disabled).is_true()
 	for i in Booster.SLOTS:
 		assert_bool(screen.cards[i].visible).is_true()
 		assert_bool(screen.cards[i].face_down).is_false()
 		assert_object(screen.cards[i].card).is_same(screen.pulls[i]["card"])
-		assert_bool(screen.new_badges[i].visible).is_equal(screen.pulls[i]["new"])
+		var shown: bool = screen.pulls[i]["new"] or screen.pulls[i]["gold"] > 0
+		assert_bool(screen.new_badges[i].visible).is_equal(shown)
 
 
 func test_collection_dims_unowned_cards() -> void:
@@ -115,7 +120,7 @@ func test_run_uses_active_deck_and_pays_gold() -> void:
 	lane.autorun = false
 	lane.set_physics_process(false)
 	assert_int(lane.sim.decks[0].cards.size()).is_equal(DeckRules.SIZE)
-	assert_bool(lane.sim.reward_pool.is_empty()).is_false()
+	assert_bool(lane.sim.upgrade_pool.is_empty()).is_false()
 	lane.sim.gold = 30
 	lane.sim.phase = Sim.Phase.LOST
 	lane.sim.run_lost.emit()

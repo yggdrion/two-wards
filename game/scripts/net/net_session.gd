@@ -41,7 +41,7 @@ enum Role { NONE, HOST, CLIENT }
 
 ## Bumped when game messages change; the host turns a mismatching client away after hello.
 ## The lobby has its own version (LobbyClient.PROTOCOL).
-const PROTOCOL := 3
+const PROTOCOL := 4
 ## How often both sides measure the round trip, in milliseconds.
 const PING_INTERVAL_MS := 1000
 

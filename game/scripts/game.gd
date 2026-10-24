@@ -96,7 +96,7 @@ func _unhandled_input(event: InputEvent) -> void:
 		var choice := key.physical_keycode - KEY_1
 		var offer: Array = sim.rewards.offers[player]
 		if not offer.is_empty() and choice >= 0 and choice < offer.size():
-			_pick_reward(String(offer[choice].id))
+			_pick_reward(choice)
 			return
 		match key.physical_keycode:
 			KEY_1, KEY_2, KEY_3, KEY_4:
@@ -200,8 +200,8 @@ func _pass(slot: int) -> void:
 		selected = -1
 
 
-func _pick_reward(card_id: String) -> void:
-	_submit(NetCommand.reward(player, card_id))
+func _pick_reward(offer: int) -> void:
+	_submit(NetCommand.reward(player, offer))
 
 
 ## Solo applies the command now; co-op hands it to the host. True if it was applied or sent.
