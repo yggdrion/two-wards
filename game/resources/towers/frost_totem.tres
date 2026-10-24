@@ -1,6 +1,7 @@
 [gd_resource type="Resource" script_class="TowerData" format=3]
 
 [ext_resource type="Script" path="res://scripts/data/tower_data.gd" id="1_tower"]
+[ext_resource type="Texture2D" path="res://assets/towers/tower_frost_totem.png" id="2_sprite"]
 
 [resource]
 script = ExtResource("1_tower")
@@ -12,3 +13,5 @@ fire_interval = 0.5
 area = true
 slow_factor = 0.5
 slow_duration = 1.0
+sprite = ExtResource("2_sprite")
+light_color = Color(0.752941, 0.796078, 0.862745, 1)

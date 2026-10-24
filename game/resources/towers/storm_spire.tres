@@ -1,6 +1,7 @@
 [gd_resource type="Resource" script_class="TowerData" format=3]
 
 [ext_resource type="Script" path="res://scripts/data/tower_data.gd" id="1_tower"]
+[ext_resource type="Texture2D" path="res://assets/towers/tower_storm_spire.png" id="2_sprite"]
 
 [resource]
 script = ExtResource("1_tower")
@@ -11,3 +12,5 @@ damage = 12
 fire_interval = 1.2
 chain_count = 3
 chain_range = 64.0
+sprite = ExtResource("2_sprite")
+light_color = Color(0.709804, 0.313725, 0.533333, 1)
