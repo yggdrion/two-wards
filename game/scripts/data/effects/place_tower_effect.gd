@@ -8,8 +8,8 @@ extends CardEffect
 
 
 func can_apply(ctx: CardContext) -> bool:
-	return ctx.lane.can_place_tower(ctx.target)
+	return ctx.sim.can_place_tower(ctx.target)
 
 
 func apply(ctx: CardContext) -> void:
-	ctx.lane.place_tower(tower, ctx.target, lifetime)
+	ctx.sim.place_tower(tower, ctx.target, lifetime)

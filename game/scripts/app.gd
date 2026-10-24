@@ -121,22 +121,24 @@ func show_screen(screen: Screen) -> void:
 func _start_run() -> void:
 	var game: RunScreen = GAME_SCENE.instantiate()
 	var lane: Lane = game.get_node("Lane")
+	var sim := lane.sim
 	if net.is_active() and not net.setup.is_empty():
-		CoopSetup.configure(lane, net.setup, _find_card)
-		lane.reward_pool = catalog.all()
+		lane.autorun = false
+		CoopSetup.configure(sim, net.setup, _find_card)
+		sim.reward_pool = catalog.all()
 		game.session = net
 		game.player = net.local_player()
 		_add_run(game)
 		return
 	var decks: Array[DeckData] = [profile.deck_data(profile.active_deck, catalog)]
-	lane.decks = decks
-	lane.reward_pool = catalog.all()
+	sim.decks = decks
+	sim.reward_pool = catalog.all()
 	var hero := HeroData.find(profile.hero)
 	if hero == null:
 		hero = HeroData.find(Profile.DEFAULT_HERO)
 	var heroes: Array[HeroData] = [hero]
-	lane.heroes = heroes
-	lane.rng_seed = _rng.randi()
+	sim.heroes = heroes
+	sim.rng_seed = _rng.randi()
 	_add_run(game)
 
 

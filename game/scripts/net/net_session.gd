@@ -28,7 +28,7 @@ signal command_received(cmd: Dictionary)
 signal command_rejected(cmd: Dictionary, reason: String)
 ## The client reached this tick (host only).
 signal ack_received(tick: int)
-## The client's lane hash at a desync check point (host only).
+## The client's sim hash at a desync check point (host only).
 signal hash_received(key: String, hash: String)
 ## Hosting online: the lobby opened a room under this code for the partner to join.
 signal room_ready(code: String)

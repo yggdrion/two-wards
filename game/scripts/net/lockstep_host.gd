@@ -1,11 +1,11 @@
 class_name LockstepHost
 extends RefCounted
-## The host side of a co-op run. The host's lane is the authority and the host is the clock:
-## each step() applies the card commands that arrived since the last step, ticks the lane once
+## The host side of a co-op run. The host's sim is the authority and the host is the clock:
+## each step() applies the card commands that arrived since the last step, ticks the sim once
 ## and returns a frame for the client. Frames are [tick, commands]; the client applies the
-## same commands before the same tick, so both lanes stay identical without sending state.
+## same commands before the same tick, so both sims stay identical without sending state.
 ##
-## Desync check: both sides hash the lane after each cleared wave and at the end of the run
+## Desync check: both sides hash the sim after each cleared wave and at the end of the run
 ## (DesyncLog); the client reports its hashes and the host compares them.
 
 ## A command was refused; the network layer tells the player who sent it.
@@ -13,7 +13,7 @@ signal rejected(cmd: Dictionary, reason: String)
 
 const STEP := 1.0 / 60.0
 
-var lane: Lane
+var sim: Sim
 ## Ticks done so far.
 var tick := 0
 ## The client's last confirmed tick (see ack()).
@@ -25,9 +25,9 @@ var hashes: DesyncLog
 var _pending: Array[Dictionary] = []
 
 
-func _init(run_lane: Lane) -> void:
-	lane = run_lane
-	hashes = DesyncLog.new(lane)
+func _init(run_sim: Sim) -> void:
+	sim = run_sim
+	hashes = DesyncLog.new(sim)
 
 
 ## Queues a card command (from this machine or from the client) for the next step.
@@ -40,21 +40,21 @@ func ack(client_tick: int) -> void:
 
 
 func can_step() -> bool:
-	if lane.is_over():
+	if sim.is_over():
 		return false
 	return max_lead <= 0 or tick - acked_tick < max_lead
 
 
-## Applies the queued commands, ticks the lane once and returns the frame to send.
+## Applies the queued commands, ticks the sim once and returns the frame to send.
 func step() -> Array:
 	var applied: Array[Dictionary] = []
 	for cmd in _pending:
-		var error := NetCommand.apply(lane, cmd)
+		var error := NetCommand.apply(sim, cmd)
 		if error.is_empty():
 			applied.append(cmd)
 		else:
 			rejected.emit(cmd, error)
 	_pending.clear()
-	lane.tick(STEP)
+	sim.tick(STEP)
 	tick += 1
 	return [tick, applied]

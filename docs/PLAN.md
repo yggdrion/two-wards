@@ -79,7 +79,8 @@ Players find each other through the lobby by room code, then exchange game traff
 ### Key choices
 
 - **Godot 4.7.2, GDScript.** Data in `Resource` files: `CardData`, `UnitData`, `WaveData`, `HeroData` (name, portrait, battlefield buff).
-- **Host-authoritative netcode (lockstep).** Both machines run the same deterministic sim. The host is the clock: every tick it applies the card events (play, cycle, pass, with a target point) it has validated since the last tick, then broadcasts that tick with those events; the client replays the ticks in order and never changes its lane by itself. Clients send card events as requests; a request against a hand that has changed is refused. There is no state sync: each player's wizard is fixed at run start and has no position, and the partner panel reads the partner's hand from the replayed lane.
+- **Host-authoritative netcode (lockstep).** Both machines run the same deterministic sim. The host is the clock: every tick it applies the card events (play, cycle, pass, with a target point) it has validated since the last tick, then broadcasts that tick with those events; the client replays the ticks in order and never changes its sim by itself. Clients send card events as requests; a request against a hand that has changed is refused. There is no state sync: each player's wizard is fixed at run start and has no position, and the partner panel reads the partner's hand from the replayed sim.
+- **Pure sim core (R1b).** `Sim` and its entities (`game/scripts/sim/`) are plain objects without the scene tree; scenarios, lockstep and the network test build a `Sim` directly. `Lane` renders it: one view node per entity, created and freed from the sim's presentation signals.
 - **Transport abstraction.** The same session runs over ENet (LAN, tests) or WebRTC through the lobby (online); gameplay only sees a `MultiplayerPeer`.
 - **Local saves.** JSON per profile with a version field.
 - **Lobby server** in TypeScript on Bun, one stateless-ish container; rooms expire after the game starts.
@@ -169,7 +170,7 @@ The PoC ends as a pretty, polished pixel-art game, not a gray box with sprites (
 | Motion | Everything alive moves: units idle, the crystal pulses, grass and banners sway (vertex shader), ambient motes drift. Nothing on screen is perfectly still for more than a second |
 | VFX ambition | Pixel-crisp effects only: no soft particles, no blur, no additive glow textures with soft alpha. Hits get a 1-frame white flash, impacts a 4–6 frame sprite burst, deaths a short dissolve. Screen shake is small and snapped to whole pixels |
 
-Juice is presentation only. VFX, screen shake, hit-stop and damage numbers react to signals from the simulation and never change sim timing or state, so tests, scenario hashes and netcode stay deterministic. Hit-stop freezes animation playback, not `Lane.tick`.
+Juice is presentation only. VFX, screen shake, hit-stop and damage numbers react to signals from the simulation and never change sim timing or state, so tests, scenario hashes and netcode stay deterministic. Hit-stop freezes animation playback, not `Sim.tick`.
 
 ### Asset list
 

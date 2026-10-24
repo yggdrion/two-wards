@@ -23,7 +23,7 @@ Last updated: 2026-10-24, after the M8 retro (PR #22) was closed.
 | A2 step 1: anchors in the game | Open: lane on the tile grid, Wang ground, dusk and lights, sprites for goblin runner, arrow tower, crystal | #25 |
 | Release on `v*` tags | Done | #23 |
 | M8 Retro | Done: go once M6 proves bulk art; first real-game milestone is the pure sim core plus Python tooling (`docs/RETRO.md`) | #22 |
-| R1 plan (sim core + Python tooling) | Plan-only PR open; R1a tooling and R1b sim core follow as two PRs | — |
+| R1 plan (sim core + Python tooling) | Plan merged; R1b (pure `Sim` core) PR open, waiting for the solo + co-op playtest; R1a tooling next | — |
 
 Plan-only PRs: #1 (CLAUDE.md, rename), #5 (revised plan), #9 (full pixel-art route), #12 (hero redesign).
 
@@ -88,7 +88,7 @@ Rapha kept the Node-based sim (no pure sim core). Lockstep with the host as the 
 
 ### M7 full loop
 
-- **Own decks** (Rapha, 2026-10-23): no shared run deck. Each player draws from their own deck (`Lane.decks`, one `Deck` per player seeded `rng_seed + i`). A passed card still goes to the partner's gift slot, but returns to its owner's discard once played or cycled (`PlayerState.gift_owner`).
+- **Own decks** (Rapha, 2026-10-23): no shared run deck. Each player draws from their own deck (`Sim.decks`, one `Deck` per player seeded `rng_seed + i`). A passed card still goes to the partner's gift slot, but returns to its owner's discard once played or cycled (`PlayerState.gift_owner`).
 - **Card reward**: after every cleared wave but the last, `RunRewards` offers each player 3 different cards from the whole catalog, rarity rolled with the booster odds from its own seeded RNG. The pick is a `reward` `NetCommand` and goes into the picker's discard pile. The break timer only runs once every offer is answered. In-run: the offer shows as full cards over the field, click or 1–3. Scenario files turn rewards on with `"rewards": true`; every runner (scenario test, lockstep test, network test, recorder) then takes the first card of each offer as soon as it opens (`Scenario.reward_pick`), because timed pick actions break as soon as client lag shifts a wave's end.
 - **Screens**: the game opens on a title screen (play, fullscreen, quit). Co-op: once connected both players go to the lobby screen (names, wizards, deck lists); the client presses Ready, the host's Start unlocks. Game `NetSession.PROTOCOL` is 2; the lobby's stays 1. After a run, the run-end screen shows the result, waves and gold, with "Open a booster" (at 50 gold) or "Camp".
 

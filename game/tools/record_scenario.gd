@@ -46,22 +46,21 @@ func _record() -> void:
 	var data: Dictionary = JSON.parse_string(FileAccess.get_file_as_string(args["in"]))
 	var scenario := Scenario.load_file(args["in"])
 	scenario.actions.clear()
-	var lane := scenario.build_lane()
-	root.add_child(lane)
+	var sim := scenario.build_sim()
 	var actions: Array = []
 	var next_think := 0.0
 	var next_pass := PASS_EVERY
 	var answered := {}
-	while not lane.is_over() and lane.time < Scenario.MAX_SECONDS:
-		for p in lane.players.size():
-			var pick := Scenario.reward_pick(lane, p, answered)
+	while not sim.is_over() and sim.time < Scenario.MAX_SECONDS:
+		for p in sim.players.size():
+			var pick := Scenario.reward_pick(sim, p, answered)
 			if not pick.is_empty():
-				NetCommand.apply(lane, pick)
-		if lane.time + Scenario.EPSILON >= next_think:
+				NetCommand.apply(sim, pick)
+		if sim.time + Scenario.EPSILON >= next_think:
 			next_think += THINK
-			var t := snappedf(lane.time, 0.001)
-			for p in lane.players.size():
-				var action := _decide(lane, p, lane.time >= next_pass)
+			var t := snappedf(sim.time, 0.001)
+			for p in sim.players.size():
+				var action := _decide(sim, p, sim.time >= next_pass)
 				if action.is_empty():
 					continue
 				action["t"] = t
@@ -69,12 +68,12 @@ func _record() -> void:
 					action["player"] = p
 				if action.has("pass"):
 					next_pass += PASS_EVERY
-				var cmd := Scenario.command(lane, action)
-				if NetCommand.apply(lane, cmd).is_empty():
+				var cmd := Scenario.command(sim, action)
+				if NetCommand.apply(sim, cmd).is_empty():
 					actions.append(action)
-		lane.tick(Scenario.STEP)
+		sim.tick(Scenario.STEP)
 	data["actions"] = actions
-	var result := Scenario.result_of(lane, PackedStringArray())
+	var result := Scenario.result_of(sim, PackedStringArray())
 	result.erase("errors")
 	data["expect"] = result
 	var file := FileAccess.open(args["out"], FileAccess.WRITE)
@@ -84,18 +83,18 @@ func _record() -> void:
 	quit()
 
 
-func _decide(lane: Lane, p: int, want_pass: bool) -> Dictionary:
-	var player := lane.players[p]
-	if want_pass and lane.players.size() == 2:
+func _decide(sim: Sim, p: int, want_pass: bool) -> Dictionary:
+	var player := sim.players[p]
+	if want_pass and sim.players.size() == 2:
 		for slot in PlayerState.HAND_SIZE:
-			if player.can_pass(slot, lane.players[1 - p]):
+			if player.can_pass(slot, sim.players[1 - p]):
 				return {"pass": String(player.hand[slot].id)}
 	for slot in player.hand.size():
 		var card := player.hand[slot]
 		if card == null:
 			continue
-		for at in _targets(lane, card):
-			if lane.can_play_card(p, slot, at):
+		for at in _targets(sim, card):
+			if sim.can_play_card(p, slot, at):
 				var action := {"play": String(card.id)}
 				if card.target == CardData.Target.POINT:
 					action["at"] = [roundi(at.x), roundi(at.y)]
@@ -103,17 +102,17 @@ func _decide(lane: Lane, p: int, want_pass: bool) -> Dictionary:
 	return {}
 
 
-func _targets(lane: Lane, card: CardData) -> Array:
+func _targets(sim: Sim, card: CardData) -> Array:
 	if card.target == CardData.Target.NONE:
 		return [Vector2.ZERO]
 	var targets: Array = []
-	var lead: Enemy = null
-	for enemy in lane.enemies:
+	var lead: SimEnemy = null
+	for enemy in sim.enemies:
 		if lead == null or enemy.progress > lead.progress:
 			lead = enemy
 	if lead != null:
 		targets.append(lead.position.round())
-	targets.append(lane.core.position + Vector2(-24, 24))
+	targets.append(sim.core.position + Vector2(-24, 24))
 	targets.append(Vector2(320, 128))
 	targets.append_array(SPOTS)
 	return targets

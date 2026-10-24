@@ -1,5 +1,5 @@
 extends GdUnitTestSuite
-## Co-op lockstep without a network: a host and a client lane in one process, with frames and
+## Co-op lockstep without a network: a host and a client sim in one process, with frames and
 ## requests delivered a few ticks late, must stay identical. The ENet version of the same
 ## check is the network test (tools/run_network_test.sh).
 
@@ -23,18 +23,11 @@ class Link:
 		return due
 
 
-func _lane(scenario: Scenario) -> Lane:
-	var lane := scenario.build_lane()
-	add_child(lane)
-	auto_free(lane)
-	return lane
-
-
 ## Plays the scenario as host (player 0) and client (player 1). Returns host, client and the
 ## number of commands the host turned down.
 func _play(scenario: Scenario) -> Dictionary:
-	var host := LockstepHost.new(_lane(scenario))
-	var client := LockstepClient.new(_lane(scenario))
+	var host := LockstepHost.new(scenario.build_sim())
+	var client := LockstepClient.new(scenario.build_sim())
 	var to_client := Link.new()
 	var to_host := Link.new()
 	client.hashes.recorded.connect(
@@ -46,31 +39,31 @@ func _play(scenario: Scenario) -> Dictionary:
 	var client_next := 0
 	var actions := scenario.actions
 	var answered := {}
-	while not (host.lane.is_over() and client.lane.is_over()) and host.tick < 60 * 900:
+	while not (host.sim.is_over() and client.sim.is_over()) and host.tick < 60 * 900:
 		for message: Variant in to_host.receive(host.tick):
 			if message is Dictionary:
 				host.request(message)
 			else:
 				host.hashes.report(message[0], message[1])
-		var pick := Scenario.reward_pick(host.lane, 0, answered)
+		var pick := Scenario.reward_pick(host.sim, 0, answered)
 		if not pick.is_empty():
 			host.request(pick)
-		pick = Scenario.reward_pick(client.lane, 1, answered)
+		pick = Scenario.reward_pick(client.sim, 1, answered)
 		if not pick.is_empty():
 			to_host.send(host.tick, pick)
-		while host_next < actions.size() and Scenario.is_due(actions[host_next], host.lane.time):
+		while host_next < actions.size() and Scenario.is_due(actions[host_next], host.sim.time):
 			var action: Dictionary = actions[host_next]
 			if Scenario.player_of(action) == 0:
-				var cmd := Scenario.command(host.lane, action)
+				var cmd := Scenario.command(host.sim, action)
 				if not cmd.has("error"):
 					host.request(cmd)
 			host_next += 1
 		while (
-			client_next < actions.size() and Scenario.is_due(actions[client_next], client.lane.time)
+			client_next < actions.size() and Scenario.is_due(actions[client_next], client.sim.time)
 		):
 			var action: Dictionary = actions[client_next]
 			if Scenario.player_of(action) == 1:
-				var cmd := Scenario.command(client.lane, action)
+				var cmd := Scenario.command(client.sim, action)
 				if not cmd.has("error"):
 					to_host.send(host.tick, cmd)
 			client_next += 1
@@ -79,7 +72,7 @@ func _play(scenario: Scenario) -> Dictionary:
 		for frames: Variant in to_client.receive(host.tick):
 			client.receive(frames)
 		client.advance()
-		if host.lane.is_over():
+		if host.sim.is_over():
 			# Nothing else to send: let the last frames and hashes arrive.
 			host.tick += 1
 	for message: Variant in to_host.receive(1 << 30):
@@ -92,39 +85,39 @@ func test_host_and_client_stay_in_sync_through_a_coop_run() -> void:
 	var run := _play(Scenario.load_file(SCENARIO))
 	var host: LockstepHost = run["host"]
 	var client: LockstepClient = run["client"]
-	assert_bool(host.lane.is_over()).is_true()
+	assert_bool(host.sim.is_over()).is_true()
 	assert_array(Array(client.errors)).is_empty()
 	assert_array(Array(host.hashes.mismatches)).is_empty()
 	# Ten waves and the end of the run, each compared.
 	assert_int(host.hashes.compared()).is_equal(11)
-	assert_str(client.lane.state_hash()).is_equal(host.lane.state_hash())
-	assert_int(client.lane.players[1].hand.size()).is_equal(host.lane.players[1].hand.size())
+	assert_str(client.sim.state_hash()).is_equal(host.sim.state_hash())
+	assert_int(client.sim.players[1].hand.size()).is_equal(host.sim.players[1].hand.size())
 
 
 func test_mismatching_hash_is_reported() -> void:
-	var lane := _lane(Scenario.load_file(SCENARIO))
-	var log := DesyncLog.new(lane)
+	var sim := Scenario.load_file(SCENARIO).build_sim()
+	var log := DesyncLog.new(sim)
 	var seen := []
 	log.mismatch.connect(func(key: String, _a: String, _b: String) -> void: seen.append(key))
 	log.report("wave_1", "not the real hash")
-	lane.wave_cleared.emit(0)
+	sim.wave_cleared.emit(0)
 	assert_array(seen).is_equal(["wave_1"])
 	assert_int(log.compared()).is_equal(1)
 
 
 func test_stale_command_is_refused() -> void:
-	var lane := _lane(Scenario.load_file(SCENARIO))
-	var player := lane.players[1]
+	var sim := Scenario.load_file(SCENARIO).build_sim()
+	var player := sim.players[1]
 	var other := "mend" if String(player.hand[0].id) != "mend" else "ballista"
 	var cmd := NetCommand.cycle(1, 0, other)
-	assert_str(NetCommand.apply(lane, cmd)).contains("not in slot")
+	assert_str(NetCommand.apply(sim, cmd)).contains("not in slot")
 	var real := NetCommand.cycle(1, 0, String(player.hand[0].id))
-	assert_str(NetCommand.apply(lane, real)).is_empty()
+	assert_str(NetCommand.apply(sim, real)).is_empty()
 
 
 func test_host_refuses_what_it_cannot_afford_and_tells_the_sender() -> void:
-	var host := LockstepHost.new(_lane(Scenario.load_file(SCENARIO)))
-	var player := host.lane.players[1]
+	var host := LockstepHost.new(Scenario.load_file(SCENARIO).build_sim())
+	var player := host.sim.players[1]
 	player.energy.value = 0.0
 	var refused := []
 	host.rejected.connect(func(cmd: Dictionary, _reason: String) -> void: refused.append(cmd))
@@ -136,7 +129,7 @@ func test_host_refuses_what_it_cannot_afford_and_tells_the_sender() -> void:
 
 
 func test_host_waits_for_a_slow_client_when_lead_is_capped() -> void:
-	var host := LockstepHost.new(_lane(Scenario.load_file(SCENARIO)))
+	var host := LockstepHost.new(Scenario.load_file(SCENARIO).build_sim())
 	host.max_lead = 2
 	host.step()
 	host.step()
@@ -156,13 +149,11 @@ func test_setup_gives_each_player_their_deck() -> void:
 	]
 	var setup := CoopSetup.make(5, infos)
 	assert_array(setup["names"]).is_equal(["Ann", "Bo"])
-	var lane: Lane = load(Scenario.LANE_SCENE).instantiate()
-	auto_free(lane)
-	CoopSetup.configure(lane, setup, Scenario.find_card)
-	var ids := lane.decks.map(
+	var sim := Sim.new()
+	CoopSetup.configure(sim, setup, Scenario.find_card)
+	var ids := sim.decks.map(
 		func(deck: DeckData) -> Array:
 			return deck.cards.map(func(c: CardData) -> String: return c.id)
 	)
 	assert_array(ids).is_equal([["mend", "mend"], ["ballista"]])
-	assert_int(lane.heroes.size()).is_equal(2)
-	assert_bool(lane.autorun).is_false()
+	assert_int(sim.heroes.size()).is_equal(2)

@@ -1,97 +1,20 @@
 extends GdUnitTestSuite
-## The lane runs waves in order with breaks, pays gold, and ends in a win or a loss.
+## The lane scene draws its Sim: one view node per enemy and tower, created and freed from the
+## sim's presentation signals.
 
 const LANE_SCENE := preload("res://scenes/lane.tscn")
 const ARROW := preload("res://resources/towers/arrow_tower.tres")
-const WAVE_01 := preload("res://resources/waves/wave_01.tres")
+const RUNNER := preload("res://resources/units/goblin_runner.tres")
 const STEP := 1.0 / 60.0
-const MAX_SECONDS := 120.0
 
 
-func _make_lane(waves: Array[WaveData], pool: Array[CardData] = []) -> Lane:
+func _lane() -> Lane:
 	var lane: Lane = LANE_SCENE.instantiate()
 	lane.autorun = false
-	lane.waves = waves
-	lane.reward_pool = pool
+	lane.sim.waves = []
 	add_child(lane)
 	auto_free(lane)
 	return lane
-
-
-func _run_until_over(lane: Lane) -> void:
-	var elapsed := 0.0
-	while not lane.is_over() and elapsed < MAX_SECONDS:
-		lane.tick(STEP)
-		elapsed += STEP
-
-
-func test_tower_kills_the_whole_wave() -> void:
-	var waves: Array[WaveData] = [WAVE_01]
-	var lane := _make_lane(waves)
-	lane.place_tower(ARROW, Vector2(260, 128))
-	_run_until_over(lane)
-	assert_int(lane.phase).is_equal(Lane.Phase.WON)
-	assert_int(lane.core.hp).is_equal(lane.core.max_hp)
-	assert_int(lane.gold).is_equal(Lane.GOLD_PER_WAVE + Lane.GOLD_FOR_WIN)
-
-
-func test_without_towers_goblins_reach_the_core() -> void:
-	var waves: Array[WaveData] = [WAVE_01]
-	var lane := _make_lane(waves)
-	_run_until_over(lane)
-	var expected_damage := WAVE_01.count * WAVE_01.enemy.core_damage
-	assert_int(lane.core.hp).is_equal(lane.core.max_hp - expected_damage)
-
-
-func test_break_between_waves() -> void:
-	var waves: Array[WaveData] = [WAVE_01, WAVE_01]
-	var lane := _make_lane(waves)
-	lane.place_tower(ARROW, Vector2(260, 128))
-	while lane.waves_cleared == 0:
-		lane.tick(STEP)
-	assert_int(lane.phase).is_equal(Lane.Phase.BREAK)
-	assert_int(lane.gold).is_equal(Lane.GOLD_PER_WAVE)
-	for i in roundi((Lane.WAVE_BREAK - 0.1) / STEP):
-		lane.tick(STEP)
-	assert_int(lane.phase).is_equal(Lane.Phase.BREAK)
-	for i in roundi(0.2 / STEP):
-		lane.tick(STEP)
-	assert_int(lane.phase).is_equal(Lane.Phase.WAVE)
-	assert_int(lane.wave_index).is_equal(1)
-
-
-func test_run_is_lost_when_crystal_breaks() -> void:
-	var waves: Array[WaveData] = [WAVE_01]
-	var lane := _make_lane(waves)
-	lane.core.hp = 1
-	_run_until_over(lane)
-	assert_int(lane.phase).is_equal(Lane.Phase.LOST)
-	assert_bool(lane.play_card(0, 0, Vector2(260, 128))).is_false()
-
-
-func test_scene_has_ten_waves() -> void:
-	var lane: Lane = auto_free(LANE_SCENE.instantiate())
-	assert_int(lane.waves.size()).is_equal(10)
-
-
-func test_energy_regenerates_during_tick() -> void:
-	var waves: Array[WaveData] = []
-	var lane := _make_lane(waves)
-	for i in 120:
-		lane.tick(STEP)
-	assert_int(lane.players[0].energy.points()).is_equal(Energy.START + 1)
-
-
-func test_placement_rules() -> void:
-	var waves: Array[WaveData] = []
-	var lane := _make_lane(waves)
-	assert_bool(lane.can_place_tower(Vector2(300, 120))).is_true()
-	assert_bool(lane.can_place_tower(Vector2(320, 20))).is_true()
-	assert_bool(lane.can_place_tower(Vector2(320, 240))).is_false()
-	assert_bool(lane.can_place_tower(Vector2(320, 4))).is_false()
-	assert_bool(lane.can_place_tower(lane.core.position + Vector2(0, -20))).is_false()
-	lane.place_tower(ARROW, Vector2(300, 120))
-	assert_bool(lane.can_place_tower(Vector2(310, 120))).is_false()
 
 
 func test_lane_scene_runs_with_autorun() -> void:
@@ -99,70 +22,53 @@ func test_lane_scene_runs_with_autorun() -> void:
 	add_child(lane)
 	await await_millis(200)
 	assert_bool(lane.is_physics_processing()).is_true()
-	assert_float(lane.time).is_greater(0.0)
+	assert_float(lane.sim.time).is_greater(0.0)
 
 
-func _cleared_first_wave_with_rewards(rng_seed: int = 1) -> Lane:
-	var waves: Array[WaveData] = [WAVE_01, WAVE_01]
-	var lane: Lane = LANE_SCENE.instantiate()
-	lane.autorun = false
-	lane.waves = waves
-	lane.reward_pool = CardCatalog.load_dir().all()
-	lane.rng_seed = rng_seed
-	add_child(lane)
-	auto_free(lane)
-	lane.place_tower(ARROW, Vector2(260, 128))
-	while lane.waves_cleared == 0:
-		lane.tick(STEP)
-	return lane
+func test_crystal_sits_at_the_path_end() -> void:
+	var lane := _lane()
+	assert_vector(lane.core.position).is_equal(lane.sim.core.position)
+	assert_object(lane.core.model).is_same(lane.sim.core)
 
 
-func test_cleared_wave_offers_three_different_cards() -> void:
-	var lane := _cleared_first_wave_with_rewards()
-	var offer: Array = lane.rewards.offers[0]
-	assert_int(offer.size()).is_equal(RunRewards.CHOICES)
-	for card: CardData in offer:
-		assert_int(offer.count(card)).is_equal(1)
+func test_views_follow_spawn_fire_and_death() -> void:
+	var lane := _lane()
+	var enemy := lane.sim.spawn_enemy(RUNNER)
+	enemy.progress = 200.0
+	enemy.step(0.0)
+	var enemy_view := lane.view_of(enemy) as Enemy
+	assert_object(enemy_view).is_not_null()
+	assert_object(enemy_view.get_parent()).is_same(lane.enemies_root)
+	var tower := lane.sim.place_tower(ARROW, enemy.position + Vector2(0, -40))
+	var tower_view := lane.view_of(tower) as Tower
+	assert_object(tower_view.get_parent()).is_same(lane.towers_root)
+	lane.sim.tick(STEP)
+	assert_bool(tower_view.is_flashing()).is_true()
+	enemy.take_damage(enemy.hp + 99)
+	assert_object(lane.view_of(enemy)).is_null()
+	await await_idle_frame()
+	assert_bool(is_instance_valid(enemy_view)).is_false()
+	assert_bool(is_instance_valid(tower_view)).is_true()
 
 
-func test_break_waits_for_the_pick() -> void:
-	var lane := _cleared_first_wave_with_rewards()
-	for i in roundi((Lane.WAVE_BREAK + 1.0) / STEP):
-		lane.tick(STEP)
-	assert_int(lane.phase).is_equal(Lane.Phase.BREAK)
-	var card: CardData = lane.rewards.offers[0][1]
-	assert_bool(lane.rewards.pick(0, String(card.id), lane.players[0].deck)).is_true()
-	assert_bool(lane.rewards.is_open()).is_false()
-	assert_bool(card in lane.players[0].deck.discard_pile).is_true()
-	for i in roundi((Lane.WAVE_BREAK + 0.1) / STEP):
-		lane.tick(STEP)
-	assert_int(lane.phase).is_equal(Lane.Phase.WAVE)
+func test_enemy_view_goes_when_it_reaches_the_crystal() -> void:
+	var lane := _lane()
+	var enemy := lane.sim.spawn_enemy(RUNNER)
+	enemy.progress = lane.sim.path.get_baked_length()
+	lane.sim.tick(STEP)
+	assert_int(lane.sim.core.hp).is_less(lane.sim.core.max_hp)
+	assert_object(lane.view_of(enemy)).is_null()
+	await await_idle_frame()
+	assert_int(lane.enemies_root.get_child_count()).is_equal(0)
 
 
-func test_reward_must_be_from_the_offer() -> void:
-	var lane := _cleared_first_wave_with_rewards()
-	var offered: Array = lane.rewards.offers[0].map(func(card: CardData) -> String: return card.id)
-	var other := ""
-	for card in lane.reward_pool:
-		if not String(card.id) in offered:
-			other = String(card.id)
-	var refused := NetCommand.apply(lane, NetCommand.reward(0, other))
-	assert_str(refused).is_not_empty()
-	assert_str(NetCommand.apply(lane, NetCommand.reward(0, offered[0]))).is_empty()
-	assert_str(NetCommand.apply(lane, NetCommand.reward(0, offered[1]))).is_not_empty()
-
-
-func test_same_seed_gives_same_offer() -> void:
-	var a := _cleared_first_wave_with_rewards(4)
-	var b := _cleared_first_wave_with_rewards(4)
-	assert_array(a.rewards.offers[0]).is_equal(b.rewards.offers[0])
-	assert_str(a.state_hash()).is_equal(b.state_hash())
-
-
-func test_last_wave_offers_nothing() -> void:
-	var waves: Array[WaveData] = [WAVE_01]
-	var lane := _make_lane(waves, CardCatalog.load_dir().all())
-	lane.place_tower(ARROW, Vector2(260, 128))
-	_run_until_over(lane)
-	assert_int(lane.phase).is_equal(Lane.Phase.WON)
-	assert_bool(lane.rewards.is_open()).is_false()
+func test_timed_tower_view_goes_when_it_expires() -> void:
+	var lane := _lane()
+	var tower := lane.sim.place_tower(ARROW, Vector2(300, 120), 1.0)
+	var view := lane.view_of(tower)
+	for i in roundi(1.1 / STEP):
+		lane.sim.tick(STEP)
+	assert_array(lane.sim.towers).is_empty()
+	assert_object(lane.view_of(tower)).is_null()
+	await await_idle_frame()
+	assert_bool(is_instance_valid(view)).is_false()

@@ -1,8 +1,8 @@
 class_name RunScreen
 extends Node2D
 ## Run screen, solo or co-op: the hand picks a card, a click anywhere on the field targets it.
-## Every action becomes a NetCommand. Solo applies it to the lane at once; in co-op it goes to
-## the host's LockstepHost (the client sends it over the network), and the lane only moves
+## Every action becomes a NetCommand. Solo applies it to the sim at once; in co-op it goes to
+## the host's LockstepHost (the client sends it over the network), and the sim only moves
 ## through the host's frames.
 
 ## The run is over (won, lost, or the partner left) and earned this much gold.
@@ -14,7 +14,7 @@ signal finished
 const MAX_CATCH_UP := 8
 
 ## Co-op connection; null plays solo. Set before the screen enters the tree, together with
-## CoopSetup.configure on the lane.
+## CoopSetup.configure on the sim.
 var session: NetSession
 ## This machine's player: 0 solo and on the host, 1 on the client.
 var player := 0
@@ -25,20 +25,21 @@ var _ended := false
 var _partner_left := false
 
 @onready var lane: Lane = $Lane
+@onready var sim: Sim = lane.sim
 @onready var overlay: Node2D = $Overlay
 @onready var hud: Hud = $HudLayer/Hud
 
 
 func _ready() -> void:
-	hud.lane = lane
+	hud.sim = sim
 	hud.player_index = player
 	hud.card_pressed.connect(_select)
 	hud.cycle_requested.connect(_cycle)
 	hud.pass_requested.connect(func() -> void: _pass(selected))
 	hud.reward_picked.connect(_pick_reward)
 	overlay.draw.connect(_draw_targeting)
-	lane.run_won.connect(_on_run_over)
-	lane.run_lost.connect(_on_run_over)
+	sim.run_won.connect(_on_run_over)
+	sim.run_lost.connect(_on_run_over)
 	if session != null:
 		_start_coop()
 
@@ -47,13 +48,13 @@ func _start_coop() -> void:
 	hud.names = session.setup.get("names", [])
 	session.partner_left.connect(_on_partner_left)
 	if session.role == NetSession.Role.HOST:
-		host = LockstepHost.new(lane)
+		host = LockstepHost.new(sim)
 		host.rejected.connect(session.reject)
 		session.command_received.connect(host.request)
 		session.ack_received.connect(host.ack)
 		session.hash_received.connect(host.hashes.report)
 	else:
-		client = LockstepClient.new(lane)
+		client = LockstepClient.new(sim)
 		session.frames_received.connect(client.receive)
 		client.hashes.recorded.connect(session.send_hash)
 
@@ -75,17 +76,17 @@ func _process(_delta: float) -> void:
 
 
 func own() -> PlayerState:
-	return lane.players[player]
+	return sim.players[player]
 
 
 func _unhandled_input(event: InputEvent) -> void:
-	if lane.is_over() or _ended:
+	if sim.is_over() or _ended:
 		_input_after_run(event)
 		return
 	var key := event as InputEventKey
 	if key != null and key.pressed and not key.echo:
 		var choice := key.physical_keycode - KEY_1
-		var offer: Array = lane.rewards.offers[player]
+		var offer: Array = sim.rewards.offers[player]
 		if not offer.is_empty() and choice >= 0 and choice < offer.size():
 			_pick_reward(String(offer[choice].id))
 			return
@@ -104,7 +105,7 @@ func _unhandled_input(event: InputEvent) -> void:
 	if click != null and click.pressed:
 		if click.button_index == MOUSE_BUTTON_LEFT and selected >= 0:
 			var at := lane.get_local_mouse_position()
-			if Lane.FIELD.has_point(at) and _play(selected, at):
+			if Sim.FIELD.has_point(at) and _play(selected, at):
 				selected = -1
 		elif click.button_index == MOUSE_BUTTON_RIGHT:
 			selected = -1
@@ -124,34 +125,34 @@ func _on_run_over() -> void:
 	selected = -1
 	if not _ended:
 		_ended = true
-		run_ended.emit(lane.gold)
+		run_ended.emit(sim.gold)
 
 
 func _on_partner_left() -> void:
-	if lane.is_over() or _ended:
+	if sim.is_over() or _ended:
 		return
 	selected = -1
-	hud.notice = "Your partner left. +%d gold" % lane.gold
+	hud.notice = "Your partner left. +%d gold" % sim.gold
 	_ended = true
 	_partner_left = true
-	run_ended.emit(lane.gold)
+	run_ended.emit(sim.gold)
 
 
 ## How the run went, for the run-end screen: result ("won", "lost", "partner_left" or
 ## "running"), waves cleared, waves in the run and gold earned.
 func summary() -> Dictionary:
 	var result := "running"
-	if lane.phase == Lane.Phase.WON:
+	if sim.phase == Sim.Phase.WON:
 		result = "won"
-	elif lane.phase == Lane.Phase.LOST:
+	elif sim.phase == Sim.Phase.LOST:
 		result = "lost"
 	elif _partner_left:
 		result = "partner_left"
 	return {
 		"result": result,
-		"waves_cleared": lane.waves_cleared,
-		"waves": lane.waves.size(),
-		"gold": lane.gold,
+		"waves_cleared": sim.waves_cleared,
+		"waves": sim.waves.size(),
+		"gold": sim.gold,
 	}
 
 
@@ -168,7 +169,7 @@ func _select(slot: int) -> void:
 
 func _play(slot: int, at: Vector2) -> bool:
 	var card := own().card_at(slot)
-	if card == null or not lane.can_play_card(player, slot, at):
+	if card == null or not sim.can_play_card(player, slot, at):
 		return false
 	return _submit(NetCommand.play(player, slot, card.id, at))
 
@@ -181,9 +182,9 @@ func _cycle(slot: int) -> void:
 
 func _pass(slot: int) -> void:
 	var card := own().card_at(slot)
-	if card == null or lane.players.size() != 2:
+	if card == null or sim.players.size() != 2:
 		return
-	if not own().can_pass(slot, lane.players[1 - player]):
+	if not own().can_pass(slot, sim.players[1 - player]):
 		return
 	if _submit(NetCommand.pass_card(player, slot, card.id)) and selected == slot:
 		selected = -1
@@ -201,7 +202,7 @@ func _submit(cmd: Dictionary) -> bool:
 	if client != null:
 		session.send_command(cmd)
 		return true
-	return NetCommand.apply(lane, cmd).is_empty()
+	return NetCommand.apply(sim, cmd).is_empty()
 
 
 ## Shows where the selected card would land and whether it can be played there.
@@ -210,9 +211,9 @@ func _draw_targeting() -> void:
 	if card == null:
 		return
 	var at := lane.get_local_mouse_position()
-	if not Lane.FIELD.has_point(at):
+	if not Sim.FIELD.has_point(at):
 		return
-	var ok := lane.can_play_card(player, selected, at)
+	var ok := sim.can_play_card(player, selected, at)
 	var color := Palette.VALID if ok else Palette.INVALID
 	for effect in card.effects:
 		if effect is PlaceTowerEffect:

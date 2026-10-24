@@ -5,7 +5,7 @@ extends SceneTree
 ## tools/run_network_test.sh starts both sides for every scenario.
 ##
 ## The host plays the scenario's player 0 actions, the client those of player 1 (a solo
-## scenario's client joins without a deck or wizard and only watches). Both compare lane hashes
+## scenario's client joins without a deck or wizard and only watches). Both compare sim hashes
 ## after every wave and at the end. Exit code: 0 in sync, 1 desync or failed commands, 2
 ## timeout or no connection.
 ##
@@ -30,7 +30,7 @@ var _scenario: Scenario
 var _session: NetSession
 var _host: LockstepHost
 var _client: LockstepClient
-var _lane: Lane
+var _sim: Sim
 var _next_action := 0
 var _answered := {}
 var _refused := 0
@@ -140,17 +140,16 @@ func _on_partner_joined(hello: Dictionary) -> void:
 
 
 func _on_run_started(setup: Dictionary) -> void:
-	_lane = _scenario.build_lane(setup)
-	root.add_child(_lane)
+	_sim = _scenario.build_sim(setup)
 	if _role == "host":
-		_host = LockstepHost.new(_lane)
+		_host = LockstepHost.new(_sim)
 		_host.max_lead = MAX_LEAD
 		_host.rejected.connect(_on_rejected)
 		_session.command_received.connect(_host.request)
 		_session.ack_received.connect(_host.ack)
 		_session.hash_received.connect(_host.hashes.report)
 	else:
-		_client = LockstepClient.new(_lane)
+		_client = LockstepClient.new(_sim)
 		_session.frames_received.connect(_client.receive)
 		_session.command_rejected.connect(_on_rejected)
 		_client.hashes.recorded.connect(_session.send_hash)
@@ -166,7 +165,7 @@ func _step_host() -> void:
 		frames.append(_host.step())
 	if not frames.is_empty():
 		_session.send_frames(frames)
-	if _lane.is_over() and _host.hashes.compared() == _host.hashes.own.size():
+	if _sim.is_over() and _host.hashes.compared() == _host.hashes.own.size():
 		_finish(_host.hashes.mismatches.is_empty())
 
 
@@ -178,19 +177,19 @@ func _step_client() -> void:
 	# The client stops when the host is done and hangs up (see _on_partner_left).
 
 
-## Sends this side's reward pick and the scenario actions due at the lane's current time.
+## Sends this side's reward pick and the scenario actions due at the sim's current time.
 func _queue_actions(player: int, send: Callable) -> void:
-	if player < _lane.players.size():
-		var pick := Scenario.reward_pick(_lane, player, _answered)
+	if player < _sim.players.size():
+		var pick := Scenario.reward_pick(_sim, player, _answered)
 		if not pick.is_empty():
 			send.call(pick)
 	var actions := _scenario.actions
-	while _next_action < actions.size() and Scenario.is_due(actions[_next_action], _lane.time):
+	while _next_action < actions.size() and Scenario.is_due(actions[_next_action], _sim.time):
 		var action: Dictionary = actions[_next_action]
 		_next_action += 1
 		if Scenario.player_of(action) != player:
 			continue
-		var cmd := Scenario.command(_lane, action)
+		var cmd := Scenario.command(_sim, action)
 		if cmd.has("error"):
 			_log("skipped t=%.2f: %s" % [action["t"], cmd["error"]])
 		else:
@@ -203,7 +202,7 @@ func _on_rejected(cmd: Dictionary, reason: String) -> void:
 
 
 func _on_partner_left() -> void:
-	if _role == "client" and _lane != null and _lane.is_over():
+	if _role == "client" and _sim != null and _sim.is_over():
 		_finish(_client.errors.is_empty())
 	else:
 		_log("partner left early")
@@ -215,7 +214,7 @@ func _finish(ok: bool) -> void:
 		return
 	var hashes := _host.hashes if _host != null else _client.hashes
 	var result := Scenario.result_of(
-		_lane, _client.errors if _client != null else PackedStringArray()
+		_sim, _client.errors if _client != null else PackedStringArray()
 	)
 	_log(
 		(

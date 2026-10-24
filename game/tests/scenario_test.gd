@@ -9,10 +9,7 @@ const SCENARIO_DIR := "res://tests/scenarios"
 
 func _run(file: String) -> Dictionary:
 	var scenario := Scenario.load_file(SCENARIO_DIR.path_join(file))
-	var lane := scenario.build_lane()
-	add_child(lane)
-	auto_free(lane)
-	return {"scenario": scenario, "result": scenario.run(lane)}
+	return {"scenario": scenario, "result": scenario.run(scenario.build_sim())}
 
 
 func _check(file: String) -> void:
@@ -57,13 +54,11 @@ func test_coop_scenario_gives_each_player_a_deck() -> void:
 	var run := _run("coop_two_wizards_pass_cards.json")
 	var scenario: Scenario = run["scenario"]
 	assert_int(scenario.player_count()).is_equal(2)
-	var lane := scenario.build_lane()
-	add_child(lane)
-	auto_free(lane)
-	assert_int(lane.players.size()).is_equal(2)
-	assert_object(lane.players[0].deck).is_not_same(lane.players[1].deck)
-	assert_int(lane.decks[0].cards.size()).is_equal(8)
-	assert_int(lane.decks[1].cards.size()).is_equal(8)
+	var sim := scenario.build_sim()
+	assert_int(sim.players.size()).is_equal(2)
+	assert_object(sim.players[0].deck).is_not_same(sim.players[1].deck)
+	assert_int(sim.decks[0].cards.size()).is_equal(8)
+	assert_int(sim.decks[1].cards.size()).is_equal(8)
 
 
 func test_same_scenario_gives_same_hash() -> void:
@@ -74,15 +69,11 @@ func test_same_scenario_gives_same_hash() -> void:
 
 func test_other_seed_changes_the_run() -> void:
 	var scenario := Scenario.load_file(SCENARIO_DIR.path_join("idle_run_is_lost.json"))
-	var lane_a := scenario.build_lane()
+	var sim_a := scenario.build_sim()
 	scenario.rng_seed += 1
-	var lane_b := scenario.build_lane()
-	add_child(lane_a)
-	add_child(lane_b)
-	auto_free(lane_a)
-	auto_free(lane_b)
+	var sim_b := scenario.build_sim()
 	var hands := []
-	for lane: Lane in [lane_a, lane_b]:
-		hands.append(lane.players[0].hand.map(func(card: CardData) -> StringName: return card.id))
+	for sim: Sim in [sim_a, sim_b]:
+		hands.append(sim.players[0].hand.map(func(card: CardData) -> StringName: return card.id))
 	# Three different cards: some seed pair must order them differently; 1 and 2 do.
 	assert_array(hands[0]).is_not_equal(hands[1])

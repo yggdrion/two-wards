@@ -11,14 +11,14 @@ const PICK_RADIUS := 24.0
 
 
 func can_apply(ctx: CardContext) -> bool:
-	return not ctx.lane.enemies_near(ctx.target, maxf(radius, PICK_RADIUS)).is_empty()
+	return not ctx.sim.enemies_near(ctx.target, maxf(radius, PICK_RADIUS)).is_empty()
 
 
 func apply(ctx: CardContext) -> void:
 	if radius > 0.0:
-		for enemy in ctx.lane.enemies_near(ctx.target, radius):
+		for enemy in ctx.sim.enemies_near(ctx.target, radius):
 			enemy.take_damage(amount)
 		return
-	var enemy := ctx.lane.nearest_enemy(ctx.target, PICK_RADIUS)
+	var enemy := ctx.sim.nearest_enemy(ctx.target, PICK_RADIUS)
 	if enemy != null:
 		enemy.take_damage(amount)

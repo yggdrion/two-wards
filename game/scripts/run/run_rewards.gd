@@ -2,7 +2,7 @@ class_name RunRewards
 extends RefCounted
 ## Card rewards between waves: after a cleared wave every player gets an offer of CHOICES
 ## different cards from the pool, each rolling its rarity like a booster slot, and picks one into
-## their own deck. The lane holds the next wave until every offer is answered.
+## their own deck. The sim holds the next wave until every offer is answered.
 
 const CHOICES := 3
 
