@@ -1,0 +1,100 @@
+{
+    "extends": [
+        "config:recommended",
+        ":dependencyDashboard",
+        "helpers:pinGitHubActionDigests",
+        ":semanticCommits"
+    ],
+    "labels": [
+        "dependencies"
+    ],
+    "semanticCommits": "enabled",
+    "recreateWhen": "always",
+    "separateMajorMinor": false,
+    "customManagers": [
+        {
+            "customType": "regex",
+            "managerFilePatterns": [
+                "/^\\.github/workflows/.+\\.ya?ml$/"
+            ],
+            "matchStrings": [
+                "bun-version: (?<currentValue>\\S+)"
+            ],
+            "depNameTemplate": "oven-sh/bun",
+            "datasourceTemplate": "github-releases",
+            "extractVersionTemplate": "^bun-v(?<version>.*)$"
+        }
+    ],
+    "packageRules": [
+        {
+            "matchManagers": [
+                "github-actions"
+            ],
+            "groupName": "github-actions",
+            "commitMessagePrefix": "chore(github-actions): ",
+            "pinDigests": true,
+            "labels": [
+                "dependencies",
+                "github-actions"
+            ]
+        },
+        {
+            "matchManagers": [
+                "npm"
+            ],
+            "groupName": "npm",
+            "commitMessagePrefix": "chore(npm): ",
+            "labels": [
+                "dependencies",
+                "npm"
+            ]
+        },
+        {
+            "matchManagers": [
+                "pip_requirements"
+            ],
+            "groupName": "python",
+            "commitMessagePrefix": "chore(python): ",
+            "labels": [
+                "dependencies",
+                "python"
+            ]
+        },
+        {
+            "matchManagers": [
+                "docker-compose"
+            ],
+            "groupName": "docker-compose",
+            "commitMessagePrefix": "chore(docker-compose): ",
+            "labels": [
+                "dependencies",
+                "docker"
+            ]
+        },
+        {
+            "matchManagers": [
+                "dockerfile"
+            ],
+            "groupName": "dockerfile",
+            "commitMessagePrefix": "chore(docker): ",
+            "labels": [
+                "dependencies",
+                "docker"
+            ]
+        },
+        {
+            "description": "CI, the lobby image and @types/bun pin the same Bun version, so bump them together",
+            "matchPackageNames": [
+                "oven-sh/bun",
+                "oven/bun",
+                "@types/bun"
+            ],
+            "groupName": "bun",
+            "commitMessagePrefix": "chore(bun): ",
+            "labels": [
+                "dependencies",
+                "bun"
+            ]
+        }
+    ]
+}
