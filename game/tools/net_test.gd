@@ -231,6 +231,7 @@ func _finish(ok: bool) -> void:
 			]
 		)
 	)
+	_log(" | ".join(_session.debug_lines()))
 	for error in result["errors"]:
 		_log("client command failed: %s" % error)
 	_exit = 0 if ok and result["result"] != "timeout" else 1

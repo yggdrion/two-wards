@@ -34,6 +34,9 @@ func _ready() -> void:
 	net.name = "Net"
 	add_child(net)
 	net.run_started.connect(func(_setup: Dictionary) -> void: show_screen(Screen.RUN))
+	var overlay := DebugOverlay.new()
+	overlay.session = net
+	add_child(overlay)
 	catalog = CardCatalog.load_dir()
 	var profile_arg := profile_from_args(OS.get_cmdline_args() + OS.get_cmdline_user_args())
 	if not profile_arg.is_empty():

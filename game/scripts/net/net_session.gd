@@ -41,9 +41,13 @@ enum Role { NONE, HOST, CLIENT }
 
 ## Bumped when game messages change; the host turns a mismatching client away after hello.
 ## The lobby has its own version (LobbyClient.PROTOCOL).
-const PROTOCOL := 2
+const PROTOCOL := 3
+## How often both sides measure the round trip, in milliseconds.
+const PING_INTERVAL_MS := 1000
 
 var role := Role.NONE
+## Last measured round trip to the partner in milliseconds, -1 before the first answer.
+var ping_ms := -1
 ## The setup of the running game, empty before run_started.
 var setup: Dictionary = {}
 ## The partner's name, wizard and deck (CoopSetup.player_info), empty until partner_joined.
@@ -54,6 +58,8 @@ var partner_is_ready := false
 var last_error := ""
 var _hello_info: Dictionary = {}
 var _lobby: LobbyClient
+var _lobby_url := ""
+var _next_ping_ms := 0
 ## Multiplayer signals this session listens to, so close() can let go of them.
 var _connections: Array[Dictionary] = []
 
@@ -85,6 +91,7 @@ func join(address: String, port: int, hello: Dictionary) -> bool:
 func host_online(url: String = Transport.lobby_url()) -> void:
 	close()
 	role = Role.HOST
+	_lobby_url = url
 	_start_lobby().create(url)
 
 
@@ -93,6 +100,7 @@ func join_online(code: String, hello: Dictionary, url: String = Transport.lobby_
 	close()
 	role = Role.CLIENT
 	_set_hello(hello)
+	_lobby_url = url
 	_start_lobby().join(url, code)
 
 
@@ -114,10 +122,75 @@ func close() -> void:
 	setup = {}
 	partner_info = {}
 	partner_is_ready = false
+	ping_ms = -1
+	_lobby_url = ""
 
 
 func is_active() -> bool:
 	return role != Role.NONE
+
+
+func _process(_delta: float) -> void:
+	if role == Role.NONE or multiplayer.get_peers().is_empty():
+		return
+	var now := Time.get_ticks_msec()
+	if now >= _next_ping_ms:
+		_next_ping_ms = now + PING_INTERVAL_MS
+		_ping.rpc(now)
+
+
+## What the debug overlay shows about the connection, one entry per line.
+func debug_lines() -> PackedStringArray:
+	if role == Role.NONE:
+		return PackedStringArray(["Net  offline"])
+	var peer := multiplayer.multiplayer_peer
+	var role_name := "host" if role == Role.HOST else "client"
+	var lines := PackedStringArray()
+	if peer is ENetMultiplayerPeer:
+		var line := "Net  %s (ENet)" % role_name
+		var peers := multiplayer.get_peers()
+		if not peers.is_empty():
+			var remote := (peer as ENetMultiplayerPeer).get_peer(peers[0])
+			if remote != null:
+				var address := remote.get_remote_address()
+				line += (
+					"  peer %s:%d  %s"
+					% [
+						address,
+						remote.get_remote_port(),
+						"LAN" if is_private_ip(address) else "internet",
+					]
+				)
+		lines.append(line)
+	else:
+		var code := _lobby.code if _lobby != null else ""
+		lines.append("Net  %s (WebRTC)  room %s  lobby %s" % [role_name, code, _lobby_url])
+		if _lobby != null and not _lobby.remote_candidates.is_empty():
+			lines.append("Partner candidates: " + ", ".join(_lobby.remote_candidates))
+	if multiplayer.get_peers().is_empty():
+		lines.append("Waiting for partner")
+	else:
+		lines.append("Ping %s" % ("..." if ping_ms < 0 else "%d ms" % ping_ms))
+	return lines
+
+
+## True for loopback, private (RFC 1918), link-local and IPv6 unique-local addresses.
+static func is_private_ip(ip: String) -> bool:
+	if ip.contains(":"):
+		var lower := ip.to_lower()
+		return lower == "::1" or lower.begins_with("fe80:") or lower.left(2) in ["fc", "fd"]
+	var parts := ip.split(".")
+	if parts.size() != 4:
+		return false
+	var a := parts[0].to_int()
+	var b := parts[1].to_int()
+	return (
+		a == 10
+		or a == 127
+		or (a == 192 and b == 168)
+		or (a == 172 and b >= 16 and b <= 31)
+		or (a == 169 and b == 254)
+	)
 
 
 ## 0 on the host, 1 on the client.
@@ -264,6 +337,16 @@ func _command(cmd: Dictionary) -> void:
 func _ack(tick: int) -> void:
 	if role == Role.HOST:
 		ack_received.emit(tick)
+
+
+@rpc("any_peer", "call_remote", "unreliable")
+func _ping(sent_ms: int) -> void:
+	_pong.rpc_id(multiplayer.get_remote_sender_id(), sent_ms)
+
+
+@rpc("any_peer", "call_remote", "unreliable")
+func _pong(sent_ms: int) -> void:
+	ping_ms = Time.get_ticks_msec() - sent_ms
 
 
 @rpc("any_peer", "call_remote", "reliable")
