@@ -23,6 +23,7 @@ Last updated: 2026-10-24, after the M8 retro (PR #22) was closed.
 | A2 step 1: anchors in the game | Open: lane on the tile grid, Wang ground, dusk and lights, sprites for goblin runner, arrow tower, crystal | #25 |
 | Release on `v*` tags | Done | #23 |
 | M8 Retro | Done: go once M6 proves bulk art; first real-game milestone is the pure sim core plus Python tooling (`docs/RETRO.md`) | #22 |
+| R1 plan (sim core + Python tooling) | Plan-only PR open; R1a tooling and R1b sim core follow as two PRs | — |
 
 Plan-only PRs: #1 (CLAUDE.md, rename), #5 (revised plan), #9 (full pixel-art route), #12 (hero redesign).
 
@@ -93,7 +94,7 @@ Rapha kept the Node-based sim (no pure sim core). Lockstep with the host as the 
 
 ## Next
 
-Two tracks side by side. Real game, first milestone (from the M8 retro): split the simulation into a pure core without the scene tree, and replace the `.sh`/`.ps1` tool twins with one Python script per tool; needs a plan PR first. M6 (art and juice): A1 is approved and the anchors are in the game (`art-reference/a2/run_anchors.png`). Data drives the art: `UnitData.frames` and `TowerData.sprite` switch a unit or tower from gray box to sprite, so each new asset is a PNG, a manifest entry and one line in its `.tres`. The goblin runner's `walk_side` is the anchor frame with a 1 px bob; all directions use it until PixelLab animates it. Next is bulk generation (goblin walk cycles in 3 directions, brute, frost totem, ballista, storm spire, props such as trees and rocks), then particles and juice. Generation needs the PixelLab key: a cloud session with the network secret, or a local untracked env var. Card art and HUD skin are A3.
+Two tracks side by side. Real game, first milestone R1 (from the M8 retro, steps in `docs/PLAN.md`): R1a replaces the `.sh`/`.ps1` tool twins with one Python script per tool; R1b splits the simulation into a pure `Sim` without the scene tree that `Lane` renders, with the four pinned scenario hashes unchanged. M6 (art and juice): A1 is approved and the anchors are in the game (`art-reference/a2/run_anchors.png`). Data drives the art: `UnitData.frames` and `TowerData.sprite` switch a unit or tower from gray box to sprite, so each new asset is a PNG, a manifest entry and one line in its `.tres`. The goblin runner's `walk_side` is the anchor frame with a 1 px bob; all directions use it until PixelLab animates it. Next is bulk generation (goblin walk cycles in 3 directions, brute, frost totem, ballista, storm spire, props such as trees and rocks), then particles and juice. Generation needs the PixelLab key: a cloud session with the network secret, or a local untracked env var. Card art and HUD skin are A3.
 
 ## Reference images
 

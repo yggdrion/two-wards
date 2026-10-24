@@ -315,7 +315,7 @@ Desync detection: host and client hash the game state at the end of each wave; t
 
 ## Milestones
 
-Eight milestones plus M3b (heroes, added after the M3 playtest); M4–M5 (networking) and M6 (assets) can run in parallel once M3b is done. The art track A1–A4 (see [Art direction](#art-direction)) runs beside them; M6 is where it must be finished. Each ends with green CI and a short playable check.
+Eight milestones plus M3b (heroes, added after the M3 playtest); M4–M5 (networking) and M6 (assets) can run in parallel once M3b is done. The art track A1–A4 (see [Art direction](#art-direction)) runs beside them; M6 is where it must be finished. Each ends with green CI and a short playable check. R1 is the first milestone of the real game, decided in the M8 retro; it runs beside M6.
 
 | # | Milestone | Deliverables | Exit criteria |
 | --- | --- | --- | --- |
@@ -328,6 +328,68 @@ Eight milestones plus M3b (heroes, added after the M3 playtest); M4–M5 (networ
 | M6 | Art and juice | A1–A3 of the art track finished: all units, towers, tiles, props, cards and UI in final art; lighting, shaders, VFX and juice | All assets pass validation; side-by-side review looks consistent; a run matches the A1 target frame |
 | M7 | Full loop | Title screen, lobby screen with deck preview, card reward after each wave, run-end screen, run → rewards → gold → booster flow | Full loop completed in co-op by two people in one session |
 | M8 | Retro | Notes per pillar: what worked, what hurt, time spent, decisions for the real game | Go/no-go and approach for the full game decided |
+| R1 | Sim core + Python tooling (first real-game milestone, from the [M8 retro](RETRO.md#decisions-for-the-real-game); runs beside M6) | A pure simulation core with no scene tree that the Node layer renders; one cross-platform Python script per tool instead of the `.sh`/`.ps1` twins; CI, CLAUDE.md and HANDOFF updated. Steps in [R1](#r1-sim-core-and-python-tooling) | The four scenario files replay to their pinned hashes unchanged; the scenario, lockstep and network tests build no scene tree; no `.sh`/`.ps1` left in `tools/`; CI green on Linux and Windows with the Python scripts; a co-op playtest from the CI build plays like before |
+
+### R1: sim core and Python tooling
+
+Two PRs that touch different files, so they can run side by side: R1a (tooling) is smaller and goes first if they run one after the other, so R1b already uses the new check. Neither changes gameplay: every card, number and hash stays the same.
+
+#### R1a: Python tooling
+
+One stdlib-only Python script per tool (Python 3.12 as in CI, no new packages), so Windows and Linux run the same code. Today 11 tools exist twice (22 files, about 1,000 lines).
+
+| Today (`.sh` + `.ps1`) | Becomes |
+| --- | --- |
+| `install_godot`, `install_gdunit4`, `install_webrtc`, `install_godot_templates` | `tools/install.py [godot\|gdunit4\|webrtc\|templates]`; prints the Godot path like `install_godot` does now. Same pins and checksums, `urllib` + `hashlib` + `zipfile` |
+| `godot` | `tools/godot.py` (same import-first rule) |
+| `run_tests` | `tools/run_tests.py [gdUnit4 args]`; calls Godot with gdUnit4's `GdUnitCmdTool.gd` directly instead of the addon's `runtest.sh`/`.cmd`, keeps the exit code |
+| `run_network_test` | `tools/run_network_test.py [scenario.json ...]`; host, client and lobby via `subprocess.Popen`, logs in a temp dir, same ports, timeouts and "skip WebRTC without bun, except in CI" |
+| `build_assets` | `tools/build_assets.py` |
+| `export` | `tools/export.py linux\|windows` |
+| `check` | `tools/check.py [--quick] [--export]` (same steps and order, same drift check) |
+| `setup` | `tools/setup.py` |
+| `pre-push` + `check --install-hook` | dropped: a `pre-push` stage hook in `.pre-commit-config.yaml` runs `python tools/check.py`, and `setup.py` installs it with `pre-commit install --hook-type pre-push` |
+
+Shared bits (repo root, pinned versions, download with checksum, Godot path) live in one `tools/_common.py`. Scripts are run as `python tools/<name>.py` (`py` on Windows works the same).
+
+Steps:
+
+1. Port the installers and `godot.py`; check on Windows and Linux that they produce the same `.tools/` and `game/addons/` trees as the old scripts (byte-identical binaries, checksums verified).
+2. Port `run_tests`, `run_network_test`, `build_assets`, `export`, `check`, `setup`; run the old and the new full check side by side once on each OS and compare the test count and network-test output.
+3. CI: every job calls `python tools/<name>.py` (with `actions/setup-python` 3.12 on the Windows jobs too). The `detect` job and its gates go, because every gated entry point now exists. Exports keep running on their own OS.
+4. Delete the 22 `.sh`/`.ps1` files and `tools/pre-push`; update CLAUDE.md (commands, "keep both in sync" rule), `docs/HANDOFF.md` ("How we work"), `docs/ASSET_PIPELINE.md`, the Testing and CI section here, and every script comment that names an old script.
+
+Exit: `python tools/check.py` passes on Windows (PowerShell, no Git Bash needed) and Linux; CI green; no `.sh`/`.ps1` in `tools/`.
+
+#### R1b: pure sim core
+
+Today `Lane` (a `Node2D` in `scenes/lane.tscn`) is both the simulation and its drawing: enemies and towers are child nodes, the path is a `Path2D`, the crystal is a node, and every test, scenario and network run instantiates the scene. After R1b the simulation is plain `RefCounted` objects that run without a scene tree, and the Node layer only reads them and draws.
+
+Target shape:
+
+| Piece | Pure core (`game/scripts/sim/`) | Node layer (`game/scripts/lane/`) |
+| --- | --- | --- |
+| Run | `Sim`: everything `Lane` does today except drawing — phase, waves, gold, time, players, lures, rewards, damage log, buffs, placement rules, queries for card effects, `tick(delta)`, `state_hash()`; signals `wave_started`, `wave_cleared`, `run_won`, `run_lost` plus presentation signals (`enemy_spawned`, `enemy_removed`, `tower_placed`, `tower_removed`, `tower_fired`, `crystal_hit`) | `Lane` keeps its name and scene, holds a `sim`, builds the ground tiles, dusk and lights, creates and frees one view node per sim entity from the signals, draws lures; `_physics_process` calls `sim.tick` when `autorun` |
+| Units | `SimEnemy` (hp, progress, position, slows, held) | `Enemy` view: sprite, shadow, HP bar, frost tint, `flip_h` |
+| Towers | `SimTower` (cooldown, buffs, lifetime, targeting, hit patterns, `is_copy`) | `Tower` view: sprite, range ring, shot flash, lights |
+| Crystal | `SimCrystal` (hp, heal, damage) | `HeartCrystal` view: sprite, light, HP bar |
+| Path | a `Curve2D` in its own resource (`resources/maps/lane_01_path.tres`), offset baked in, used by the sim and drawn by the scene | `Path2D` in `lane.tscn` points at the same resource |
+| Already pure | `WaveSpawner`, `PlayerState`, `Deck`, `Energy`, `RunRewards`, effects | — |
+
+Rules that stay: the sim advances only through `tick(delta)`; `NetCommand.apply`, `LockstepHost`, `LockstepClient`, `DesyncLog` and `Scenario` take a `Sim` instead of a `Lane` and are otherwise unchanged; `CardContext.lane` becomes `CardContext.sim`; juice reacts to presentation signals and never feeds back into the sim. Entity order in the sim arrays is the order today's node children have (insertion order), so `state_hash()` stays byte-identical.
+
+Steps:
+
+1. Move the path into `lane_01_path.tres` and pin the test baseline: record the four scenario hashes and the per-wave network-test hashes before any code moves.
+2. Add `Sim`, `SimEnemy`, `SimTower`, `SimCrystal` by moving the logic out of `lane.gd`, `enemy.gd`, `tower.gd`, `heart_crystal.gd`; `Lane` creates a `Sim` and forwards to it, so the game and all tests keep working in between. Hashes must match the baseline.
+3. Switch `CardContext`, the effects, `mirror_image.gd`, `time_warp.gd`, `NetCommand`, the lockstep classes, `DesyncLog`, `Scenario`, `CoopSetup`, `net_test.gd` and `record_scenario.gd` to `Sim`; scenario, lockstep, card and network runs build a `Sim` directly, no scene.
+4. Turn `Enemy`, `Tower`, `HeartCrystal` into views driven by the presentation signals; `game.gd`, `hud.gd` and the partner panel read `lane.sim`. Remove the forwarding methods from `Lane`.
+5. Tests: unit tests for the sim classes run on `Sim` without `add_child`; one view test checks that spawning, firing, removal and expiry create and free the right nodes; the existing lane/HUD/screen tests stay green. Update the "Code conventions" and "Architecture rules" in CLAUDE.md and the "Key choices" here.
+6. Playtest from the CI build (solo and co-op) before merge: it must look and play exactly as before.
+
+Exit: as in the R1 row; also `grep` finds no `Node`, `get_tree`, `queue_free` or `add_child` in `game/scripts/sim/`.
+
+Out of scope for R1: new gameplay, a different net model, a GDExtension or C# core, headless servers, any rebalancing.
 
 ## Risks and open decisions
 
@@ -359,6 +421,7 @@ The biggest risk was WebRTC on desktop; M5 retired it (webrtc-native GDExtension
 - [x] Resolution (2026-10-22, after the first hero sprite): 640×360 base with 64×64 units and 32×32 tiles, so sprites keep their on-screen size with twice the detail. Was 320×180 with 32×32 units
 - [x] Hero role (2026-10-22, after the M3 playtest): no hero on the field. Each player picks one of two wizards that buffs the whole battlefield; wizards show only in the partner panel and the hero select. Replaces "each client owns its hero position", so there is no continuous sync
 - [x] Sim structure (2026-10-23, M4 checkpoint): keep the Node-based sim. It already advances only through `Lane.tick`, takes all randomness from the seeded deck and replays scenarios to identical hashes, which is all lockstep needs; the retro can revisit a pure core for the real game
+- [x] Real game (2026-10-24, M8 retro): go once M6 proves bulk art; split out a pure sim core; keep host-as-clock lockstep; one Python script per tool instead of `.sh`/`.ps1` twins. First milestone: R1
 - [x] WebRTC: no early spike; proven in M5 with the ENet/WebSocket fallback
 - [x] Art goal (2026-10-22): full pixel-art route, the PoC must end up pretty and polished; art track A1–A4 beside the code milestones
 - [x] Look (2026-10-22): natural evening meadow lit by magic, more detailed than the mockups
