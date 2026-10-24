@@ -23,11 +23,17 @@ out.mkdir(parents=True, exist_ok=True)
 godot_import(godot_bin)
 # The commit goes into the pck so co-op can refuse a partner on another build
 # (NetSession.build_id); runs from source have no file and count as "dev".
-git = subprocess.run(
-    ["git", "rev-parse", "--short", "HEAD"], capture_output=True, text=True, cwd=ROOT, check=False
-)
+# A fixed slice of the full hash: `--short` picks its length from the clone's object count, so
+# a shallow CI clone and a full local clone could disagree on the same commit.
+try:
+    git = subprocess.run(
+        ["git", "rev-parse", "HEAD"], capture_output=True, text=True, cwd=ROOT, check=False
+    )
+    commit = git.stdout.strip()[:12] if git.returncode == 0 else ""
+except OSError:  # no git on PATH
+    commit = ""
 build_id = GAME / "build_id.txt"
-build_id.write_text(git.stdout.strip() if git.returncode == 0 else "dev")
+build_id.write_text(commit or "dev")
 try:
     run(godot_bin, "--headless", "--export-release", preset, out / file, cwd=GAME)
 finally:
