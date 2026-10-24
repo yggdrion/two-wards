@@ -4,7 +4,7 @@ extends Control
 ## full card shows above the hand while the mouse is on a card, never while aiming one. In
 ## co-op a card passed by the partner shows as a fourth card, and the partner panel shows the
 ## partner's name, wizard and hand. After a cleared wave the reward offer shows as full cards
-## over the field until the player picks one.
+## over the field until the player picks one. Esc opens a menu to leave the run or stay.
 
 signal card_pressed(slot: int)
 signal cycle_requested(slot: int)
@@ -12,6 +12,8 @@ signal cycle_requested(slot: int)
 signal pass_requested
 ## A card of the reward offer was clicked.
 signal reward_picked(card_id: String)
+## The player chose to leave the run in the Esc menu.
+signal leave_requested
 
 ## Screen size in base pixels; everything below is laid out from it and Sim.FIELD.
 const SCREEN := Vector2(640, 360)
@@ -32,9 +34,14 @@ var player_index := 0
 var names: Array = []
 ## Shown as the banner when set, e.g. when the partner left.
 var notice := ""
-## Asks whether to leave the run (after Esc with no card selected).
-var confirm_leave := false
+## Shows the Esc menu that asks whether to leave the run.
+var confirm_leave := false:
+	set(value):
+		confirm_leave = value
+		if _leave_menu != null:
+			_leave_menu.visible = value
 var partner_panel: PartnerPanel
+var leave_button: Button
 ## Slot of the card waiting for a target, or -1.
 var selected := -1
 var cards: Array[CardView] = []
@@ -42,6 +49,7 @@ var cards: Array[CardView] = []
 var rewards: Array[CardView] = []
 var _preview: CardView
 var _hovered := -1
+var _leave_menu: Control
 
 
 func _ready() -> void:
@@ -76,6 +84,30 @@ func _ready() -> void:
 	partner_panel.visible = false
 	partner_panel.pressed.connect(pass_requested.emit)
 	add_child(partner_panel)
+	_build_leave_menu()
+
+
+## Dims the screen (and swallows clicks) behind a small panel with Stay and Leave run.
+func _build_leave_menu() -> void:
+	_leave_menu = ColorRect.new()
+	_leave_menu.color = Color(Palette.PANEL, 0.6)
+	_leave_menu.size = SCREEN
+	_leave_menu.theme = App.THEME
+	_leave_menu.visible = confirm_leave
+	add_child(_leave_menu)
+	var panel := PanelContainer.new()
+	_leave_menu.add_child(panel)
+	var box := VBoxContainer.new()
+	box.add_theme_constant_override("separation", 4)
+	panel.add_child(box)
+	var title := MetaScreen.label("Leave the run? You get no gold")
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	box.add_child(title)
+	box.add_child(MetaScreen.button("Stay", func() -> void: confirm_leave = false))
+	leave_button = MetaScreen.button("Leave run", leave_requested.emit)
+	box.add_child(leave_button)
+	panel.size = panel.get_combined_minimum_size()
+	panel.position = (SCREEN - panel.size) / 2.0
 
 
 func _process(_delta: float) -> void:
@@ -196,10 +228,7 @@ func _refresh_partner() -> void:
 func _draw_banner() -> void:
 	var text := ""
 	var hint := ""
-	if confirm_leave:
-		text = "Leave the run? No gold"
-		hint = "Esc again to leave, any other key to stay"
-	elif not notice.is_empty() and not sim.is_over():
+	if not notice.is_empty() and not sim.is_over():
 		text = notice
 		hint = CONTINUE_HINT
 	else:

@@ -10,15 +10,21 @@ var start_button: Button
 var coop_button: Button
 var booster_button: Button
 var hero_button: Button
-var _deck_label: Label
+var menu: VBoxContainer
+var deck_label: Label
 
 
 func build() -> void:
 	add_header("Two Wards", false)
-	var menu := VBoxContainer.new()
-	menu.add_theme_constant_override("separation", 8)
-	menu.position = Vector2(220, 56)
-	menu.size = Vector2(200, 0)
+	deck_label = label("", &"DimLabel")
+	deck_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	deck_label.position = Vector2(0, 34)
+	deck_label.size = Vector2(SCREEN.x, 24)
+	add_child(deck_label)
+	menu = VBoxContainer.new()
+	menu.add_theme_constant_override("separation", 4)
+	menu.position = Vector2((SCREEN.x - 240) / 2, 60)
+	menu.size = Vector2(240, 0)
 	add_child(menu)
 	start_button = button("Start run", func() -> void: navigate.emit(App.Screen.RUN))
 	coop_button = button("Co-op", func() -> void: navigate.emit(App.Screen.COOP))
@@ -41,11 +47,6 @@ func build() -> void:
 		display.changed.connect(_refresh_fullscreen)
 		_refresh_fullscreen()
 	menu.add_child(button("Quit", func() -> void: get_tree().quit()))
-	_deck_label = label("", &"DimLabel")
-	_deck_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	_deck_label.position = Vector2(0, 316)
-	_deck_label.size = Vector2(SCREEN.x, 24)
-	add_child(_deck_label)
 
 
 func _refresh_fullscreen() -> void:
@@ -61,6 +62,6 @@ func refresh() -> void:
 	start_button.disabled = not ready
 	coop_button.disabled = not ready
 	if ready:
-		_deck_label.text = "Deck: %s" % deck_name
+		deck_label.text = "Deck: %s" % deck_name
 	else:
-		_deck_label.text = "Deck %s is not ready, fix it in Decks" % deck_name
+		deck_label.text = "Deck %s is not ready, fix it in Decks" % deck_name
