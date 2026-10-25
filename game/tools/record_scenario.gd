@@ -1,8 +1,9 @@
 extends SceneTree
 ## Records a scenario file by letting a simple bot play every player's hand, so co-op scenarios
 ## don't have to be written by hand. The bot plays the first affordable card every half second:
-## towers on the next free spot of SPOTS, spells on the enemy furthest along the path, and it
-## passes one card to the partner now and then. With "rewards" on it takes the first upgrade of
+## towers on the free spot closest to the path (a 24 px grid over the field, like a player who
+## keeps building), spells on the enemy furthest along the path, and it passes one card to the
+## partner now and then. With "rewards" on it takes the first upgrade of
 ## every offer, like every scenario runner (Scenario.reward_pick). Pin the printed "expect"
 ## afterwards with the scenario test.
 ##
@@ -10,24 +11,14 @@ extends SceneTree
 ##   --in=res://tests/scenarios/<draft>.json --out=<file.json>
 ## The draft gives seed, wizards, decks and optional waves and rewards; its actions are replaced.
 
-const SPOTS := [
-	Vector2(300, 120),
-	Vector2(344, 120),
-	Vector2(280, 156),
-	Vector2(360, 156),
-	Vector2(320, 90),
-	Vector2(260, 110),
-	Vector2(380, 110),
-	Vector2(320, 164),
-	Vector2(160, 110),
-	Vector2(240, 30),
-	Vector2(480, 180),
-	Vector2(500, 60),
-]
+## Grid step for build spots.
+const GRID := 24
 const THINK := 0.5
 const PASS_EVERY := 25.0
 
 var _done := false
+## Build spots, closest to the path first; filled once the sim exists.
+var _spots: Array = []
 
 
 ## Runs on the first frame: nodes added before that don't get _ready yet.
@@ -47,6 +38,13 @@ func _record() -> void:
 	var scenario := Scenario.load_file(args["in"])
 	scenario.actions.clear()
 	var sim := scenario.build_sim()
+	for x in range(GRID / 2, int(Sim.FIELD.size.x), GRID):
+		for y in range(GRID / 2, int(Sim.FIELD.size.y), GRID):
+			_spots.append(Vector2(x, y))
+	_spots.sort_custom(
+		func(a: Vector2, b: Vector2) -> bool:
+			return sim.distance_to_path(a) < sim.distance_to_path(b)
+	)
 	var actions: Array = []
 	var next_think := 0.0
 	var next_pass := PASS_EVERY
@@ -114,5 +112,5 @@ func _targets(sim: Sim, card: CardData) -> Array:
 		targets.append(lead.position.round())
 	targets.append(sim.core.position + Vector2(-24, 24))
 	targets.append(Vector2(320, 128))
-	targets.append_array(SPOTS)
+	targets.append_array(_spots)
 	return targets

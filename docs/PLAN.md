@@ -139,7 +139,7 @@ Twelve cards across three rarities cover every card type once or more; the meta 
 
 - New profile starts with 2 copies of each of the 6 commons and an 8-card starter deck (one copy each would not fill a deck).
 - Gold per run = (10 + 5 × tier) per wave survived + (25 + 25 × tier) for a win; tier is 0 to 4 (shown as Tier 1–5).
-- Difficulty tiers: a new profile has tier 0; winning on tier N unlocks N + 1, and the camp cycles through unlocked tiers. Co-op runs on the host's tier, and a win unlocks the next tier for both players. Enemy max HP = unit HP × (1 + 0.15 × wave index) × (1 + 0.3 × tier) × (1 + 1.0 per extra player); each tier spawns 8% faster (`Sim.TIER_*`, `WAVE_HP`, `PLAYER_HP`).
+- Difficulty tiers: a new profile has tier 0; winning on tier N unlocks N + 1, and the camp cycles through unlocked tiers. Co-op runs on the host's tier, and a win unlocks the next tier for both players. Enemy max HP = unit HP × 1.25^wave index × (1 + 0.5 × tier) × (1 + 0.8 per extra player); towers are unlimited, so the HP compounds per wave to outgrow a full field; each tier spawns 8% faster (`Sim.TIER_*`, `WAVE_HP`, `PLAYER_HP`).
 - Booster costs 50 gold and holds 3 cards; each slot rolls 70% common, 25% rare, 5% epic.
 - Pity: the 10th booster in a row without an epic holds one.
 - A pulled card the profile already owns 2 copies of (the deck cap) pays gold instead: 10 common, 20 rare, 40 epic.
