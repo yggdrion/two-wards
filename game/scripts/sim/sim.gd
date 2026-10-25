@@ -37,11 +37,11 @@ const GOLD_FOR_WIN := 25
 ## Difficulty tiers 0..TIER_COUNT - 1. Each tier adds TIER_HP of enemy max HP, spawns
 ## TIER_INTERVAL faster and pays TIER_GOLD_PER_WAVE / TIER_GOLD_FOR_WIN more gold.
 const TIER_COUNT := 5
-## Enemy max HP grows by WAVE_HP per wave (wave 1 is the base) and by PLAYER_HP per player
-## after the first, so the late waves keep up with the towers built by then.
-const WAVE_HP := 0.15
-const PLAYER_HP := 1.0
-const TIER_HP := 0.3
+## Enemy max HP compounds by WAVE_HP per wave (wave 1 is the base; towers are unlimited, so
+## the late waves must outgrow a full field) and adds PLAYER_HP per player after the first.
+const WAVE_HP := 0.25
+const PLAYER_HP := 0.8
+const TIER_HP := 0.5
 const TIER_INTERVAL := 0.08
 const TIER_GOLD_PER_WAVE := 5
 const TIER_GOLD_FOR_WIN := 25
@@ -250,7 +250,7 @@ func spawn_enemy(unit: UnitData) -> SimEnemy:
 ## Enemy max HP multiplier for the current wave, tier and player count.
 func enemy_hp_scale() -> float:
 	return (
-		(1.0 + WAVE_HP * wave_index)
+		pow(1.0 + WAVE_HP, wave_index)
 		* (1.0 + TIER_HP * tier)
 		* (1.0 + PLAYER_HP * maxi(players.size() - 1, 0))
 	)
