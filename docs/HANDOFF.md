@@ -99,6 +99,12 @@ Rapha kept the Node-based sim (no pure sim core). Lockstep with the host as the 
 
 Two tracks side by side. Real game, first milestone R1 (from the M8 retro, steps in `docs/PLAN.md`): R1a (open) replaces the `.sh`/`.ps1` tool twins with one Python script per tool; R1b splits the simulation into a pure `Sim` without the scene tree that `Lane` renders, with the four pinned scenario hashes unchanged. M6 (art and juice): A1 is approved and the anchors are in the game (`art-reference/a2/run_anchors.png`). Data drives the art: `UnitData.frames` and `TowerData.sprite` switch a unit or tower from gray box to sprite, so each new asset is a PNG, a manifest entry and one line in its `.tres`. The goblin runner's `walk_side` is the anchor frame with a 1 px bob; all directions use it until PixelLab animates it. Next is bulk generation (goblin walk cycles in 3 directions, brute, frost totem, ballista, storm spire, props such as trees and rocks), then particles and juice. Generation needs the PixelLab key: a cloud session with the network secret, or a local untracked env var. Card art and HUD skin are A3.
 
+Balance ideas from Rapha (2026-10-25), parked as next todos, not started. Check each against the scope table in `docs/PLAN.md` first, and measure with `python tools/balance_sim.py` (skill `.claude/skills/balance-sim`) before and after:
+
+- **Way harder.** Push the tiers well past today's numbers after the playtest of PR 51. Fix the outliers first: the all-tower deck (2 Storm Spire) wins every tier, and strong co-op pairs win Tier 5 while two starter decks lose from Tier 2.
+- **Meta progression beyond cards.** Something to earn and spend on besides boosters, so gold keeps a use once the collection is full (about 520 gold today). Candidates: wizard levels or talents, more wizards to unlock, crystal upgrades.
+- **Rarity levels for cards.** Copies past the 2-copy cap could raise a card's level instead of paying gold. Permanent card levels are "out of scope" in the PoC scope table, so this needs Rapha's scope call first.
+
 ## Reference images
 
 `docs/art-reference/` holds the mockups and screenshots made during the project. It lives outside the Godot project (`game/`), so Godot never imports it and the asset validator (which only checks `game/assets/`) ignores it.
