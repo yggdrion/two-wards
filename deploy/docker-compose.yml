@@ -32,7 +32,7 @@ services:
     restart: unless-stopped
 
   vector:
-    image: timberio/vector:0.60.0-alpine
+    image: timberio/vector:0.61.0-alpine
     environment:
       # vector.yaml reads the login from these; vector only expands env vars with this switch.
       VECTOR_DANGEROUSLY_ALLOW_ENV_VAR_INTERPOLATION: "true"
