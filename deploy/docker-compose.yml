@@ -17,7 +17,7 @@ services:
         aliases: [two-wards-lobby]
 
   coturn:
-    image: coturn/coturn:4.19.0
+    image: coturn/coturn:4.19.1
     command:
       - -c
       - /etc/coturn/turnserver.conf
@@ -32,7 +32,7 @@ services:
     restart: unless-stopped
 
   vector:
-    image: timberio/vector:0.61.0-alpine
+    image: timberio/vector:0.62.0-alpine
     environment:
       # vector.yaml reads the login from these; vector only expands env vars with this switch.
       VECTOR_DANGEROUSLY_ALLOW_ENV_VAR_INTERPOLATION: "true"
