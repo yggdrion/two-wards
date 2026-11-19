@@ -17,7 +17,7 @@ services:
         aliases: [two-wards-lobby]
 
   coturn:
-    image: coturn/coturn:4.19.1
+    image: coturn/coturn:4.19.2
     command:
       - -c
       - /etc/coturn/turnserver.conf
